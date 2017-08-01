@@ -8,7 +8,7 @@ cd $catkin_ws/src
 git clone https://hngenc@bitbucket.org/zaddan/mav-bench.git
 ```
 
-## To build the motion-planning package:
+## To build the package_delivery package:
 
 Run the following commands:
 ```shell
@@ -36,6 +36,7 @@ wget -O $catkin_ws/build/glog_catkin/glog_src-prefix/src/glog_src/config.sub 'ht
 
 ## To run the motion-planning package:
 ```shell
-roslaunch mavbench path_planner.launch
+change the host_ip (located in the package_delivery.launch file to the ip of the host(where airsim is running))
+roslaunch mavbench package_delivery.launch
 ```
 
