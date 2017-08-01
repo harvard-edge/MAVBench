@@ -36,6 +36,7 @@ wget -O $catkin_ws/build/glog_catkin/glog_src-prefix/src/glog_src/config.sub 'ht
 
 ## To run the motion-planning package:
 ```shell
+change the host_ip (located in the package_delivery.launch file to the ip of the host(where airsim is running))
 roslaunch mavbench package_delivery.launch
 ```
 
