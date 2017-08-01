@@ -29,7 +29,9 @@
 	<!-- Point-cloud publisher -->
  	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
 		<!-- IP of the Airsim computer -->
-		<param name="Airsim_ip" value="10.157.34.208"/>
+		<!-- param name="Airsim_ip" value="10.157.34.208"/ -->
+		<param name="Airsim_ip" value="10.157.34.101"/>
+
 
 		<!-- Port of the Airsim computer (this is default, do not change!) -->
 		<param name="Airsim_port" value="41451"/>
@@ -66,23 +68,23 @@
     </node>
 	
     
-    <node pkg="mavbench" type="panic_pcl" name="panic_pcl" output="screen">
+    <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
 		<param name="safe_distance" value="1.25"/>
     </node>
  
-    <node pkg="mavbench" type="future_collision" name="future_collision" output="screen">
+    <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
     </node>
     
     <?ignore 
     <!-- Convert to point cloud -->
-	<node pkg="mavbench" type="panic" name="panic">
+	<node pkg="package_delivery" type="panic" name="panic">
 		<remap from="depth_img" to="/Airsim/depth_2"/>
 		<!-- remap from="depth_img" to="/stereo/left/image_raw"/ -->
     </node>
     ?>
 
 	<!-- Path-Planner -->
-	<node pkg="mavbench" type="airsim_planner" name="airsim_planner" output="screen">
+	<node pkg="package_delivery" type="airsim_planner" name="airsim_planner" output="screen">
 		<param name="nodes_to_add_to_roadmap" value="400"/>
 		<param name="max_dist_to_connect_at" value="10"/>
 
@@ -104,15 +106,16 @@
 	</node>
 
 	<!-- Demo program that controls drone -->
-	<node pkg="mavbench" type="airsim_planner_demo" name="airsim_planner_demo" output="screen">
-		<param name="ip_addr" value="10.157.34.208" />
-		<param name="issue_cmd__time_step" value=".05"/>
+	<node pkg="package_delivery" type="airsim_planner_demo" name="airsim_planner_demo" output="screen">
+		<!-- param name="ip_addr" value="10.157.34.208" / -->
+		<param name="ip_addr" value="10.157.34.101"/>
+        <param name="issue_cmd__time_step" value=".05"/>
 
 		<param name="points_to_replan_after" value="1000000000"/>
     </node>
 
     <!-- rviz -->
-    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mavbench)/extras/rvizConfig.rviz"/>
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
 
 </launch>
 

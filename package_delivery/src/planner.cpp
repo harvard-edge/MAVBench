@@ -13,7 +13,7 @@
 // My headers
 #include "graph.h"
 #include "path_planner.h"
-#include "mavbench/get_trajectory.h"
+#include "package_delivery/get_trajectory.h"
 
 // Misc messages
 #include <geometry_msgs/Point.h>
@@ -77,7 +77,7 @@ std::vector<graph::node_id> nodes_in_radius(/*const*/ graph& g, graph::node_id n
 void generate_octomap(const octomap_msgs::Octomap& msg);
 
 // *** F:DN Initializes the PRM.
-graph create_PRM(const mavbench::get_trajectory::Request &req, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id, bool& success);
+graph create_PRM(const package_delivery::get_trajectory::Request &req, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id, bool& success);
 
 
 // *** F:DN Increases the density of the PRM.
@@ -89,7 +89,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 
 
 // ***F:DN Build the response to the service from the smooth_path
-void create_response(mavbench::get_trajectory::Response &res, smooth_trajectory& smooth_path);
+void create_response(package_delivery::get_trajectory::Response &res, smooth_trajectory& smooth_path);
 
 
 // ***F:DN Temporary debugging function that publishes the roadmap (without the connections) for visualization.
@@ -101,7 +101,7 @@ void postprocess(piecewise_trajectory& path);
 
 
 //*** F:DN getting the smoothened trajectory
-bool get_trajectory_fun(mavbench::get_trajectory::Request &req, mavbench::get_trajectory::Response &res)
+bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
 {
 	//----------------------------------------------------------------- 
 	// *** F:DN variables	
@@ -321,7 +321,7 @@ void generate_octomap(const octomap_msgs::Octomap& msg)
 }
 
 
-graph create_PRM(const mavbench::get_trajectory::Request &req, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id, bool& success)
+graph create_PRM(const package_delivery::get_trajectory::Request &req, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id, bool& success)
 {
 	graph roadmap;
 	success = true;
@@ -422,7 +422,7 @@ void grow_PRM(graph &roadmap, octomap::OcTree * octree)
 }
 
 
-void create_response(mavbench::get_trajectory::Response &res, smooth_trajectory& smooth_path)
+void create_response(package_delivery::get_trajectory::Response &res, smooth_trajectory& smooth_path)
 {
     const double safe_radius = 1.0;
 

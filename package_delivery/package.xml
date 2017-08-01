@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>mavbench</name>
+  <name>package_delivery</name>
   <version>0.0.0</version>
   <description>MAV-Bench ROS packages</description>
 
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/mavbench</url> -->
+  <!-- <url type="website">http://wiki.ros.org/package_delivery</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->

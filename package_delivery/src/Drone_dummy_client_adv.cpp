@@ -14,7 +14,7 @@
 #include "common/Common.hpp"
 #include <fstream>
 #include "Drone.h"
-#include "mavbench/get_trajectory.h"
+#include "package_delivery/get_trajectory.h"
 #include <cstdlib>
 #include <geometry_msgs/Point.h>
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
@@ -94,8 +94,8 @@ int main(int argc, char **argv)
 
 	ros::NodeHandle n;
 
-	ros::ServiceClient client = n.serviceClient<mavbench::get_trajectory>("dummy_service_adv");
-	mavbench::get_trajectory srv;
+	ros::ServiceClient client = n.serviceClient<package_delivery::get_trajectory>("dummy_service_adv");
+	package_delivery::get_trajectory srv;
     
     // *** F:DN hardcoding the goal 
     geometry_msgs::Point goal;

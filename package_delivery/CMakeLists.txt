@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(mavbench)
+project(package_delivery)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -184,10 +184,11 @@ link_directories(
 # )
 
 add_executable(airsim_planner src/planner.cpp src/graph.cpp src/path_planner.cpp)
-add_dependencies(airsim_planner mavbench_generate_messages_cpp)
+add_dependencies(airsim_planner package_delivery_generate_messages_cpp)
 target_link_libraries(airsim_planner ${catkin_LIBRARIES}  cuda cudart cublas curand)
 
 add_executable(airsim_planner_demo src/main.cpp src/Drone.cpp)
+add_dependencies(airsim_planner_demo package_delivery_generate_messages_cpp)
 target_link_libraries(airsim_planner_demo ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
 

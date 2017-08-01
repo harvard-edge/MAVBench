@@ -16,7 +16,7 @@
 #include "common/Common.hpp"
 #include <fstream>
 #include "Drone.h"
-#include "mavbench/get_trajectory.h"
+#include "package_delivery/get_trajectory.h"
 #include <cstdlib>
 #include <geometry_msgs/Point.h>
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
@@ -153,8 +153,8 @@ int main(int argc, char **argv)
 	//----------------------------------------------------------------- 
     double input_x, input_y, input_z; //goal asked by the user
     geometry_msgs::Point start, goal, original_start; //msg send out to the 
-	ros::ServiceClient client = n.serviceClient<mavbench::get_trajectory>("get_trajectory_srv");
-	mavbench::get_trajectory srv;
+	ros::ServiceClient client = n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
+	package_delivery::get_trajectory srv;
 	string ip_addr;
     ros::param::get("/airsim_planner_demo/ip_addr",ip_addr);
     uint16_t port = 41451;

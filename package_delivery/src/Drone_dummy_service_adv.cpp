@@ -1,13 +1,13 @@
 #include "ros/ros.h"
-#include "mavbench/get_trajectory.h"
+#include "package_delivery/get_trajectory.h"
 #include <geometry_msgs/Point.h>
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 
 // *** F:DN simply, sends and arm command
 
-bool send_trajectory(mavbench::get_trajectory::Request  &req,
-         mavbench::get_trajectory::Response &res)
+bool send_trajectory(package_delivery::get_trajectory::Request  &req,
+         package_delivery::get_trajectory::Response &res)
 {
    
 
