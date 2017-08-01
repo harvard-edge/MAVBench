@@ -1,0 +1,118 @@
+<launch>
+	<!-- Octomap -->
+	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+		<param name="resolution" value="0.5" />
+		
+		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+		<param name="frame_id" type="string" value="fcu" />
+		
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="sensor_model/max_range" value="50" />
+		
+		<!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/points" />
+
+		<!-- Filter ground for binary occupancy map -->
+		<param name="base_frame_id" value="fcu" />
+		<!-- <param name="filter_ground" value="true" />
+		<param name="ground_filter_plane_distance" value="1.00" />
+		<param name="ground_filter/distance" value="0.50" /> -->
+	    <param name="pointcloud_min_z" type="double" value="-2.0" />
+	    <param name="pointcloud_max_z" type="double" value="7.0" />
+	    <param name="occupancy_min_z" type="double" value="-2.00" />
+	    <param name="occupancy_max_z" type="double" value="7.0" />
+		<!-- <param name="ground_filter_plane_distance" value="0.07" />
+		<param name="ground_filter/distance" value="0.04" />
+		<param name="ground_filter/angle" value="0.4" /> -->
+	</node>
+
+	<!-- Point-cloud publisher -->
+ 	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
+		<!-- IP of the Airsim computer -->
+		<param name="Airsim_ip" value="10.157.34.208"/>
+
+		<!-- Port of the Airsim computer (this is default, do not change!) -->
+		<param name="Airsim_port" value="41451"/>
+
+		<!-- RGB camera parameters (parameters when calibrated) -->
+		<param name="Fx" value="128"/>
+		<param name="Fy" value="128"/>
+		<param name="cx" value="128"/>
+		<param name="cy" value="72"/>
+		<param name="width" value="256"/>  <!-- Width when calibrated!-->
+		<param name="height" value="144"/> <!-- Height when calibrated!-->
+
+		<!-- Depth baseline -->
+		<param name="Tx" value="0.14"/> 
+		<param name="scale" value="0.38"/> 
+		<param name="maxDist" value="50.0"/> 
+
+		<!-- Topic with odometry information for the vehicle (used to create tf tree) -->
+		<param name="odomTopic" value="/mavros/local_position/odom"/>
+	</node>
+
+	<!-- Nodelet manager for this pipeline -->
+	<node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager"/>
+
+	<!-- Convert to point cloud -->
+	<node pkg="nodelet" type="nodelet" name="cloudify"
+	args="load depth_image_proc/point_cloud_xyz depth_transforms_manager --no-bond">
+
+		<!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
+		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
+		<!-- Input: Rectified depth image -->
+		<remap from="image_rect" to="/Airsim/depth"/>
+
+    </node>
+	
+    
+    <node pkg="mavbench" type="panic_pcl" name="panic_pcl" output="screen">
+		<param name="safe_distance" value="1.25"/>
+    </node>
+ 
+    <node pkg="mavbench" type="future_collision" name="future_collision" output="screen">
+    </node>
+    
+    <?ignore 
+    <!-- Convert to point cloud -->
+	<node pkg="mavbench" type="panic" name="panic">
+		<remap from="depth_img" to="/Airsim/depth_2"/>
+		<!-- remap from="depth_img" to="/stereo/left/image_raw"/ -->
+    </node>
+    ?>
+
+	<!-- Path-Planner -->
+	<node pkg="mavbench" type="airsim_planner" name="airsim_planner" output="screen">
+		<param name="nodes_to_add_to_roadmap" value="400"/>
+		<param name="max_dist_to_connect_at" value="10"/>
+
+		<param name="v_max" value="4.0"/>
+		<param name="a_max" value="2.0"/>
+        <param name="drone_radius" value="2.0"/>
+        <param name="drone_height" value="0.6"/>
+
+		<param name="max_roadmap_size" value="2000"/>
+		
+        <param name="x_dist_low_bound" value="-35"/>
+		<param name="x_dist_high_bound" value="35"/>
+        <param name="y_dist_low_bound" value="0"/>
+        <param name="y_dist_high_bound" value="70"/>
+        <param name="z_dist_low_bound" value="3"/>
+        <param name="z_dist_high_bound" value="5"/>
+
+        <param name="sampling_interval" value="0.5"/>
+	</node>
+
+	<!-- Demo program that controls drone -->
+	<node pkg="mavbench" type="airsim_planner_demo" name="airsim_planner_demo" output="screen">
+		<param name="ip_addr" value="10.157.34.208" />
+		<param name="issue_cmd__time_step" value=".05"/>
+
+		<param name="points_to_replan_after" value="1000000000"/>
+    </node>
+
+    <!-- rviz -->
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mavbench)/extras/rvizConfig.rviz"/>
+
+</launch>
+

@@ -1,0 +1,7 @@
+generic CMakelist needed for ros and airlib to communicate with each other
+
+note1: at the beginning of the CMakefile you can dump what is labeled as "to be added when airsim communication is desired"
+note2: note that  target_link_libraries need to consider the order of the dependecines, so if talker_tmp depends on Airlib You need to do the following:
+target_link_libraries(listener_tmp ${catkin_LIBRARIES} AirLib  MavLinkCom rpc pthread ${OpenCV_LIBS})
+
+

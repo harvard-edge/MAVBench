@@ -1,0 +1,5 @@
+geometry_msgs/Point start
+geometry_msgs/Point goal
+---
+trajectory_msgs/MultiDOFJointTrajectory multiDOFtrajectory
+int32 unknown
