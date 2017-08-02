@@ -143,7 +143,7 @@ void action_upon_future_col(Drone& drone) {
 int main(int argc, char **argv)
 {
     // ROS node initialization
-    ros::init(argc, argv, "airsim_planner_demo", ros::init_options::NoSigintHandler);
+    ros::init(argc, argv, "package_delivery", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
     signal(SIGINT, sigIntHandler);
 	
@@ -156,7 +156,7 @@ int main(int argc, char **argv)
 	ros::ServiceClient client = n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
 	package_delivery::get_trajectory srv;
 	string ip_addr;
-    ros::param::get("/airsim_planner_demo/ip_addr",ip_addr);
+    ros::param::get("/package_delivery/ip_addr",ip_addr);
     uint16_t port = 41451;
     Drone drone(ip_addr.c_str(), port);
      
@@ -172,10 +172,10 @@ int main(int argc, char **argv)
 	// *** F:DN knobs
 	//----------------------------------------------------------------- 
     double issue_cmd__time_step;  //how often sending a cmd to the drone
-    ros::param::get("/airsim_planner_demo/issue_cmd__time_step", issue_cmd__time_step);
+    ros::param::get("/package_delivery/issue_cmd__time_step", issue_cmd__time_step);
     const int step__total_number = 1;
     int points_to_replan_after;
-    ros::param::get("/airsim_planner_demo/points_to_replan_after", points_to_replan_after);
+    ros::param::get("/package_delivery/points_to_replan_after", points_to_replan_after);
     
     //----------------------------------------------------------------- 
 	// *** F:DN Body

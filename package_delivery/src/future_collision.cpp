@@ -27,13 +27,13 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 
     static double height = [] () {
         double h;
-        ros::param::get("/airsim_planner/drone_height", h);
+        ros::param::get("/motion_planner/drone_height", h);
         return h;
     } ();
 
     static double radius = [] () {
         double r;
-        ros::param::get("/airsim_planner/drone_radius", r);
+        ros::param::get("/motion_planner/drone_radius", r);
         return r;
     } ();
 

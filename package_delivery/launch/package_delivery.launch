@@ -90,7 +90,7 @@
     ?>
 
 	<!-- Path-Planner -->
-	<node pkg="package_delivery" type="airsim_planner" name="airsim_planner" output="screen">
+	<node pkg="package_delivery" type="motion_planner" name="motion_planner" output="screen">
 		<param name="nodes_to_add_to_roadmap" value="400"/>
 		<param name="max_dist_to_connect_at" value="10"/>
 
@@ -112,7 +112,7 @@
 	</node>
 
 	<!-- Demo program that controls drone -->
-	<node pkg="package_delivery" type="airsim_planner_demo" name="airsim_planner_demo" output="screen">
+	<node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen">
 		<param name="ip_addr" value="$(arg host_ip)"/>
         <param name="issue_cmd__time_step" value=".05"/>
 

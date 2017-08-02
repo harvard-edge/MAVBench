@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(package_delivery)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++11 -g -fno-omit-frame-pointer)
 
 
 
@@ -183,13 +183,13 @@ link_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(airsim_planner src/planner.cpp src/graph.cpp src/path_planner.cpp)
-add_dependencies(airsim_planner package_delivery_generate_messages_cpp)
-target_link_libraries(airsim_planner ${catkin_LIBRARIES}  cuda cudart cublas curand)
+add_executable(motion_planner src/motion_planner.cpp src/graph.cpp src/global_planner.cpp)
+add_dependencies(motion_planner package_delivery_generate_messages_cpp)
+target_link_libraries(motion_planner ${catkin_LIBRARIES}  cuda cudart cublas curand)
 
-add_executable(airsim_planner_demo src/main.cpp src/Drone.cpp)
-add_dependencies(airsim_planner_demo package_delivery_generate_messages_cpp)
-target_link_libraries(airsim_planner_demo ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
+add_executable(package_delivery src/package_delivery.cpp src/Drone.cpp)
+add_dependencies(package_delivery package_delivery_generate_messages_cpp)
+target_link_libraries(package_delivery ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
 
 #add_executable(panic src/panic.cpp)
