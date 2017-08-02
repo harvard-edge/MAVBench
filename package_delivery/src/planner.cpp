@@ -7,7 +7,6 @@
 #include <vector>
 #include <algorithm>
 #include <iostream>
-#include <chrono>
 #include <thread>
 
 // My headers
@@ -76,12 +75,17 @@ std::vector<graph::node_id> nodes_in_radius(/*const*/ graph& g, graph::node_id n
 // *** F:DN Generatea octomap. Returns nullptr on error.
 void generate_octomap(const octomap_msgs::Octomap& msg);
 
+
 // *** F:DN Initializes the PRM.
-graph create_PRM(const package_delivery::get_trajectory::Request &req, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id, bool& success);
+graph create_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id);
 
 
 // *** F:DN Increases the density of the PRM.
 void grow_PRM(graph &roadmap, octomap::OcTree * octree);
+
+
+// ***F:DN Use the PRM sampling method to find a piecewise path
+piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree);
 
 
 // *** F:DN Optimize and smoothen a piecewise path without causing any new collisions.
@@ -106,16 +110,8 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 	//----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
-	graph::node_id start_id, goal_id;
-	graph roadmap;
 	piecewise_trajectory piecewise_path;
 	smooth_trajectory smooth_path;
-	bool success;
-	int max_roadmap_size;
-	auto generate_shortest_path = dijkstra_plan; // TODO: parameter
-	// auto generate_shortest_path = astar_plan;
-
-    ros::param::get("/airsim_planner/max_roadmap_size", max_roadmap_size);
 
 
     //----------------------------------------------------------------- 
@@ -126,36 +122,15 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     	ROS_ERROR("Octomap is not available.");
     	return false;
     }
-    
-    roadmap = create_PRM(req, octree, start_id, goal_id, success);
 
-    if (!success) {
-    	ROS_ERROR("PRM could not be initialized.");
-    	return false;
+    piecewise_path = PRM(req.start, req.goal, octree);
+
+    if (piecewise_path.size() == 0) {
+        return false;
     }
 
-    publish_graph(roadmap); // A debugging function used to publish the roadmap generated, so it can be viewed in rviz
+    ROS_INFO("Path size: %d. Now post-processing...", piecewise_path.size());
 
-	// Search for a path to the goal in the PRM
-    piecewise_path = generate_shortest_path(roadmap, start_id, goal_id);
-
-    // Grow PRM and re-run path-planner until we find a path
-    while(piecewise_path.empty()) {
-        grow_PRM(roadmap, octree);
-
-        ROS_INFO("Roadmap size: %d", roadmap.size());
-
-        publish_graph(roadmap);
-
-      	if (roadmap.size() > max_roadmap_size) {
-      		ROS_ERROR("Path not found!");
-      		return false;
-      	}
-
-		piecewise_path = generate_shortest_path(roadmap, start_id, goal_id);
-    }
-
-    ROS_INFO("Roadmap size: %d.\nPath size: %d. Now post-processing...", roadmap.size(), piecewise_path.size());
     postprocess(piecewise_path);
 
     ROS_INFO("Path size: %d. Now smoothening...", piecewise_path.size());
@@ -321,29 +296,29 @@ void generate_octomap(const octomap_msgs::Octomap& msg)
 }
 
 
-graph create_PRM(const package_delivery::get_trajectory::Request &req, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id, bool& success)
+graph create_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id)
 {
 	graph roadmap;
-	success = true;
+	bool success = true;
 
 	ROS_INFO("starting piecewise_path");
 	ROS_INFO("initialized roadmap");
 	start_id = -1, goal_id = -2;
-	graph::node start = {req.start.x, req.start.y, req.start.z, start_id};
-	graph::node goal = {req.goal.x, req.goal.y, req.goal.z, goal_id};
+	graph::node s = {start.x, start.y, start.z, start_id};
+	graph::node g = {goal.x, goal.y, goal.z, goal_id};
 
-	ROS_INFO("Start %f %f %f", req.start.x, req.start.y, req.start.z);
-	ROS_INFO("Goal  %f %f %f", req.goal.x, req.goal.y, req.goal.z);
+	ROS_INFO("Start %f %f %f", start.x, start.y, start.z);
+	ROS_INFO("Goal  %f %f %f", goal.x, goal.y, goal.z);
 
 	// Check whether the path is even possible.
 	// The path is impossible if the start or end coordinates are in an occupied part of the octomap.
 	
-	if (occupied(octree, req.start.x, req.start.y, req.start.z)) {
+	if (occupied(octree, start.x, start.y, start.z)) {
 		ROS_ERROR("Start is already occupied!");
 		success = false;
 	}
 
-	if (occupied(octree, req.goal.x, req.goal.y, req.goal.z)) {
+	if (occupied(octree, goal.x, goal.y, goal.z)) {
 		ROS_ERROR("Goal is already occupied!");
 		success	= false;
 	}
@@ -351,12 +326,12 @@ graph create_PRM(const package_delivery::get_trajectory::Request &req, octomap::
 	// If the path is believed to be possible, then add the start and end nodes.
 	// Note: the path may still be impossible. Our earlier check is quite rudimentary.
 	if (success) {
-		roadmap.add_node(start);
-		roadmap.add_node(goal);
+		roadmap.add_node(s);
+		roadmap.add_node(g);
 
 		// If possible, connect the start and end nodes directly.
 		// Then, the shortest path will be a straight line between the start and goal.
-		if (!collision(octree, start, goal)) {
+		if (!collision(octree, s, g)) {
 			ROS_INFO("No collision so connecting start and goal directly.");
 			roadmap.connect(start_id, goal_id);
 		}
@@ -495,8 +470,6 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	mav_trajectory_generation::Vertex start_v(dimension), end_v(dimension);
 	start_v.makeStartOrEnd(Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z), derivative_to_optimize);
 	end_v.makeStartOrEnd(Eigen::Vector3d(piecewise_path.back().x, piecewise_path.back().y, piecewise_path.back().z), derivative_to_optimize);
-    // start_v.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z));
-    // end_v.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(piecewise_path.back().x, piecewise_path.back().y, piecewise_path.back().z));
 
 	vertices.push_back(start_v);
 	for (auto it = piecewise_path.begin()+1; it+1 != piecewise_path.end(); ++it) {
@@ -635,4 +608,127 @@ void postprocess(piecewise_trajectory& path)
             ++it;
     }
 }
+
+piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree)
+{
+	//----------------------------------------------------------------- 
+	// *** F:DN variables	
+	//----------------------------------------------------------------- 
+    piecewise_trajectory result;
+	graph::node_id start_id, goal_id;
+	auto generate_shortest_path = dijkstra_plan; // TODO: parameter
+	// auto generate_shortest_path = astar_plan;
+	int max_roadmap_size;
+
+    ros::param::get("/airsim_planner/max_roadmap_size", max_roadmap_size);
+    
+    //----------------------------------------------------------------- 
+    // *** F:DN Body 
+    //----------------------------------------------------------------- 
+    graph roadmap = create_PRM(start, goal, octree, start_id, goal_id);
+
+    if (roadmap.size() == 0) {
+    	ROS_ERROR("PRM could not be initialized.");
+    	return result;
+    }
+
+    publish_graph(roadmap); // A debugging function used to publish the roadmap generated, so it can be viewed in rviz
+
+	// Search for a path to the goal in the PRM
+    result = generate_shortest_path(roadmap, start_id, goal_id);
+
+    // Grow PRM and re-run path-planner until we find a path
+    while(result.empty()) {
+        grow_PRM(roadmap, octree);
+
+        ROS_INFO("Roadmap size: %d", roadmap.size());
+
+        publish_graph(roadmap);
+
+      	if (roadmap.size() > max_roadmap_size) {
+            ROS_ERROR("Path not found!");
+            return result;
+      	}
+
+		result = generate_shortest_path(roadmap, start_id, goal_id);
+    }
+
+    return result;
+}
+
+graph create_RRT(geometry_msgs::Point start, graph::node_id &start_id)
+{
+	graph rrt;
+
+	start_id = -1;
+	graph::node s = {start.x, start.y, start.z, start_id};
+
+    rrt.add_node(s);
+
+	return rrt;
+}
+
+graph::node_id closest_node_to_coordinate(graph& g, double x, double y, double z)
+{
+    auto node_ids = g.node_ids();
+    graph::node goal = {x, y, z};
+
+    return *min_element(node_ids.begin(), node_ids.end(), [&g, &goal] (graph::node_id n1, graph::node_id n2) { return dist(g.get_node(n1), goal) < dist(g.get_node(n2), goal); });
+}
+
+
+graph::node& extend_RRT(graph rrt, geometry_msgs::Point goal)
+{
+    const double step_size = 0.5;
+
+    double x_dist_low_bound, x_dist_high_bound;
+    double y_dist_low_bound, y_dist_high_bound;
+    double z_dist_low_bound, z_dist_high_bound;
+
+    ros::param::get("/airsim_planner/x_dist_low_bound", x_dist_low_bound);
+	ros::param::get("/airsim_planner/x_dist_high_bound", x_dist_high_bound);
+	ros::param::get("/airsim_planner/y_dist_low_bound", y_dist_low_bound);
+	ros::param::get("/airsim_planner/y_dist_high_bound", y_dist_high_bound);
+	ros::param::get("/airsim_planner/z_dist_low_bound", z_dist_low_bound);
+	ros::param::get("/airsim_planner/z_dist_high_bound", z_dist_high_bound);
+
+    static std::mt19937 rd_mt(350); //a pseudo-random number generator
+    static std::uniform_real_distribution<> x_dist(x_dist_low_bound, x_dist_high_bound); 
+	static std::uniform_real_distribution<> y_dist(y_dist_low_bound, y_dist_high_bound); 
+	static std::uniform_real_distribution<> z_dist(z_dist_low_bound, z_dist_high_bound); 
+    static std::uniform_int_distribution<> bias(0, 100);
+
+    // Get random coordinate, q_random
+    double x, y, z;
+
+    if (bias(rd_mt) <= 10)
+        x = goal.x, y = goal.y, z = goal.z;
+    else
+        x = x_dist(rd_mt), y = y_dist(rd_mt), z = z_dist(rd_mt);
+    
+    // Find closest node, q_close
+    graph::node_id q_close = closest_node_to_coordinate(rrt, x, y, z);
+
+    // Get step towards q_random, q_step
+
+    // If no collision, append q_step to q_close
+    // Return q_step
+}
+
+#ifdef fdsafdasfasfasdfasd
+
+piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree)
+{
+    piecewise_trajectory result;
+
+    graph rrt = create_RRT(start, start_id);
+
+    while (goal != extend_RRT(rrt, goal)) {}
+
+    result = build_reverse_path(roadmap, start_id, goal_id);
+
+    return result;
+}
+
+#endif
 

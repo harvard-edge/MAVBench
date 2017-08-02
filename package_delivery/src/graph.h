@@ -14,6 +14,7 @@ public:
 	{
 		double x, y, z;
 		node_id id;
+        node_id parent; // used for RRT and any other tree structures
 	};
 
 	struct edge
