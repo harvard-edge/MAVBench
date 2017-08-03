@@ -145,6 +145,7 @@ int main(int argc, char **argv)
     // ROS node initialization
     ros::init(argc, argv, "package_delivery", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
+    ros::NodeHandle panic_nh;
     signal(SIGINT, sigIntHandler);
 	
     
@@ -153,34 +154,46 @@ int main(int argc, char **argv)
 	//----------------------------------------------------------------- 
     double input_x, input_y, input_z; //goal asked by the user
     geometry_msgs::Point start, goal, original_start; //msg send out to the 
-	ros::ServiceClient client = n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
-	package_delivery::get_trajectory srv;
+	package_delivery::get_trajectory get_trajectory_srv;
 	string ip_addr;
     ros::param::get("/package_delivery/ip_addr",ip_addr);
     uint16_t port = 41451;
     Drone drone(ip_addr.c_str(), port);
-     
-    // *** F:DN panic subscriber 
-    ros::NodeHandle panic_nh;
-    ros::Subscriber panic_sub = 
-    panic_nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
+    int reaction_delay_counter_init_value = 8; 
+    int reaction_delay_counter =  reaction_delay_counter_init_value;
+    bool delivering_mission_complete = false; //if true, we have delivered the 
+                                              //pkg and successfully returned to origin
+    // *** F:DN subscribers,publishers,servers,clients
+	ros::ServiceClient get_trajectory_client = 
+        n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
+    ros::Subscriber panic_sub =  
+		panic_nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
     ros::NodeHandle future_col_nh;
-    ros::Subscriber future_col_sub = future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
+    ros::Subscriber future_col_sub = 
+		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
 
     
     //----------------------------------------------------------------- 
-	// *** F:DN knobs
+	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
     double issue_cmd__time_step;  //how often sending a cmd to the drone
     ros::param::get("/package_delivery/issue_cmd__time_step", issue_cmd__time_step);
-    const int step__total_number = 1;
+    //const int step__total_number = 1;
     int points_to_replan_after;
     ros::param::get("/package_delivery/points_to_replan_after", points_to_replan_after);
+    int package_delivery_loop_rate = 100;
+    float goal_s_error_margin = 5.0; //ok distance to be away from the goal.
+                                                      //this is b/c it's very hard 
+                                                      //given the issues associated with
+                                                      //flight controler to land exactly
+                                                      //on the goal
+
+    
     
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(package_delivery_loop_rate);
     while (ros::ok())
 	{
         // *** F:DN arm, disarm, move around before switching to autonomous mode 
@@ -196,125 +209,117 @@ int main(int argc, char **argv)
         std::cin >> input_x >> input_y >> input_z;
 		goal.x = input_y; goal.y = input_x; goal.z = -1*input_z;
         original_start = start;
-		srv.request.start = start;
-		srv.request.goal = goal;
+		get_trajectory_srv.request.start = start;
+		get_trajectory_srv.request.goal = goal;
 
         bool returned_to_start = false;
-ugly_loop: //TODO: get rid of this monstrosity. Move this stuff into a function.
-        while (dist(drone.gps(), goal) > 5.0) {
-            ROS_INFO("Distance to target: %f", dist(drone.gps(), goal));
+ugly_loop: 
+        
+        while (delivering_mission_complete) {//go toward the destination and come back
+            // *** F:DN request client call from the trajectory server and 
+            //          follow the path
+            while (dist(drone.gps(), goal) > goal_s_error_margin) {
+                ROS_INFO("Distance to target: %f", dist(drone.gps(), goal));
+                auto drone_pos = drone.gps();
+                start.x = drone_pos.y; start.y = drone_pos.x; start.z = -drone_pos.z;
+                get_trajectory_srv.request.start = start;
 
-            auto drone_pos = drone.gps();
-            start.x = drone_pos.y; start.y = drone_pos.x; start.z = -drone_pos.z;
-            srv.request.start = start;
+                // *** F:DN ask for the trajectory
+                if (get_trajectory_client.call(get_trajectory_srv))
+                {
+                    ROS_INFO("Received trajectory.");
+                }
+                else
+                {
+                    ROS_ERROR("Failed to call service.");
+                    break;
+                }
 
-            // *** F:DN ask for the service
-            if (client.call(srv))
-            {
-                ROS_INFO("Received trajectory.");
-            }
-            else
-            {
-                ROS_ERROR("Failed to call service.");
-                break;
-            }
+                /* 
+                   if (get_trajectory_srv.response.unknown != -1) {
+                   auto unknown_pos = get_trajectory_srv.response.multiDOFtrajectory.points[get_trajectory_srv.response.unknown].transforms[0].translation;
+                   ROS_WARN("Enters unknown space at %f, %f, %f\n", unknown_pos.x, unknown_pos.y, unknown_pos.z); 
+                   }
+                   */
 
-            if (srv.response.unknown != -1) {
-                auto unknown_pos = srv.response.multiDOFtrajectory.points[srv.response.unknown].transforms[0].translation;
-                ROS_WARN("Enters unknown space at %f, %f, %f\n", unknown_pos.x, unknown_pos.y, unknown_pos.z); 
-            }
+                // *** F:DN iterate through cmd propopsed and issue them
+                should_panic = future_col = false;
+                int last_point = -1;
+                for (int i = 0; !should_panic && i <get_trajectory_srv.response.multiDOFtrajectory.points.size()-1; ++i) {
+                    auto p = get_trajectory_srv.response.multiDOFtrajectory.points[i];
+                    auto p_next = get_trajectory_srv.response.multiDOFtrajectory.points[i+1];
 
-            // *** F:DN iterate through cmd propopsed and issue them
-            int max_points = points_to_replan_after < srv.response.multiDOFtrajectory.points.size()-1 ? points_to_replan_after : srv.response.multiDOFtrajectory.points.size()-1;
+                    double p_z = -p.transforms[0].translation.z;
+                    /* 
+                       double p_x = p.transforms[0].translation.y;
+                       double p_y = p.transforms[0].translation.x;
 
-            should_panic = future_col = false;
-            int last_point = -1;
-            for (int i = 0; !should_panic && i < max_points; ++i) {
-                auto p = srv.response.multiDOFtrajectory.points[i];
-                auto p_next = srv.response.multiDOFtrajectory.points[i+1];
+                       double p_x_next = p_next.transforms[0].translation.y;
+                       double p_y_next = p_next.transforms[0].translation.x;
+                       double p_z_next = -p_next.transforms[0].translation.z;
+                       */
+                    double v_x = p.velocities[0].linear.y;
+                    double v_y = p.velocities[0].linear.x;
+                    double v_z = -p.velocities[0].linear.z;
 
-                double p_x = p.transforms[0].translation.y;
-                double p_y = p.transforms[0].translation.x;
-                double p_z = -p.transforms[0].translation.z;
+                    /* 
+                       double v_x_next = p_next.velocities[0].linear.y;
+                       double v_y_next = p_next.velocities[0].linear.x;
+                       double v_z_next = -p_next.velocities[0].linear.z;
+                       */
 
-                double p_x_next = p_next.transforms[0].translation.y;
-                double p_y_next = p_next.transforms[0].translation.x;
-                double p_z_next = -p_next.transforms[0].translation.z;
+                    double segment_dedicated_time = (p_next.time_from_start - p.time_from_start).toSec();
+                    auto segment_start_time = std::chrono::system_clock::now();
 
-                double v_x = p.velocities[0].linear.y;
-                double v_y = p.velocities[0].linear.x;
-                double v_z = -p.velocities[0].linear.z;
-
-                double v_x_next = p_next.velocities[0].linear.y;
-                double v_y_next = p_next.velocities[0].linear.x;
-                double v_z_next = -p_next.velocities[0].linear.z;
-
-                double segment_dedicated_time = (p_next.time_from_start - p.time_from_start).toSec();
-                auto segment_start_time = std::chrono::system_clock::now();
-                
-                double segment__t_step_size = segment_dedicated_time/step__total_number;
-                
-                for (int step_ctr = 0; step_ctr < step__total_number ; step_ctr +=1) {
-                    const double k = 0;
-
-                    double p_x_inter = p_x + (p_x_next - p_x) * (double)step_ctr / step__total_number;
-                    double p_y_inter = p_y + (p_y_next - p_y) * (double)step_ctr / step__total_number;
-                    double p_z_inter = p_z + (p_z_next - p_z) * (double)step_ctr / step__total_number;
-
-                    double v_x_inter = v_x + (v_x_next - v_x) * (double)step_ctr / step__total_number;
-                    double v_y_inter = v_y + (v_y_next - v_y) * (double)step_ctr / step__total_number;
-                    double v_z_inter = v_z + (v_z_next - v_z) * (double)step_ctr / step__total_number;
-
-                    auto drone_pos = drone.gps();
-
-                    drone.fly_velocity(v_x_inter + k*(p_x_inter-drone_pos.x),
-                            v_y_inter + k*(p_y_inter-drone_pos.y),
-                            v_z_inter + 0.2*(p_z_inter-drone_pos.z));
+                    drone.fly_velocity(v_x, 
+                            v_y,
+                            v_z + 0.2*(p_z-drone.gps().z));
 
                     ros::spinOnce(); // Check whether we should panic
-                    
-                    if (should_panic) {
+
+                    if (should_panic) { //if deteceted a panic
                         ROS_ERROR("you should panic\n");
                         action_upon_panic(drone);
                         break;
                     }
 
-                    if (future_col && last_point == -1) {
-                        last_point = i;
+                    if (future_col){ //if detect a future colision, replan(but wait a bit)
+                        if(reaction_delay_counter <= 0) {
+                            ROS_WARN("Obstacle appeared on trajectory");
+                            action_upon_future_col(drone);
+                            reaction_delay_counter = reaction_delay_counter_init_value; 
+                            reaction_delay_counter = reaction_delay_counter_init_value; 
+                            break;
+                        }
+                        reaction_delay_counter--;
                     }
 
-                    std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>((step_ctr+1)*segment__t_step_size));
+                    std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>((1)*segment_dedicated_time));
                 }
-
-                if (future_col && last_point != -1 && i > last_point + 8) {
-                    ROS_WARN("Obstacle appeared on trajectory");
-                    action_upon_future_col(drone);
-                    break;
-                }
+                drone.fly_velocity(0, 0, 0);
             }
-            drone.fly_velocity(0, 0, 0);
+
+            if (returned_to_start) { //if returned to start, we are done
+                delivering_mission_complete = true;
+            }else(returned_to_start) { //else, adjust the goal to return back
+                ROS_INFO("Returning to start");
+                float yaw = drone.get_yaw();
+                drone.set_yaw(yaw + 180);
+
+                start = goal;
+                goal = original_start;
+                get_trajectory_srv.request.start = start;
+                get_trajectory_srv.request.goal = goal;
+
+                returned_to_start = true;
+            }
         }
 
-        // Now return to start
-        if (!returned_to_start) {
-            ROS_INFO("Returning to start");
-            float yaw = drone.get_yaw();
-            drone.set_yaw(yaw + 180);
+        ROS_INFO("Delivered the package and returned!");
+        delivering_mission_complete = false;
+        loop_rate.sleep();
+    }
 
-            start = goal;
-            goal = original_start;
-            srv.request.start = start;
-            srv.request.goal = goal;
-
-            returned_to_start = true;
-            goto ugly_loop;
-        }
-
-        ROS_INFO("Done!");
-
-		loop_rate.sleep();
-	}
-
-	return 0;
+    return 0;
 }
 
