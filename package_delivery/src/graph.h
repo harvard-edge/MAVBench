@@ -4,11 +4,13 @@
 #include <unordered_map>
 #include <set>
 #include <vector>
+#include <limits>
 
 class graph
 {
 public:
 	using node_id = int;
+    static node_id invalid_id() { return std::numeric_limits<node_id>::max(); }
 
 	struct node
 	{

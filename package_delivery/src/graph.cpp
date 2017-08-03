@@ -14,7 +14,9 @@ graph::node_id graph::add_node(const double& x, const double& y, const double& z
 
 graph::node_id graph::add_node(graph::node n)
 {
-	return add_node(n.x, n.y, n.z, n.id);
+	// return add_node(n.x, n.y, n.z, n.id);
+	nodes[n.id] = n;
+	return n.id;
 }
 
 struct graph::node& graph::get_node(graph::node_id id)

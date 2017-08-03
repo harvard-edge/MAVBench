@@ -132,6 +132,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     piecewise_path = RRT(req.start, req.goal, octree);
 
     if (piecewise_path.size() == 0) {
+        ROS_ERROR("Empty path returned");
         return false;
     }
 
@@ -626,7 +627,7 @@ piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, 
 	// auto generate_shortest_path = astar_plan;
 	int max_roadmap_size;
 
-    ros::param::get("/motion_planner/max_roadmap_size", max_roadmap_size);
+    ros::param::get("motion_planner/max_roadmap_size", max_roadmap_size);
     
     //----------------------------------------------------------------- 
     // *** F:DN Body 
@@ -785,13 +786,13 @@ piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, 
     int iterations = 0;
     for (bool finished = false; !finished;
             goal_id = extend_RRT(rrt, goal, finished)) {
-        // if (rrt.size() % 16 == 0)
-            ROS_INFO("RRT size: %d", rrt.size());
+
+            // Visualize RRT (a temporary debugging technique)
             publish_graph(rrt);
             graph_conn_pub.publish(graph_conn_list);
             ros::spinOnce();
 
-        if (iterations >= 1000) {
+        if (iterations >= 1000000000) {
             publish_graph(rrt);
             ROS_INFO("We're done ese");
             return result;

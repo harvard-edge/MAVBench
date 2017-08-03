@@ -215,7 +215,7 @@ int main(int argc, char **argv)
         bool returned_to_start = false;
 ugly_loop: 
         
-        while (delivering_mission_complete) {//go toward the destination and come back
+        while (!delivering_mission_complete) {//go toward the destination and come back
             // *** F:DN request client call from the trajectory server and 
             //          follow the path
             while (dist(drone.gps(), goal) > goal_s_error_margin) {
@@ -301,7 +301,7 @@ ugly_loop:
 
             if (returned_to_start) { //if returned to start, we are done
                 delivering_mission_complete = true;
-            }else(returned_to_start) { //else, adjust the goal to return back
+            } else { //else, adjust the goal to return back
                 ROS_INFO("Returning to start");
                 float yaw = drone.get_yaw();
                 drone.set_yaw(yaw + 180);
