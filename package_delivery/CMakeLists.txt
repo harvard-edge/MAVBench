@@ -183,7 +183,7 @@ link_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(motion_planner src/motion_planner.cpp src/graph.cpp src/global_planner.cpp)
+add_executable(motion_planner src/motion_planner.cpp src/graph.cpp src/global_planner.cpp src/common.cpp)
 add_dependencies(motion_planner package_delivery_generate_messages_cpp)
 target_link_libraries(motion_planner ${catkin_LIBRARIES}  cuda cudart cublas curand)
 
@@ -195,7 +195,7 @@ target_link_libraries(package_delivery ${catkin_LIBRARIES} AirLib MavLinkCom rpc
 #add_executable(panic src/panic.cpp)
 #target_link_libraries(panic ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
-add_executable(panic_pcl src/panic_pcl.cpp)
+add_executable(panic_pcl src/panic_pcl.cpp src/common.cpp)
 target_link_libraries(panic_pcl ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
 add_executable(future_collision src/future_collision)

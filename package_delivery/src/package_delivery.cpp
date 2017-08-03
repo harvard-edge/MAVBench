@@ -245,6 +245,7 @@ ugly_loop:
                 // *** F:DN iterate through cmd propopsed and issue them
                 should_panic = future_col = false;
                 int last_point = -1;
+                ROS_INFO("about the send out commands one by one"); 
                 for (int i = 0; !should_panic && i <get_trajectory_srv.response.multiDOFtrajectory.points.size()-1; ++i) {
                     auto p = get_trajectory_srv.response.multiDOFtrajectory.points[i];
                     auto p_next = get_trajectory_srv.response.multiDOFtrajectory.points[i+1];

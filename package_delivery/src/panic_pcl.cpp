@@ -5,24 +5,21 @@
 #include <math.h>
 #include <stdio.h>
 #include "std_msgs/Bool.h"
+#include "common.h"
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 bool too_close;
-
-float distance(float x, float y, float z) {
-  return std::sqrt(x*x + y*y + z*z);
-}
 
 
 void callback(const PointCloud::ConstPtr& msg)//, bool &too_close)
 {
     
-    float safe_distance;
-    ros::param::get("/panic_pcl/safe_distance",safe_distance);
+    float panic_distance;
+    ros::param::get("/panic_pcl/panic_distance",panic_distance);
     too_close = false;
     BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points){
       if (!(std::isnan(pt.x) || std::isnan(pt.y) || std::isnan(pt.z))) {
-          if (distance(pt.x, pt.y, pt.z) < safe_distance) {
+          if (distance(pt.x, pt.y, pt.z) < panic_distance) {
               too_close = true;
     //          ROS_INFO("\t(%f, %f, %f %d)\n", pt.x, pt.y, pt.z, too_close);
               break;
