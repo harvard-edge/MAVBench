@@ -117,6 +117,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 	//----------------------------------------------------------------- 
 	piecewise_trajectory piecewise_path;
 	smooth_trajectory smooth_path;
+    auto motion_planning_core = RRT;
 
 
     //----------------------------------------------------------------- 
@@ -128,8 +129,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     	return false;
     }
 
-    // piecewise_path = PRM(req.start, req.goal, octree);
-    piecewise_path = RRT(req.start, req.goal, octree);
+    piecewise_path = motion_planning_core(req.start, req.goal, octree);
 
     if (piecewise_path.size() == 0) {
         ROS_ERROR("Empty path returned");
@@ -147,7 +147,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 	
     create_response(res, smooth_path);
 
-    // Publish the trajectory
+    // Publish the trajectory (for debugging purposes)
     traj_topic = res.multiDOFtrajectory;
 
 	return true;
@@ -772,7 +772,6 @@ piecewise_trajectory build_reverse_path(graph g, graph::node_id goal)
 
     return result;
 }
-
 
 piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree)
 {
