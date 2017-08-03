@@ -118,6 +118,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 	//----------------------------------------------------------------- 
 	piecewise_trajectory piecewise_path;
 	smooth_trajectory smooth_path;
+    auto motion_planning_core = RRT;
 
 
     //----------------------------------------------------------------- 
@@ -129,8 +130,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     	return false;
     }
 
-     piecewise_path = PRM(req.start, req.goal, octree);
-    //piecewise_path = RRT(req.start, req.goal, octree);
+    piecewise_path = motion_planning_core(req.start, req.goal, octree);
 
     if (piecewise_path.size() == 0) {
         ROS_ERROR("Empty path returned");
@@ -148,7 +148,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 	
     create_response(res, smooth_path);
 
-    // Publish the trajectory
+    // Publish the trajectory (for debugging purposes)
     traj_topic = res.multiDOFtrajectory;
 
 	return true;
@@ -694,33 +694,42 @@ graph::node_id closest_node_to_coordinate(graph& g, double x, double y, double z
 
 graph::node_id extend_RRT(graph& rrt, geometry_msgs::Point goal, bool& reached_goal)
 {
-    const double step_size = 0.5;
-
     graph::node_id result;
     reached_goal = false;
 
-    double x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound;
-    double y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound;
-    double z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound;
+    static double step_size;
+    static int bias;
 
-    ros::param::get("/motion_planner/x_dist_to_sample_from__low_bound", x_dist_to_sample_from__low_bound);
-	ros::param::get("/motion_planner/x_dist_to_sample_from__high_bound", x_dist_to_sample_from__high_bound);
-	ros::param::get("/motion_planner/y_dist_to_sample_from__low_bound", y_dist_to_sample_from__low_bound);
-	ros::param::get("/motion_planner/y_dist_to_sample_from__high_bound", y_dist_to_sample_from__high_bound);
-	ros::param::get("/motion_planner/z_dist_to_sample_from__low_bound", z_dist_to_sample_from__low_bound);
-	ros::param::get("/motion_planner/z_dist_to_sample_from__high_bound", z_dist_to_sample_from__high_bound);
+    static double x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound;
+    static double y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound;
+    static double z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound;
+    static bool initialized = false;
+
+    if (!initialized) {
+        ros::param::get("/motion_planner/rrt_step_size", step_size);
+        ros::param::get("/motion_planner/rrt_bias", bias);
+
+        ros::param::get("/motion_planner/x_dist_to_sample_from__low_bound", x_dist_to_sample_from__low_bound);
+        ros::param::get("/motion_planner/x_dist_to_sample_from__high_bound", x_dist_to_sample_from__high_bound);
+        ros::param::get("/motion_planner/y_dist_to_sample_from__low_bound", y_dist_to_sample_from__low_bound);
+        ros::param::get("/motion_planner/y_dist_to_sample_from__high_bound", y_dist_to_sample_from__high_bound);
+        ros::param::get("/motion_planner/z_dist_to_sample_from__low_bound", z_dist_to_sample_from__low_bound);
+        ros::param::get("/motion_planner/z_dist_to_sample_from__high_bound", z_dist_to_sample_from__high_bound);
+
+        initialized = true;
+    }
 
     static std::mt19937 rd_mt(350); //a pseudo-random number generator
     static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound); 
 	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound); 
 	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound); 
-    static std::uniform_int_distribution<> bias(0, 100);
+    static std::uniform_int_distribution<> bias_dist(0, 100);
 
     // Get random coordinate, q_random
     double x, y, z;
     bool towards_goal;
 
-    if (bias(rd_mt) <= 10) {
+    if (bias_dist(rd_mt) <= bias) {
         x = goal.x, y = goal.y, z = goal.z;
         towards_goal = true;
     } else {
@@ -780,7 +789,6 @@ piecewise_trajectory build_reverse_path(graph g, graph::node_id goal)
     return result;
 }
 
-
 piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree)
 {
     piecewise_trajectory result;
@@ -791,13 +799,14 @@ piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, 
 
     // Keep extending the RRT until we reach the goal
     int iterations = 0;
+    int fails = 0;
     for (bool finished = false; !finished;
             goal_id = extend_RRT(rrt, goal, finished)) {
 
-            // Visualize RRT (a temporary debugging technique)
-            publish_graph(rrt);
-            graph_conn_pub.publish(graph_conn_list);
-            ros::spinOnce();
+        // Visualize RRT (a temporary debugging technique)
+        // publish_graph(rrt);
+        // graph_conn_pub.publish(graph_conn_list);
+        // ros::spinOnce();
 
         if (iterations >= 1000000000) {
             publish_graph(rrt);
@@ -805,9 +814,14 @@ piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, 
             return result;
         }
         iterations++;
+
+        if (goal_id == graph::invalid_id())
+            fails++;
     }
 
     publish_graph(rrt);
+
+    ROS_INFO("Fail rate: %f%%", double(fails*100) / iterations);
 
     ROS_INFO("RRT (of size %d) reached goal! Building path now", rrt.size());
 

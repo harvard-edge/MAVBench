@@ -1,8 +1,8 @@
 <launch>
     <!-- Behzad's workstation ip --> 
-    <arg name="host_ip" value="10.157.34.101" /> 
+    <!-- arg name="host_ip" value="10.157.34.101" / --> 
     <!-- Hasans's workstation ip --> 
-    <!-- arg name="host_ip" value="10.157.34.208" / --> 
+    <arg name="host_ip" value="10.157.34.208" /> 
 
 
 
@@ -95,15 +95,18 @@
 		<param name="max_dist_to_connect_at" value="10"/>
 
 		<param name="v_max" value="4.0"/>
-		<param name="a_max" value="2.0"/>
+		<param name="a_max" value="3.0"/>
         <param name="drone_radius" value="2.0"/>
         <param name="drone_height" value="0.6"/>
 
 		<param name="max_roadmap_size" value="2000"/>
+
+        <param name="rrt_step_size" value="1.0"/>
+        <param name="rrt_bias" value="10"/>
 		
         <param name="x_dist_to_sample_from__low_bound" value="-35"/>
 		<param name="x_dist_to_sample_from__high_bound" value="35"/>
-        <param name="y_dist_to_sample_from__low_bound" value="-70"/>
+        <param name="y_dist_to_sample_from__low_bound" value="-10"/>
         <param name="y_dist_to_sample_from__high_bound" value="70"/>
         <param name="z_dist_to_sample_from__low_bound" value="3"/>
         <param name="z_dist_to_sample_from__high_bound" value="5"/>
