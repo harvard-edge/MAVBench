@@ -8,8 +8,8 @@
 #include <algorithm>
 #include <iostream>
 #include <thread>
-
 // My headers
+#include "common.h"
 #include "graph.h"
 #include "global_planner.h"
 #include "package_delivery/get_trajectory.h"
@@ -128,8 +128,8 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     	return false;
     }
 
-    // piecewise_path = PRM(req.start, req.goal, octree);
-    piecewise_path = RRT(req.start, req.goal, octree);
+     piecewise_path = PRM(req.start, req.goal, octree);
+    //piecewise_path = RRT(req.start, req.goal, octree);
 
     if (piecewise_path.size() == 0) {
         ROS_ERROR("Empty path returned");
@@ -182,6 +182,13 @@ int main(int argc, char ** argv)
     graph_conn_list.pose.orientation.w = 1;
     graph_conn_list.color.r = 1;
     graph_conn_list.color.a = 1;
+
+    
+    /* //TODO place a sanity check making sure that panic distance is smaller than halo
+    float panic_distance = ros::param::get("/panic_pcl/safe_distance",panic_distance);
+    float  
+    */
+
 
 	ros::Rate pub_rate(5);
 	while (ros::ok())
@@ -355,9 +362,9 @@ void grow_PRM(graph &roadmap, octomap::OcTree * octree)
 	//-----------------------------------------------------------------
 	int nodes_to_add_to_roadmap;
 	double max_dist_to_connect_at;
-    double x_dist_low_bound, x_dist_high_bound;
-    double y_dist_low_bound, y_dist_high_bound;
-    double z_dist_low_bound, z_dist_high_bound;
+    double x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound;
+    double y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound;
+    double z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound;
 
 	// Move these into main() to avoid continously incurring communication overhead with ROS parameter server
 	ros::param::get("/motion_planner/nodes_to_add_to_roadmap", nodes_to_add_to_roadmap);
@@ -366,16 +373,16 @@ void grow_PRM(graph &roadmap, octomap::OcTree * octree)
 	//-----------------------------------------------------------------
 	// *** F:DN variables
 	//-----------------------------------------------------------------
-    ros::param::get("/motion_planner/x_dist_low_bound", x_dist_low_bound);
-	ros::param::get("/motion_planner/x_dist_high_bound", x_dist_high_bound);
-	ros::param::get("/motion_planner/y_dist_low_bound", y_dist_low_bound);
-	ros::param::get("/motion_planner/y_dist_high_bound", y_dist_high_bound);
-	ros::param::get("/motion_planner/z_dist_low_bound", z_dist_low_bound);
-	ros::param::get("/motion_planner/z_dist_high_bound", z_dist_high_bound);
+    ros::param::get("/motion_planner/x_dist_to_sample_from__low_bound", x_dist_to_sample_from__low_bound);
+	ros::param::get("/motion_planner/x_dist_to_sample_from__high_bound", x_dist_to_sample_from__high_bound);
+	ros::param::get("/motion_planner/y_dist_to_sample_from__low_bound", y_dist_to_sample_from__low_bound);
+	ros::param::get("/motion_planner/y_dist_to_sample_from__high_bound", y_dist_to_sample_from__high_bound);
+	ros::param::get("/motion_planner/z_dist_to_sample_from__low_bound", z_dist_to_sample_from__low_bound);
+	ros::param::get("/motion_planner/z_dist_to_sample_from__high_bound", z_dist_to_sample_from__high_bound);
     static std::mt19937 rd_mt(350); //a pseudo-random number generator
-    static std::uniform_real_distribution<> x_dist(x_dist_low_bound, x_dist_high_bound); 
-	static std::uniform_real_distribution<> y_dist(y_dist_low_bound, y_dist_high_bound); 
-	static std::uniform_real_distribution<> z_dist(z_dist_low_bound, z_dist_high_bound); 
+    static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound); 
+	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound); 
+	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound); 
 
     //-----------------------------------------------------------------
     // *** F:DB Body
@@ -692,21 +699,21 @@ graph::node_id extend_RRT(graph& rrt, geometry_msgs::Point goal, bool& reached_g
     graph::node_id result;
     reached_goal = false;
 
-    double x_dist_low_bound, x_dist_high_bound;
-    double y_dist_low_bound, y_dist_high_bound;
-    double z_dist_low_bound, z_dist_high_bound;
+    double x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound;
+    double y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound;
+    double z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound;
 
-    ros::param::get("/motion_planner/x_dist_low_bound", x_dist_low_bound);
-	ros::param::get("/motion_planner/x_dist_high_bound", x_dist_high_bound);
-	ros::param::get("/motion_planner/y_dist_low_bound", y_dist_low_bound);
-	ros::param::get("/motion_planner/y_dist_high_bound", y_dist_high_bound);
-	ros::param::get("/motion_planner/z_dist_low_bound", z_dist_low_bound);
-	ros::param::get("/motion_planner/z_dist_high_bound", z_dist_high_bound);
+    ros::param::get("/motion_planner/x_dist_to_sample_from__low_bound", x_dist_to_sample_from__low_bound);
+	ros::param::get("/motion_planner/x_dist_to_sample_from__high_bound", x_dist_to_sample_from__high_bound);
+	ros::param::get("/motion_planner/y_dist_to_sample_from__low_bound", y_dist_to_sample_from__low_bound);
+	ros::param::get("/motion_planner/y_dist_to_sample_from__high_bound", y_dist_to_sample_from__high_bound);
+	ros::param::get("/motion_planner/z_dist_to_sample_from__low_bound", z_dist_to_sample_from__low_bound);
+	ros::param::get("/motion_planner/z_dist_to_sample_from__high_bound", z_dist_to_sample_from__high_bound);
 
     static std::mt19937 rd_mt(350); //a pseudo-random number generator
-    static std::uniform_real_distribution<> x_dist(x_dist_low_bound, x_dist_high_bound); 
-	static std::uniform_real_distribution<> y_dist(y_dist_low_bound, y_dist_high_bound); 
-	static std::uniform_real_distribution<> z_dist(z_dist_low_bound, z_dist_high_bound); 
+    static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound); 
+	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound); 
+	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound); 
     static std::uniform_int_distribution<> bias(0, 100);
 
     // Get random coordinate, q_random

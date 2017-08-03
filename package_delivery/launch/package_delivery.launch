@@ -75,7 +75,7 @@
 	
     
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
-		<param name="safe_distance" value="1.25"/>
+		<param name="panic_distance" value="1.25"/>
     </node>
  
     <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
@@ -101,12 +101,12 @@
 
 		<param name="max_roadmap_size" value="2000"/>
 		
-        <param name="x_dist_low_bound" value="-35"/>
-		<param name="x_dist_high_bound" value="35"/>
-        <param name="y_dist_low_bound" value="0"/>
-        <param name="y_dist_high_bound" value="70"/>
-        <param name="z_dist_low_bound" value="3"/>
-        <param name="z_dist_high_bound" value="5"/>
+        <param name="x_dist_to_sample_from__low_bound" value="-35"/>
+		<param name="x_dist_to_sample_from__high_bound" value="35"/>
+        <param name="y_dist_to_sample_from__low_bound" value="-70"/>
+        <param name="y_dist_to_sample_from__high_bound" value="70"/>
+        <param name="z_dist_to_sample_from__low_bound" value="3"/>
+        <param name="z_dist_to_sample_from__high_bound" value="5"/>
 
         <param name="sampling_interval" value="0.5"/>
 	</node>
