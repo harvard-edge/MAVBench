@@ -25,6 +25,7 @@
 #include <time.h>
 #include "std_msgs/Bool.h"
 #include <signal.h>
+#include "common.h"
 
 using namespace std;
 bool should_panic = false;
@@ -125,17 +126,7 @@ void action_upon_panic(Drone& drone) {
 }
 
 void action_upon_future_col(Drone& drone) {
-    float yaw = drone.get_yaw();
-
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-    ROS_INFO("Spinning around...");
-    drone.set_yaw(yaw+30 <= 180 ? yaw + 30 : 360 - yaw - 30);
-    drone.set_yaw(yaw);
-    drone.set_yaw(yaw-30 <= 180 ? yaw - 30 : 360 - yaw + 30);
-    drone.set_yaw(yaw);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    scan_around(drone, 30);
 }
 
 
@@ -213,8 +204,7 @@ int main(int argc, char **argv)
 		get_trajectory_srv.request.goal = goal;
 
         bool returned_to_start = false;
-ugly_loop: 
-        
+        spin_around(drone); 
         while (!delivering_mission_complete) {//go toward the destination and come back
             // *** F:DN request client call from the trajectory server and 
             //          follow the path

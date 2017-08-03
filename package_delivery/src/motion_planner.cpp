@@ -10,6 +10,7 @@
 #include <thread>
 // My headers
 #include "common.h"
+#include "Drone.h"
 #include "graph.h"
 #include "global_planner.h"
 #include "package_delivery/get_trajectory.h"
@@ -193,7 +194,7 @@ int main(int argc, char ** argv)
 	ros::Rate pub_rate(5);
 	while (ros::ok())
 	{
-		smooth_traj_vis_pub.publish(smooth_traj_markers);
+        smooth_traj_vis_pub.publish(smooth_traj_markers);
 		piecewise_traj_vis_pub.publish(piecewise_traj_markers);
 		octo_pub.publish(omp);
 		pcl_pub.publish(pcl_ptr);
@@ -388,7 +389,6 @@ void grow_PRM(graph &roadmap, octomap::OcTree * octree)
     // *** F:DB Body
     //----------------------------------------------------------------- 
 	// Add random nodes
-	
     std::vector<graph::node_id> nodes_added;
 	while (nodes_added.size() < nodes_to_add_to_roadmap) {
 		double x = x_dist(rd_mt), y = y_dist(rd_mt), z = z_dist(rd_mt);

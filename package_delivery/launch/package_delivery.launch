@@ -112,7 +112,7 @@
 	</node>
 
 	<!-- Demo program that controls drone -->
-	<node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen">
+	<node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp">
 		<param name="ip_addr" value="$(arg host_ip)"/>
         <param name="issue_cmd__time_step" value=".05"/>
 
