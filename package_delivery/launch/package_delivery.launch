@@ -1,5 +1,12 @@
 <launch>
-	<!-- Octomap -->
+    <!-- Behzad's workstation ip --> 
+    <arg name="host_ip" value="10.157.34.101" /> 
+    <!-- Hasans's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.208" / --> 
+
+
+
+    <!-- Octomap -->
 	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
 		<param name="resolution" value="0.5" />
 		
@@ -29,8 +36,7 @@
 	<!-- Point-cloud publisher -->
  	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
 		<!-- IP of the Airsim computer -->
-		<!-- param name="Airsim_ip" value="10.157.34.208"/ -->
-		<param name="Airsim_ip" value="10.157.34.101"/>
+		<param name="Airsim_ip" value="$(arg host_ip)" />
 
 
 		<!-- Port of the Airsim computer (this is default, do not change!) -->
@@ -84,7 +90,7 @@
     ?>
 
 	<!-- Path-Planner -->
-	<node pkg="package_delivery" type="airsim_planner" name="airsim_planner" output="screen">
+	<node pkg="package_delivery" type="motion_planner" name="motion_planner" output="screen">
 		<param name="nodes_to_add_to_roadmap" value="400"/>
 		<param name="max_dist_to_connect_at" value="10"/>
 
@@ -106,9 +112,8 @@
 	</node>
 
 	<!-- Demo program that controls drone -->
-	<node pkg="package_delivery" type="airsim_planner_demo" name="airsim_planner_demo" output="screen">
-		<!-- param name="ip_addr" value="10.157.34.208" / -->
-		<param name="ip_addr" value="10.157.34.101"/>
+	<node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen">
+		<param name="ip_addr" value="$(arg host_ip)"/>
         <param name="issue_cmd__time_step" value=".05"/>
 
 		<param name="points_to_replan_after" value="1000000000"/>

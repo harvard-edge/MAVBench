@@ -11,7 +11,7 @@
 
 // My headers
 #include "graph.h"
-#include "path_planner.h"
+#include "global_planner.h"
 #include "package_delivery/get_trajectory.h"
 
 // Misc messages
@@ -162,7 +162,7 @@ int main(int argc, char ** argv)
     graph roadmap;
     std::vector<graph::node> piecewise_path;
 	octomap::OcTree * octree;
-    ros::init(argc, argv, "airsim_planner");
+    ros::init(argc, argv, "motion_planner");
     ros::NodeHandle nh;
 
     ros::Subscriber octomap_sub = nh.subscribe("octomap_full", 1, generate_octomap);
@@ -230,13 +230,13 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 
     static double height = [] () {
         double h;
-        ros::param::get("/airsim_planner/drone_height", h);
+        ros::param::get("/motion_planner/drone_height", h);
         return h;
     } ();
 
     static double radius = [] () {
         double r;
-        ros::param::get("/airsim_planner/drone_radius", r);
+        ros::param::get("/motion_planner/drone_radius", r);
         return r;
     } ();
 
@@ -359,18 +359,18 @@ void grow_PRM(graph &roadmap, octomap::OcTree * octree)
     double z_dist_low_bound, z_dist_high_bound;
 
 	// Move these into main() to avoid continously incurring communication overhead with ROS parameter server
-	ros::param::get("/airsim_planner/nodes_to_add_to_roadmap", nodes_to_add_to_roadmap);
-	ros::param::get("/airsim_planner/max_dist_to_connect_at", max_dist_to_connect_at);
+	ros::param::get("/motion_planner/nodes_to_add_to_roadmap", nodes_to_add_to_roadmap);
+	ros::param::get("/motion_planner/max_dist_to_connect_at", max_dist_to_connect_at);
 
 	//-----------------------------------------------------------------
 	// *** F:DN variables
 	//-----------------------------------------------------------------
-    ros::param::get("/airsim_planner/x_dist_low_bound", x_dist_low_bound);
-	ros::param::get("/airsim_planner/x_dist_high_bound", x_dist_high_bound);
-	ros::param::get("/airsim_planner/y_dist_low_bound", y_dist_low_bound);
-	ros::param::get("/airsim_planner/y_dist_high_bound", y_dist_high_bound);
-	ros::param::get("/airsim_planner/z_dist_low_bound", z_dist_low_bound);
-	ros::param::get("/airsim_planner/z_dist_high_bound", z_dist_high_bound);
+    ros::param::get("/motion_planner/x_dist_low_bound", x_dist_low_bound);
+	ros::param::get("/motion_planner/x_dist_high_bound", x_dist_high_bound);
+	ros::param::get("/motion_planner/y_dist_low_bound", y_dist_low_bound);
+	ros::param::get("/motion_planner/y_dist_high_bound", y_dist_high_bound);
+	ros::param::get("/motion_planner/z_dist_low_bound", z_dist_low_bound);
+	ros::param::get("/motion_planner/z_dist_high_bound", z_dist_high_bound);
     static std::mt19937 rd_mt(350); //a pseudo-random number generator
     static std::uniform_real_distribution<> x_dist(x_dist_low_bound, x_dist_high_bound); 
 	static std::uniform_real_distribution<> y_dist(y_dist_low_bound, y_dist_high_bound); 
@@ -410,7 +410,7 @@ void create_response(package_delivery::get_trajectory::Response &res, smooth_tra
 	// Sample trajectory
 	mav_msgs::EigenTrajectoryPoint::Vector states;
 	double sampling_interval;
-	ros::param::get("/airsim_planner/sampling_interval", sampling_interval);
+	ros::param::get("/motion_planner/sampling_interval", sampling_interval);
 	mav_trajectory_generation::sampleWholeTrajectory(smooth_path, sampling_interval, &states);
 
     // Get starting position
@@ -489,8 +489,8 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	double v_max, a_max;
 	const double magic_fabian_constant = 6.5; // A tuning parameter.
 
-	ros::param::get("/airsim_planner/v_max", v_max);
-	ros::param::get("/airsim_planner/a_max", a_max);
+	ros::param::get("/motion_planner/v_max", v_max);
+	ros::param::get("/motion_planner/a_max", a_max);
 
 	const int N = 10;
 	mav_trajectory_generation::PolynomialOptimization<N> opt(dimension);
@@ -626,7 +626,7 @@ piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, 
 	// auto generate_shortest_path = astar_plan;
 	int max_roadmap_size;
 
-    ros::param::get("/airsim_planner/max_roadmap_size", max_roadmap_size);
+    ros::param::get("/motion_planner/max_roadmap_size", max_roadmap_size);
     
     //----------------------------------------------------------------- 
     // *** F:DN Body 
@@ -695,12 +695,12 @@ graph::node_id extend_RRT(graph& rrt, geometry_msgs::Point goal, bool& reached_g
     double y_dist_low_bound, y_dist_high_bound;
     double z_dist_low_bound, z_dist_high_bound;
 
-    ros::param::get("/airsim_planner/x_dist_low_bound", x_dist_low_bound);
-	ros::param::get("/airsim_planner/x_dist_high_bound", x_dist_high_bound);
-	ros::param::get("/airsim_planner/y_dist_low_bound", y_dist_low_bound);
-	ros::param::get("/airsim_planner/y_dist_high_bound", y_dist_high_bound);
-	ros::param::get("/airsim_planner/z_dist_low_bound", z_dist_low_bound);
-	ros::param::get("/airsim_planner/z_dist_high_bound", z_dist_high_bound);
+    ros::param::get("/motion_planner/x_dist_low_bound", x_dist_low_bound);
+	ros::param::get("/motion_planner/x_dist_high_bound", x_dist_high_bound);
+	ros::param::get("/motion_planner/y_dist_low_bound", y_dist_low_bound);
+	ros::param::get("/motion_planner/y_dist_high_bound", y_dist_high_bound);
+	ros::param::get("/motion_planner/z_dist_low_bound", z_dist_low_bound);
+	ros::param::get("/motion_planner/z_dist_high_bound", z_dist_high_bound);
 
     static std::mt19937 rd_mt(350); //a pseudo-random number generator
     static std::uniform_real_distribution<> x_dist(x_dist_low_bound, x_dist_high_bound); 
