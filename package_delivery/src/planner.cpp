@@ -51,6 +51,7 @@ visualization_msgs::MarkerArray piecewise_traj_markers;
 octomap_msgs::Octomap omp;
 PointCloud::Ptr pcl_ptr{new pcl::PointCloud<pcl::PointXYZ>};
 visualization_msgs::Marker graph_conn_list;
+ros::Publisher graph_conn_pub;
 
 // *** F:DN calculating the distance between two nodes in the graph.
 double dist(const graph::node& n1, const graph::node& n2);
@@ -88,6 +89,10 @@ void grow_PRM(graph &roadmap, octomap::OcTree * octree);
 piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree);
 
 
+// ***F:DN Use the RRT sampling method to find a piecewise path
+piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree);
+
+
 // *** F:DN Optimize and smoothen a piecewise path without causing any new collisions.
 smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree);
 
@@ -123,7 +128,8 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     	return false;
     }
 
-    piecewise_path = PRM(req.start, req.goal, octree);
+    // piecewise_path = PRM(req.start, req.goal, octree);
+    piecewise_path = RRT(req.start, req.goal, octree);
 
     if (piecewise_path.size() == 0) {
         return false;
@@ -166,7 +172,7 @@ int main(int argc, char ** argv)
     ros::Publisher traj_pub = nh.advertise<trajectory_msgs::MultiDOFJointTrajectory>("multidoftraj", 1);
 	ros::Publisher octo_pub = nh.advertise<octomap_msgs::Octomap>("omap", 1);
     ros::Publisher pcl_pub = nh.advertise<PointCloud> ("graph", 1);
-    ros::Publisher graph_conn_pub = nh.advertise<visualization_msgs::Marker>("graph_conns", 100);
+    graph_conn_pub = nh.advertise<visualization_msgs::Marker>("graph_conns", 100);
 	
 	pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "fcu";
     graph_conn_list.type = visualization_msgs::Marker::LINE_LIST;
@@ -662,6 +668,7 @@ graph create_RRT(geometry_msgs::Point start, graph::node_id &start_id)
 
 	start_id = -1;
 	graph::node s = {start.x, start.y, start.z, start_id};
+    s.parent = graph::invalid_id();
 
     rrt.add_node(s);
 
@@ -677,9 +684,12 @@ graph::node_id closest_node_to_coordinate(graph& g, double x, double y, double z
 }
 
 
-graph::node& extend_RRT(graph rrt, geometry_msgs::Point goal)
+graph::node_id extend_RRT(graph& rrt, geometry_msgs::Point goal, bool& reached_goal)
 {
     const double step_size = 0.5;
+
+    graph::node_id result;
+    reached_goal = false;
 
     double x_dist_low_bound, x_dist_high_bound;
     double y_dist_low_bound, y_dist_high_bound;
@@ -700,35 +710,102 @@ graph::node& extend_RRT(graph rrt, geometry_msgs::Point goal)
 
     // Get random coordinate, q_random
     double x, y, z;
+    bool towards_goal;
 
-    if (bias(rd_mt) <= 10)
+    if (bias(rd_mt) <= 10) {
         x = goal.x, y = goal.y, z = goal.z;
-    else
+        towards_goal = true;
+    } else {
         x = x_dist(rd_mt), y = y_dist(rd_mt), z = z_dist(rd_mt);
+        towards_goal = false;
+    }
     
     // Find closest node, q_close
-    graph::node_id q_close = closest_node_to_coordinate(rrt, x, y, z);
+    graph::node_id q_close_id = closest_node_to_coordinate(rrt, x, y, z);
 
-    // Get step towards q_random, q_step
+    // Get q_step
+    graph::node& q_close = rrt.get_node(q_close_id);
+    double dx = x - q_close.x;
+    double dy = y - q_close.y;
+    double dz = z - q_close.z;
+
+    double d_len = std::sqrt(dx*dx + dy*dy + dz*dz);
+    if (d_len > step_size) { 
+        dx = dx * step_size / d_len;
+        dy = dy * step_size / d_len;
+        dz = dz * step_size / d_len;
+    }
+
+    graph::node q_step = {q_close.x + dx, q_close.y + dy, q_close.z + dz};
 
     // If no collision, append q_step to q_close
-    // Return q_step
+    if (!collision(octree, q_close, q_step)) {
+        graph::node_id q_step_id = rrt.add_node(q_step.x, q_step.y, q_step.z);
+
+        // The cost of an edge is not important for RRT, so we leave it 0
+        rrt.connect(q_close_id, q_step_id, 0);
+        rrt.get_node(q_step_id).parent = q_close_id;
+
+        // Check whether we have reached the goal
+        if (towards_goal && d_len <= step_size)
+            reached_goal = true;
+
+        result = q_step_id;
+    } else {
+        result = graph::invalid_id();
+    }
+
+    // Return result (either q_step or an invalid id)
+    return result;
 }
 
-#ifdef fdsafdasfasfasdfasd
-
-piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree)
+piecewise_trajectory build_reverse_path(graph g, graph::node_id goal)
 {
     piecewise_trajectory result;
 
-    graph rrt = create_RRT(start, start_id);
+    for (graph::node_id n = goal; n != graph::invalid_id(); n = g.get_node(n).parent) {
+        result.push_back(g.get_node(n));
+    }
 
-    while (goal != extend_RRT(rrt, goal)) {}
-
-    result = build_reverse_path(roadmap, start_id, goal_id);
+	std::reverse(result.begin(), result.end());
 
     return result;
 }
 
-#endif
+
+piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree)
+{
+    piecewise_trajectory result;
+    graph::node_id start_id, goal_id;
+
+    // Initialize the RRT with the starting location
+    graph rrt = create_RRT(start, start_id);
+
+    // Keep extending the RRT until we reach the goal
+    int iterations = 0;
+    for (bool finished = false; !finished;
+            goal_id = extend_RRT(rrt, goal, finished)) {
+        // if (rrt.size() % 16 == 0)
+            ROS_INFO("RRT size: %d", rrt.size());
+            publish_graph(rrt);
+            graph_conn_pub.publish(graph_conn_list);
+            ros::spinOnce();
+
+        if (iterations >= 1000) {
+            publish_graph(rrt);
+            ROS_INFO("We're done ese");
+            return result;
+        }
+        iterations++;
+    }
+
+    publish_graph(rrt);
+
+    ROS_INFO("RRT (of size %d) reached goal! Building path now", rrt.size());
+
+    // Follow the parents on the tree backwards to the root
+    result = build_reverse_path(rrt, goal_id);
+
+    return result;
+}
 
