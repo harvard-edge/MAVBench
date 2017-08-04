@@ -142,10 +142,11 @@ int main(int argc, char **argv)
     signal(SIGINT, sigIntHandler);
 	
     
-    package_delivery_initialize_params();
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
+    
+    package_delivery_initialize_params();
     double input_x, input_y, input_z; //goal asked by the user
     geometry_msgs::Point start, goal, original_start; //msg send out to the 
 	package_delivery::get_trajectory get_trajectory_srv;
