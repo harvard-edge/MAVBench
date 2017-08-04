@@ -1,14 +1,25 @@
 <launch>
+    <!-- args --> 
     <!-- Behzad's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.101" / --> 
     <!-- Hasans's workstation ip --> 
     <arg name="host_ip" value="10.157.34.208" /> 
+    
+    <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
+    <!-- also planning to prevent stdio stuff(if they really matter)--> 
+    <arg name="DEBUG" value="true" /> 
 
 
+    <!-- set this to "" if you don't want perf -->
+    <arg name="my_launch_prefix" value="" /> 
+    <!-- arg name="my_launch_prefix" value="/home/nvidia/install/perf/perf record -g fp"/ -->
+    
 
+
+    <!-- starting nodes --> 
     <!-- Octomap -->
 	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
-		<param name="resolution" value="0.5" />
+        <param name="resolution" value="0.5" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
 		<param name="frame_id" type="string" value="fcu" />
@@ -90,7 +101,7 @@
     ?>
 
 	<!-- Path-Planner -->
-	<node pkg="package_delivery" type="motion_planner" name="motion_planner" output="screen">
+	<node pkg="package_delivery" type="motion_planner" name="motion_planner" output="screen" launch-prefix="$(arg my_launch_prefix)">
 		<param name="nodes_to_add_to_roadmap" value="400"/>
 		<param name="max_dist_to_connect_at" value="10"/>
 
@@ -104,10 +115,10 @@
         <param name="rrt_step_size" value="1.0"/>
         <param name="rrt_bias" value="10"/>
 		
-        <param name="x_dist_to_sample_from__low_bound" value="-35"/>
-		<param name="x_dist_to_sample_from__high_bound" value="35"/>
+        <param name="x_dist_to_sample_from__low_bound" value="-15"/>
+		<param name="x_dist_to_sample_from__high_bound" value="85"/>
         <param name="y_dist_to_sample_from__low_bound" value="-10"/>
-        <param name="y_dist_to_sample_from__high_bound" value="70"/>
+        <param name="y_dist_to_sample_from__high_bound" value="80"/>
         <param name="z_dist_to_sample_from__low_bound" value="3"/>
         <param name="z_dist_to_sample_from__high_bound" value="5"/>
 
@@ -117,14 +128,16 @@
 	<!-- Demo program that controls drone -->
 	<!-- <node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp"> -->
 	<node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen">
-		<param name="ip_addr" value="$(arg host_ip)"/>
-        <param name="issue_cmd__time_step" value=".05"/>
-
-		<param name="points_to_replan_after" value="1000000000"/>
+        <param name="ip_addr" value="$(arg host_ip)"/>
+        <!-- param name="issue_cmd__time_step" value=".05"/-->
+		<!-- param name="points_to_replan_after" value="1000000000"/-->
     </node>
 
-    <!-- rviz -->
-    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
+	<!-- rviz -->
+	<group if="$(arg DEBUG)">
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
+	</group> 
+
 
 </launch>
 

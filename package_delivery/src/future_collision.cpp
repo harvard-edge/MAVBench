@@ -12,6 +12,9 @@
 // Global variables
 octomap::OcTree * octree = nullptr;
 trajectory_msgs::MultiDOFJointTrajectory traj;
+double drone_height__global;
+double drone_radius__global;
+
 
 struct coord {
     double x, y , z;
@@ -27,13 +30,15 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 
     static double height = [] () {
         double h;
-        ros::param::get("/motion_planner/drone_height", h);
+        h = drone_height__global; 
+        //ros::param::get("/motion_planner/drone_height", h);
         return h;
     } ();
 
     static double radius = [] () {
         double r;
-        ros::param::get("/motion_planner/drone_radius", r);
+        r = drone_radius__global; 
+        //ros::param::get("/motion_planner/drone_radius", r);
         return r;
     } ();
 
@@ -110,6 +115,15 @@ bool check_for_collisions()
 }
 
 
+void future_collision_initialize_params() {
+    ros::param::get("/motion_planner/drone_radius", drone_radius__global);
+    ros::param::get("/motion_planner/drone_height", drone_height__global);
+}
+
+
+
+
+
 int main(int argc, char** argv)
 {
     
@@ -124,6 +138,12 @@ int main(int argc, char** argv)
     ros::Subscriber traj_sub = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>("multidoftraj", 1, pull_traj);
     ros::Publisher collision_publisher = nh.advertise<std_msgs::Bool>("future_col_topic", 1);
     
+      
+    
+    //----------------------------------------------------------------- 
+    // *** F:DN BODY
+    //----------------------------------------------------------------- 
+    future_collision_initialize_params(); 
     ros::Rate loop_rate(10);
     while (ros::ok()) {
         col_msg.data = check_for_collisions();
