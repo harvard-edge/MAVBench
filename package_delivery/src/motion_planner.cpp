@@ -140,7 +140,6 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     //----------------------------------------------------------------- 
     // *** F:DN Body 
     //----------------------------------------------------------------- 
-
     if (octree == nullptr) {
     	ROS_ERROR("Octomap is not available.");
     	return false;
@@ -189,7 +188,7 @@ void motion_planning_initialize_params() {
     ros::param::get("/motion_planner/drone_height", drone_height__global);
     ros::param::get("/motion_planner/v_max", v_max__global);
     ros::param::get("/motion_planner/a_max", a_max__global);
-    ros::param::get("DEBUG", DEBUG__global);
+    ros::param::get("ros_DEBUG", DEBUG__global);
     //std::cout<<"max_dist_to_"<<max_dist_to_connect_at__global<<std::endl;
 }
 
@@ -207,6 +206,8 @@ int main(int argc, char ** argv)
     ros::init(argc, argv, "motion_planner");
     ros::NodeHandle nh;
     motion_planning_initialize_params();
+    
+    // *** F:DN topics and services
     ros::Subscriber octomap_sub = nh.subscribe("octomap_full", 1, generate_octomap);
     ros::ServiceServer service = nh.advertiseService("get_trajectory_srv", get_trajectory_fun);
     ros::Publisher smooth_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 1);
@@ -216,7 +217,8 @@ int main(int argc, char ** argv)
     ros::Publisher pcl_pub = nh.advertise<PointCloud> ("graph", 1);
     graph_conn_pub = nh.advertise<visualization_msgs::Marker>("graph_conns", 100);
 	
-	pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "fcu";
+	
+    pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "fcu";
     graph_conn_list.type = visualization_msgs::Marker::LINE_LIST;
     graph_conn_list.action = visualization_msgs::Marker::ADD;
     graph_conn_list.scale.x = 0.1;
@@ -224,13 +226,13 @@ int main(int argc, char ** argv)
     graph_conn_list.color.r = 1;
     graph_conn_list.color.a = 1;
 
-    
     /* //TODO place a sanity check making sure that panic distance is smaller than halo
     float panic_distance = ros::param::get("/panic_pcl/safe_distance",panic_distance);
     float  
     */
 
     
+
     //----------------------------------------------------------------- 
     // *** F:DN BODY
     //----------------------------------------------------------------- 
