@@ -38,6 +38,7 @@
 #include <mav_trajectory_generation_ros/ros_visualization.h>
 
 
+bool DEBUG__global;
 double drone_height__global;
 double drone_radius__global;
 double rrt_step_size__global;
@@ -188,7 +189,7 @@ void motion_planning_initialize_params() {
     ros::param::get("/motion_planner/drone_height", drone_height__global);
     ros::param::get("/motion_planner/v_max", v_max__global);
     ros::param::get("/motion_planner/a_max", a_max__global);
-
+    ros::param::get("DEBUG", DEBUG__global);
     //std::cout<<"max_dist_to_"<<max_dist_to_connect_at__global<<std::endl;
 }
 
@@ -236,11 +237,13 @@ int main(int argc, char ** argv)
 	ros::Rate pub_rate(5);
 	while (ros::ok())
 	{
-        smooth_traj_vis_pub.publish(smooth_traj_markers);
-		piecewise_traj_vis_pub.publish(piecewise_traj_markers);
-		octo_pub.publish(omp);
+        if (DEBUG__global) { //if debug, publish markers to be seen by rviz
+            smooth_traj_vis_pub.publish(smooth_traj_markers);
+            piecewise_traj_vis_pub.publish(piecewise_traj_markers);
+            graph_conn_pub.publish(graph_conn_list);
+        }	
+        octo_pub.publish(omp);
 		pcl_pub.publish(pcl_ptr);
-        graph_conn_pub.publish(graph_conn_list);
         traj_pub.publish(traj_topic);
 		ros::spinOnce();
 		pub_rate.sleep();
