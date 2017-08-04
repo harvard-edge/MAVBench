@@ -30,6 +30,9 @@
 using namespace std;
 bool should_panic = false;
 bool future_col = false;
+string ip_addr__global;
+
+
 
 void sigIntHandler(int sig)
 {
@@ -114,13 +117,7 @@ void action_upon_panic(Drone& drone) {
     drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0, 0.75);
     std::this_thread::sleep_for(std::chrono::milliseconds(850));
 
-    ROS_INFO("Spinning around...");
-    drone.set_yaw(90);
-    drone.set_yaw(180);
-    drone.set_yaw(-90);
-    drone.set_yaw(0);
-    drone.set_yaw(yaw);
-
+    spin_around(drone);
     should_panic = true;
     ROS_INFO("Done panicking!");
 }
@@ -129,6 +126,11 @@ void action_upon_future_col(Drone& drone) {
     scan_around(drone, 30);
 }
 
+
+void package_delivery_initialize_params() {
+    ros::param::get("/package_delivery/ip_addr",ip_addr__global);
+    ;
+}
 
 // *** F:DN main function
 int main(int argc, char **argv)
@@ -140,16 +142,16 @@ int main(int argc, char **argv)
     signal(SIGINT, sigIntHandler);
 	
     
+    package_delivery_initialize_params();
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
     double input_x, input_y, input_z; //goal asked by the user
     geometry_msgs::Point start, goal, original_start; //msg send out to the 
 	package_delivery::get_trajectory get_trajectory_srv;
-	string ip_addr;
-    ros::param::get("/package_delivery/ip_addr",ip_addr);
+	
     uint16_t port = 41451;
-    Drone drone(ip_addr.c_str(), port);
+    Drone drone(ip_addr__global.c_str(), port);
     int reaction_delay_counter_init_value = 8; 
     int reaction_delay_counter =  reaction_delay_counter_init_value;
     bool delivering_mission_complete = false; //if true, we have delivered the 
@@ -167,11 +169,7 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
-    double issue_cmd__time_step;  //how often sending a cmd to the drone
-    ros::param::get("/package_delivery/issue_cmd__time_step", issue_cmd__time_step);
-    //const int step__total_number = 1;
-    int points_to_replan_after;
-    ros::param::get("/package_delivery/points_to_replan_after", points_to_replan_after);
+        //const int step__total_number = 1;
     int package_delivery_loop_rate = 100;
     float goal_s_error_margin = 5.0; //ok distance to be away from the goal.
                                                       //this is b/c it's very hard 

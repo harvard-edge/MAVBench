@@ -1,8 +1,8 @@
 <launch>
     <!-- Behzad's workstation ip --> 
-    <!-- arg name="host_ip" value="10.157.34.101" / --> 
+    <arg name="host_ip" value="10.157.34.101" /> 
     <!-- Hasans's workstation ip --> 
-    <arg name="host_ip" value="10.157.34.208" /> 
+    <!-- arg name="host_ip" value="10.157.34.208" /--> 
 
 
 
@@ -115,11 +115,12 @@
 	</node>
 
 	<!-- Demo program that controls drone -->
-	<node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp">
-		<param name="ip_addr" value="$(arg host_ip)"/>
-        <param name="issue_cmd__time_step" value=".05"/>
-
-		<param name="points_to_replan_after" value="1000000000"/>
+	<!-- node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp" -->
+	<node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen"> 
+        
+        <param name="ip_addr" value="$(arg host_ip)"/>
+        <!-- param name="issue_cmd__time_step" value=".05"/-->
+		<!-- param name="points_to_replan_after" value="1000000000"/-->
     </node>
 
     <!-- rviz -->

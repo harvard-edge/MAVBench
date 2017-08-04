@@ -37,6 +37,21 @@
 #include <mav_trajectory_generation_ros/trajectory_sampling.h>
 #include <mav_trajectory_generation_ros/ros_visualization.h>
 
+
+double drone_height__global;
+double drone_radius__global;
+double rrt_step_size__global;
+int rrt_bias__global;
+double x_dist_to_sample_from__low_bound__global, x_dist_to_sample_from__high_bound__global;
+double y_dist_to_sample_from__low_bound__global, y_dist_to_sample_from__high_bound__global;
+double z_dist_to_sample_from__low_bound__global, z_dist_to_sample_from__high_bound__global;
+int nodes_to_add_to_roadmap__global;
+double max_dist_to_connect_at__global;
+double sampling_interval__global;
+double v_max__global, a_max__global;
+int max_roadmap_size__global;
+
+
 // Type-defs
 using piecewise_trajectory = std::vector<graph::node>;
 using smooth_trajectory = mav_trajectory_generation::Trajectory;
@@ -118,8 +133,8 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 	//----------------------------------------------------------------- 
 	piecewise_trajectory piecewise_path;
 	smooth_trajectory smooth_path;
-    auto motion_planning_core = RRT;
-
+    //auto motion_planning_core = RRT;
+    auto motion_planning_core = PRM;
 
     //----------------------------------------------------------------- 
     // *** F:DN Body 
@@ -155,6 +170,30 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 }
 
 
+// *** F:DN initializing all the global variables 
+void motion_planning_initialize_params() {
+    ros::param::get("motion_planner/max_roadmap_size", max_roadmap_size__global);
+    ros::param::get("/motion_planner/sampling_interval", sampling_interval__global);
+    ros::param::get("/motion_planner/rrt_step_size", rrt_step_size__global);
+    ros::param::get("/motion_planner/rrt_bias", rrt_bias__global);
+    ros::param::get("/motion_planner/x_dist_to_sample_from__low_bound", x_dist_to_sample_from__low_bound__global);
+    ros::param::get("/motion_planner/x_dist_to_sample_from__high_bound", x_dist_to_sample_from__high_bound__global);
+    ros::param::get("/motion_planner/y_dist_to_sample_from__low_bound", y_dist_to_sample_from__low_bound__global);
+    ros::param::get("/motion_planner/y_dist_to_sample_from__high_bound", y_dist_to_sample_from__high_bound__global);
+    ros::param::get("/motion_planner/z_dist_to_sample_from__low_bound", z_dist_to_sample_from__low_bound__global);
+    ros::param::get("/motion_planner/z_dist_to_sample_from__high_bound", z_dist_to_sample_from__high_bound__global);
+    ros::param::get("/motion_planner/nodes_to_add_to_roadmap", nodes_to_add_to_roadmap__global);
+    ros::param::get("/motion_planner/max_dist_to_connect_at", max_dist_to_connect_at__global);
+    ros::param::get("/motion_planner/drone_radius", drone_radius__global);
+    ros::param::get("/motion_planner/drone_height", drone_height__global);
+    ros::param::get("/motion_planner/v_max", v_max__global);
+    ros::param::get("/motion_planner/a_max", a_max__global);
+
+    //std::cout<<"max_dist_to_"<<max_dist_to_connect_at__global<<std::endl;
+}
+
+
+
 int main(int argc, char ** argv)
 {
     //----------------------------------------------------------------- 
@@ -166,7 +205,7 @@ int main(int argc, char ** argv)
 	octomap::OcTree * octree;
     ros::init(argc, argv, "motion_planner");
     ros::NodeHandle nh;
-
+    motion_planning_initialize_params();
     ros::Subscriber octomap_sub = nh.subscribe("octomap_full", 1, generate_octomap);
     ros::ServiceServer service = nh.advertiseService("get_trajectory_srv", get_trajectory_fun);
     ros::Publisher smooth_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 1);
@@ -190,7 +229,10 @@ int main(int argc, char ** argv)
     float  
     */
 
-
+    
+    //----------------------------------------------------------------- 
+    // *** F:DN BODY
+    //----------------------------------------------------------------- 
 	ros::Rate pub_rate(5);
 	while (ros::ok())
 	{
@@ -237,15 +279,20 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 	// The drone is modeled as a cylinder.
 	// Angles are in radians and lengths are in meters.
 
+    
     static double height = [] () {
         double h;
-        ros::param::get("/motion_planner/drone_height", h);
+        h = drone_height__global; 
+        //ros::param::get("/motion_planner/drone_height__global", h);
         return h;
     } ();
 
+
+    //static double height = drone_heigh__global;
     static double radius = [] () {
         double r;
-        ros::param::get("/motion_planner/drone_radius", r);
+        r = drone_radius__global; 
+        //ros::param::get("/motion_planner/drone_radius__global", r);
         return r;
     } ();
 
@@ -361,36 +408,44 @@ void grow_PRM(graph &roadmap, octomap::OcTree * octree)
 	//-----------------------------------------------------------------
 	// *** F:DN parameters 
 	//-----------------------------------------------------------------
-	int nodes_to_add_to_roadmap;
-	double max_dist_to_connect_at;
-    double x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound;
-    double y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound;
-    double z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound;
+	//int nodes_to_add_to_roadmap__global;
+	//double max_dist_to_connect_at__global;
+    //double x_dist_to_sample_from__high_bound__global, x_to_dist_sample_from__high_bound__global;
+    //double y_dist_to_sample_from__low_bound__global, y_dist_to_sample_from__high_bound__global;
+    //double z_dist_to_sample_from__low_bound__global, z_dist_to_sample_from__high_bound__global;
 
 	// Move these into main() to avoid continously incurring communication overhead with ROS parameter server
-	ros::param::get("/motion_planner/nodes_to_add_to_roadmap", nodes_to_add_to_roadmap);
-	ros::param::get("/motion_planner/max_dist_to_connect_at", max_dist_to_connect_at);
+	//ros::param::get("/motion_planner/nodes_to_add_to_roadmap__global", nodes_to_add_to_roadmap__global);
+	//ros::param::get("/motion_planner/max_dist_to_connect_at__global", max_dist_to_connect_at__global);
 
 	//-----------------------------------------------------------------
 	// *** F:DN variables
 	//-----------------------------------------------------------------
-    ros::param::get("/motion_planner/x_dist_to_sample_from__low_bound", x_dist_to_sample_from__low_bound);
-	ros::param::get("/motion_planner/x_dist_to_sample_from__high_bound", x_dist_to_sample_from__high_bound);
-	ros::param::get("/motion_planner/y_dist_to_sample_from__low_bound", y_dist_to_sample_from__low_bound);
-	ros::param::get("/motion_planner/y_dist_to_sample_from__high_bound", y_dist_to_sample_from__high_bound);
-	ros::param::get("/motion_planner/z_dist_to_sample_from__low_bound", z_dist_to_sample_from__low_bound);
-	ros::param::get("/motion_planner/z_dist_to_sample_from__high_bound", z_dist_to_sample_from__high_bound);
+    /* 
+    ros::param::get("/motion_planner/x_dist_to_sample_from__high_bound__global", x_dist_to_sample_from__high_bound__global);
+	ros::param::get("/motion_planner/x_to_dist_sample_from__high_bound__global", x_to_dist_sample_from__high_bound__global);
+	ros::param::get("/motion_planner/y_dist_to_sample_from__low_bound__global", y_dist_to_sample_from__low_bound__global);
+	ros::param::get("/motion_planner/y_dist_to_sample_from__high_bound__global", y_dist_to_sample_from__high_bound__global);
+	ros::param::get("/motion_planner/z_dist_to_sample_from__low_bound__global", z_dist_to_sample_from__low_bound__global);
+	ros::param::get("/motion_planner/z_dist_to_sample_from__high_bound__global", z_dist_to_sample_from__high_bound__global);
+    */ 
+    
+    
+    //std::cout<<x_dist_to_sample_from__low_bound__global<<" " <<x_dist_to_sample_from__high_bound__global<<" "<<y_dist_to_sample_from__low_bound__global<<" " << y_dist_to_sample_from__high_bound__global << " " <<z_dist_to_sample_from__low_bound__global<<" " <<z_dist_to_sample_from__high_bound__global<<std::endl;
+    //std::cout<<"max_dist_to_"<<max_dist_to_connect_at__global<<std::endl;
+    
+    
     static std::mt19937 rd_mt(350); //a pseudo-random number generator
-    static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound); 
-	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound); 
-	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound); 
+    static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound__global, x_dist_to_sample_from__high_bound__global); 
+	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound__global, y_dist_to_sample_from__high_bound__global); 
+	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound__global, z_dist_to_sample_from__high_bound__global); 
 
     //-----------------------------------------------------------------
     // *** F:DB Body
     //----------------------------------------------------------------- 
 	// Add random nodes
     std::vector<graph::node_id> nodes_added;
-	while (nodes_added.size() < nodes_to_add_to_roadmap) {
+	while (nodes_added.size() < nodes_to_add_to_roadmap__global) {
 		double x = x_dist(rd_mt), y = y_dist(rd_mt), z = z_dist(rd_mt);
 
 		// Make sure we're not adding a node to an occupied part of the octomap
@@ -402,10 +457,10 @@ void grow_PRM(graph &roadmap, octomap::OcTree * octree)
 
 	// Connect the recently-added points to their neighbors in the roadmap
 	for (const auto& n : nodes_added) {
-		auto nearest_nodes = nodes_in_radius(roadmap, n, max_dist_to_connect_at, octree);
-
+		auto nearest_nodes = nodes_in_radius(roadmap, n, max_dist_to_connect_at__global, octree);
 		for (const auto& n2 : nearest_nodes) {
-			roadmap.connect(n, n2, dist(roadmap.get_node(n), roadmap.get_node(n2)));
+            //ROS_WARN("hey");
+            roadmap.connect(n, n2, dist(roadmap.get_node(n), roadmap.get_node(n2)));
 		}
 	}	
 }
@@ -417,9 +472,9 @@ void create_response(package_delivery::get_trajectory::Response &res, smooth_tra
 
 	// Sample trajectory
 	mav_msgs::EigenTrajectoryPoint::Vector states;
-	double sampling_interval;
-	ros::param::get("/motion_planner/sampling_interval", sampling_interval);
-	mav_trajectory_generation::sampleWholeTrajectory(smooth_path, sampling_interval, &states);
+	//double sampling_interval__global;
+	//ros::param::get("/motion_planner/sampling_interval__global", sampling_interval__global);
+	mav_trajectory_generation::sampleWholeTrajectory(smooth_path, sampling_interval__global, &states);
 
     // Get starting position
     graph::node start = {states[0].position_W.x(), states[0].position_W.y(), states[0].position_W.z()};
@@ -494,11 +549,11 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	vertices.push_back(end_v);
 
 	// Parameters used to calculate how quickly the drone can move between vertices
-	double v_max, a_max;
 	const double magic_fabian_constant = 6.5; // A tuning parameter.
 
-	ros::param::get("/motion_planner/v_max", v_max);
-	ros::param::get("/motion_planner/a_max", a_max);
+	//double v_max__global, a_max__global;
+	//ros::param::get("/motion_planner/v_max__global", v_max__global);
+	//ros::param::get("/motion_planner/a_max__global", a_max__global);
 
 	const int N = 10;
 	mav_trajectory_generation::PolynomialOptimization<N> opt(dimension);
@@ -510,7 +565,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 		col = false;
 
 		// Estimate the time the drone should take flying between each node
-		auto segment_times = estimateSegmentTimes(vertices, v_max, a_max, magic_fabian_constant);
+		auto segment_times = estimateSegmentTimes(vertices, v_max__global, a_max__global, magic_fabian_constant);
 	
 		// Optimize and create a smooth path from the vertices
 		opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
@@ -632,9 +687,9 @@ piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, 
 	graph::node_id start_id, goal_id;
 	auto generate_shortest_path = dijkstra_plan; // TODO: parameter
 	// auto generate_shortest_path = astar_plan;
-	int max_roadmap_size;
+	//int max_roadmap_size__global;
 
-    ros::param::get("motion_planner/max_roadmap_size", max_roadmap_size);
+    //ros::param::get("motion_planner/max_roadmap_size__global", max_roadmap_size__global);
     
     //----------------------------------------------------------------- 
     // *** F:DN Body 
@@ -659,7 +714,7 @@ piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, 
 
         publish_graph(roadmap);
 
-      	if (roadmap.size() > max_roadmap_size) {
+      	if (roadmap.size() > max_roadmap_size__global) {
             ROS_ERROR("Path not found!");
             return result;
       	}
@@ -692,44 +747,25 @@ graph::node_id closest_node_to_coordinate(graph& g, double x, double y, double z
 }
 
 
+
 graph::node_id extend_RRT(graph& rrt, geometry_msgs::Point goal, bool& reached_goal)
 {
     graph::node_id result;
     reached_goal = false;
 
-    static double step_size;
-    static int bias;
-
-    static double x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound;
-    static double y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound;
-    static double z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound;
-    static bool initialized = false;
-
-    if (!initialized) {
-        ros::param::get("/motion_planner/rrt_step_size", step_size);
-        ros::param::get("/motion_planner/rrt_bias", bias);
-
-        ros::param::get("/motion_planner/x_dist_to_sample_from__low_bound", x_dist_to_sample_from__low_bound);
-        ros::param::get("/motion_planner/x_dist_to_sample_from__high_bound", x_dist_to_sample_from__high_bound);
-        ros::param::get("/motion_planner/y_dist_to_sample_from__low_bound", y_dist_to_sample_from__low_bound);
-        ros::param::get("/motion_planner/y_dist_to_sample_from__high_bound", y_dist_to_sample_from__high_bound);
-        ros::param::get("/motion_planner/z_dist_to_sample_from__low_bound", z_dist_to_sample_from__low_bound);
-        ros::param::get("/motion_planner/z_dist_to_sample_from__high_bound", z_dist_to_sample_from__high_bound);
-
-        initialized = true;
-    }
+    
 
     static std::mt19937 rd_mt(350); //a pseudo-random number generator
-    static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound, x_dist_to_sample_from__high_bound); 
-	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound, y_dist_to_sample_from__high_bound); 
-	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound, z_dist_to_sample_from__high_bound); 
+    static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound__global, x_dist_to_sample_from__high_bound__global); 
+	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound__global, y_dist_to_sample_from__high_bound__global); 
+	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound__global, z_dist_to_sample_from__high_bound__global); 
     static std::uniform_int_distribution<> bias_dist(0, 100);
 
     // Get random coordinate, q_random
     double x, y, z;
     bool towards_goal;
 
-    if (bias_dist(rd_mt) <= bias) {
+    if (bias_dist(rd_mt) <= rrt_bias__global) {
         x = goal.x, y = goal.y, z = goal.z;
         towards_goal = true;
     } else {
@@ -747,10 +783,10 @@ graph::node_id extend_RRT(graph& rrt, geometry_msgs::Point goal, bool& reached_g
     double dz = z - q_close.z;
 
     double d_len = std::sqrt(dx*dx + dy*dy + dz*dz);
-    if (d_len > step_size) { 
-        dx = dx * step_size / d_len;
-        dy = dy * step_size / d_len;
-        dz = dz * step_size / d_len;
+    if (d_len > rrt_step_size__global) { 
+        dx = dx * rrt_step_size__global / d_len;
+        dy = dy * rrt_step_size__global / d_len;
+        dz = dz * rrt_step_size__global / d_len;
     }
 
     graph::node q_step = {q_close.x + dx, q_close.y + dy, q_close.z + dz};
@@ -764,7 +800,7 @@ graph::node_id extend_RRT(graph& rrt, geometry_msgs::Point goal, bool& reached_g
         rrt.get_node(q_step_id).parent = q_close_id;
 
         // Check whether we have reached the goal
-        if (towards_goal && d_len <= step_size)
+        if (towards_goal && d_len <= rrt_step_size__global)
             reached_goal = true;
 
         result = q_step_id;
