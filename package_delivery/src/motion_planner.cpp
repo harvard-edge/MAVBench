@@ -118,7 +118,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 	//----------------------------------------------------------------- 
 	piecewise_trajectory piecewise_path;
 	smooth_trajectory smooth_path;
-    auto motion_planning_core = RRT;
+    auto motion_planning_core = PRM;
 
 
     //----------------------------------------------------------------- 
