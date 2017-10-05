@@ -5,7 +5,7 @@
 #include <cv_bridge/cv_bridge.h>
 //#include "template_library.hpp"
 #include <sstream>
-#include "rpc/RpcLibClient.hpp"
+#include "api/RpcLibClient.hpp"
 #include <iostream>
 #include <chrono>
 #include <math.h>
@@ -98,6 +98,7 @@ void control_drone(Drone& drone)
 // *** F:DN call back function for the panic_topic subscriber
 void panic_call_back(const std_msgs::Bool::ConstPtr& msg) {
     should_panic = msg->data;
+    should_panic = false;
 }
 
 void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
@@ -123,13 +124,12 @@ void action_upon_panic(Drone& drone) {
 }
 
 void action_upon_future_col(Drone& drone) {
-    scan_around(drone, 30);
+    scan_around(drone, 90);
 }
 
 
 void package_delivery_initialize_params() {
     ros::param::get("/package_delivery/ip_addr",ip_addr__global);
-    ;
 }
 
 // *** F:DN main function
@@ -153,7 +153,7 @@ int main(int argc, char **argv)
 	
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port);
-    int reaction_delay_counter_init_value = 8; 
+    int reaction_delay_counter_init_value = 3; 
     int reaction_delay_counter =  reaction_delay_counter_init_value;
     bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
 	//----------------------------------------------------------------- 
         //const int step__total_number = 1;
     int package_delivery_loop_rate = 100;
-    float goal_s_error_margin = 5.0; //ok distance to be away from the goal.
+    float goal_s_error_margin = 2.0; //ok distance to be away from the goal.
                                                       //this is b/c it's very hard 
                                                       //given the issues associated with
                                                       //flight controler to land exactly
@@ -204,6 +204,7 @@ int main(int argc, char **argv)
 
         bool returned_to_start = false;
         spin_around(drone); 
+
         while (!delivering_mission_complete) {//go toward the destination and come back
             // *** F:DN request client call from the trajectory server and 
             //          follow the path
@@ -230,6 +231,12 @@ int main(int argc, char **argv)
                    ROS_WARN("Enters unknown space at %f, %f, %f\n", unknown_pos.x, unknown_pos.y, unknown_pos.z); 
                    }
                    */
+
+                // Look towards target
+                double dx = goal.y - drone_pos.x;
+                double dy = goal.x - drone_pos.y;
+                //ROS_INFO("Turning to %f degrees", std::atan(dy / dx) * 180 / M_PI);
+                drone.set_yaw(std::atan(dy / dx) * 180 / M_PI);
 
                 // *** F:DN iterate through cmd propopsed and issue them
                 should_panic = future_col = false;
@@ -293,7 +300,7 @@ int main(int argc, char **argv)
             } else { //else, adjust the goal to return back
                 ROS_INFO("Returning to start");
                 float yaw = drone.get_yaw();
-                drone.set_yaw(yaw + 180);
+                drone.set_yaw(yaw + 180 <= 180 ? yaw + 180 : -(360 - yaw - 180));
 
                 start = goal;
                 goal = original_start;

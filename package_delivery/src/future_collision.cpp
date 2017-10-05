@@ -1,6 +1,7 @@
 #include "ros/ros.h"
 #include <cmath>
 #include "std_msgs/Bool.h"
+#include "visualization_msgs/Marker.h"
 #include "trajectory_msgs/MultiDOFJointTrajectory.h"
 
 // Octomap specific includes
@@ -14,7 +15,7 @@ octomap::OcTree * octree = nullptr;
 trajectory_msgs::MultiDOFJointTrajectory traj;
 double drone_height__global;
 double drone_radius__global;
-
+visualization_msgs::Marker marker;
 
 struct coord {
     double x, y , z;
@@ -37,7 +38,7 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 
     static double radius = [] () {
         double r;
-        r = drone_radius__global; 
+        r = drone_radius__global * 0.75; 
         //ros::param::get("/motion_planner/drone_radius", r);
         return r;
     } ();
@@ -60,8 +61,16 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 			for (double a = 0; a <= pi*2; a += angle_step) {
 				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
 
-				if (octree->castRay(start, direction, end, true, distance))
+				if (octree->castRay(start, direction, end, true, distance)) {
+                    // ROS_WARN("future collision detected on %f, %f ,%f", n1.x, n1.y, n1.z);
+                    
+                    marker.header.stamp = ros::Time();
+                    marker.pose.position.x = n1.x;
+                    marker.pose.position.y = n1.y;
+                    marker.pose.position.z = n1.z;
+                    
 					return true;
+                }
 			}
 		}
 	}
@@ -118,10 +127,26 @@ bool check_for_collisions()
 void future_collision_initialize_params() {
     ros::param::get("/motion_planner/drone_radius", drone_radius__global);
     ros::param::get("/motion_planner/drone_height", drone_height__global);
+
+    marker.header.frame_id = "fcu";
+    marker.ns = "my_namespace";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+    marker.pose.orientation.x = 0.0;
+    marker.pose.orientation.y = 0.0;
+    marker.pose.orientation.z = 0.0;
+    marker.pose.orientation.w = 1.0;
+    marker.scale.x = 2;
+    marker.scale.y = 2;
+    marker.scale.z = 2;
+    marker.color.a = 1.0; // Don't forget to set the alpha!
+    marker.color.r = 0.0;
+    marker.color.g = 1.0;
+    marker.color.b = 0.0;
+    // only if using a MESH_RESOURCE marker type:
+    // marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";
 }
-
-
-
 
 
 int main(int argc, char** argv)
@@ -137,8 +162,8 @@ int main(int argc, char** argv)
     ros::Subscriber octomap_sub = nh.subscribe("octomap_full", 1, pull_octomap);
     ros::Subscriber traj_sub = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>("multidoftraj", 1, pull_traj);
     ros::Publisher collision_publisher = nh.advertise<std_msgs::Bool>("future_col_topic", 1);
+    ros::Publisher vis_pub = nh.advertise<visualization_msgs::Marker>( "collision_marker", 1);
     
-      
     
     //----------------------------------------------------------------- 
     // *** F:DN BODY
@@ -148,6 +173,7 @@ int main(int argc, char** argv)
     while (ros::ok()) {
         col_msg.data = check_for_collisions();
         collision_publisher.publish(col_msg);
+        vis_pub.publish( marker );
 
         ros::spinOnce();
         loop_rate.sleep();

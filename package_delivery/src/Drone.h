@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string>
 #include <opencv2/opencv.hpp>
-#include "rpc/RpcLibClient.hpp"
+#include "api/RpcLibClient.hpp"
 #include <geometry_msgs/Pose.h>
 #include "coord.h"
 

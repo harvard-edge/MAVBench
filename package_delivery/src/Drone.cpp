@@ -27,6 +27,7 @@ void Drone::connect()
 	if (client != 0)
 		delete client;
 	client = new msr::airlib::RpcLibClient();
+    client->enableApiControl(true);
 }
 
 void Drone::connect(const std::string& ip_addr, uint16_t port)
@@ -34,6 +35,7 @@ void Drone::connect(const std::string& ip_addr, uint16_t port)
 	if (client != 0)
 		delete client;
 	client = new msr::airlib::RpcLibClient(ip_addr, port);
+    client->enableApiControl(true);
 }
 
 void Drone::arm()
@@ -61,7 +63,7 @@ bool Drone::takeoff(double h)
 	while (std::cin.get() != '\n') {}
 
 	try {
-		client->setOffboardMode(true);
+		// client->setOffboardMode(true);
 	} catch (...) {
 		std::cout << "Setting offboard mode failed" << std::endl;
 	}
