@@ -25,8 +25,8 @@
 		<param name="frame_id" type="string" value="fcu" />
 		
 		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="45" />
-		
+		<param name="sensor_model/max_range" value="20" />
+
 		<!-- data source to integrate (PointCloud2) -->
 		<remap from="cloud_in" to="/points" />
 
@@ -45,7 +45,7 @@
 	</node>
 
 	<!-- Point-cloud publisher -->
- 	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
+ 	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
 		<!-- IP of the Airsim computer -->
 		<param name="Airsim_ip" value="$(arg host_ip)" />
 
@@ -59,13 +59,10 @@
 		<param name="cy" value="72"/>
 		<param name="scale_x" value="256"/>  <!-- Width when calibrated!-->
 		<param name="scale_y" value="144"/> <!-- Height when calibrated!-->
-		<param name="width" value="256"/>  <!-- Width when calibrated!-->
-		<param name="height" value="144"/> <!-- Height when calibrated!-->
 
 		<!-- Depth baseline -->
 		<param name="Tx" value="0.14"/> 
 		<param name="scale" value="0.38"/> 
-		<param name="maxDist" value="45.0"/> 
 
 		<!-- Topic with odometry information for the vehicle (used to create tf tree) -->
 		<param name="odomTopic" value="/mavros/local_position/odom"/>
@@ -87,7 +84,7 @@
 	
     
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
-		<param name="panic_distance" value="1.25"/>
+		<param name="panic_distance" value="1.75"/>
     </node>
  
     <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
@@ -103,29 +100,29 @@
 
 	<!-- Path-Planner -->
 	<node pkg="package_delivery" type="motion_planner" name="motion_planner" output="screen" launch-prefix="$(arg my_launch_prefix)">
-		<param name="nodes_to_add_to_roadmap" value="400"/>
+		<param name="nodes_to_add_to_roadmap" value="300"/>
 		<param name="max_dist_to_connect_at" value="10"/>
 
-		<param name="v_max" value="5.0"/>
-		<param name="a_max" value="3.5"/>
+		<param name="v_max" value="4.0"/>
+		<param name="a_max" value="10.0"/>
         <param name="drone_radius" value="2.0"/>
         <param name="drone_height" value="0.6"/>
 
-		<param name="max_roadmap_size" value="5000"/>
+		<param name="max_roadmap_size" value="1600"/>
 
         <param name="rrt_step_size" value="1.0"/>
         <param name="rrt_bias" value="10"/>
 		
-        <param name="x_dist_to_sample_from__low_bound" value="-45"/>
-		<param name="x_dist_to_sample_from__high_bound" value="200"/>
+        <param name="x_dist_to_sample_from__low_bound" value="-30"/>
+		<param name="x_dist_to_sample_from__high_bound" value="30"/>
         <param name="y_dist_to_sample_from__low_bound" value="-5"/>
-        <param name="y_dist_to_sample_from__high_bound" value="200"/>
-        <param name="z_dist_to_sample_from__low_bound" value="4"/>
-        <param name="z_dist_to_sample_from__high_bound" value="5"/>
+        <param name="y_dist_to_sample_from__high_bound" value="60"/>
+        <param name="z_dist_to_sample_from__low_bound" value="1"/>
+        <param name="z_dist_to_sample_from__high_bound" value="6"/>
 
         <param name="sampling_interval" value="0.5"/>
 
-        <param name="motion_planning_core" value="RRT"/>
+        <param name="motion_planning_core" value="PRM"/>
 	</node>
 
 	<!-- Demo program that controls drone -->

@@ -15,7 +15,7 @@ void callback(const PointCloud::ConstPtr& msg)//, bool &too_close)
 {
     
     float panic_distance;
-    ros::param::get("/panic_pcl/panic_distance",panic_distance);
+    ros::param::get("/panic_pcl/panic_distance", panic_distance);
     too_close = false;
     BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points){
       if (!(std::isnan(pt.x) || std::isnan(pt.y) || std::isnan(pt.z))) {

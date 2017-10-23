@@ -9,9 +9,11 @@
 #include <iostream>
 #include <thread>
 #include <functional>
+#include <limits>
+#include <signal.h>
+
 // My headers
 #include "common.h"
-#include "Drone.h"
 #include "graph.h"
 #include "global_planner.h"
 #include "package_delivery/get_trajectory.h"
@@ -74,6 +76,13 @@ octomap_msgs::Octomap omp;
 PointCloud::Ptr pcl_ptr{new pcl::PointCloud<pcl::PointXYZ>};
 visualization_msgs::Marker graph_conn_list;
 ros::Publisher graph_conn_pub;
+
+// ** F:DN closes program as soon as Ctrl-C is pressed
+void sigIntHandler(int sig)
+{
+    ros::shutdown();
+    exit(0);
+}
 
 // *** F:DN calculating the distance between two nodes in the graph.
 double dist(const graph::node& n1, const graph::node& n2);
@@ -221,7 +230,8 @@ int main(int argc, char ** argv)
     ros::init(argc, argv, "motion_planner");
     ros::NodeHandle nh;
     motion_planning_initialize_params();
-    
+    signal(SIGINT, sigIntHandler);
+
     // *** F:DN topics and services
     ros::Subscriber octomap_sub = nh.subscribe("octomap_full", 1, generate_octomap);
     ros::ServiceServer service = nh.advertiseService("get_trajectory_srv", get_trajectory_fun);
@@ -294,27 +304,20 @@ bool known(octomap::OcTree * octree, double x, double y, double z)
 
 bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2)
 {
-	const double pi = 3.14159265359;
+    // First, check if anything goes underground
+    if (n1.z <= 0 ||
+            n2.z <= 0)
+        return true;
+            
+    const double pi = 3.14159265359;
 
 	// The drone is modeled as a cylinder.
 	// Angles are in radians and lengths are in meters.
-
     
-    static double height = [] () {
-        double h;
-        h = drone_height__global; 
-        //ros::param::get("/motion_planner/drone_height__global", h);
-        return h;
-    } ();
-
+    double height = drone_height__global; 
 
     //static double height = drone_heigh__global;
-    static double radius = [] () {
-        double r;
-        r = drone_radius__global; 
-        //ros::param::get("/motion_planner/drone_radius__global", r);
-        return r;
-    } ();
+    double radius = drone_radius__global; 
 
 	const double angle_step = pi/4;
 	const double radius_step = radius/3;
@@ -398,14 +401,37 @@ graph create_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap:
 	// Check whether the path is even possible.
 	// The path is impossible if the start or end coordinates are in an occupied part of the octomap.
 	
+    /*
 	if (occupied(octree, start.x, start.y, start.z)) {
 		ROS_ERROR("Start is already occupied!");
 		success = false;
 	}
+    */
 
 	if (occupied(octree, goal.x, goal.y, goal.z)) {
 		ROS_ERROR("Goal is already occupied!");
 		success	= false;
+	}
+
+    // Free space around the start since is assumed to be open
+    const double pi = 3.14159265359;
+
+    double height = drone_height__global*1.5; 
+    double radius = drone_radius__global*1.5;
+
+	const double angle_step = pi/16;
+	const double radius_step = radius/10;
+	const double height_step = height/8;
+
+	for (double h = -height/2; h <= height/2; h += height_step) {
+		for (double r = 0; r <= radius; r += radius_step) {
+			for (double a = 0; a <= pi*2; a += angle_step) {
+                octomap::OcTreeNode * otn = octree->search(start.x + r*std::cos(a), start.y + r*std::sin(a), start.z + h);
+                if (otn != NULL) {
+                    otn->setValue(-std::numeric_limits<double>::infinity());
+                }
+			}
+		}
 	}
 
 	// If the path is believed to be possible, then add the start and end nodes.

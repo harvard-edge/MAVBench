@@ -112,7 +112,7 @@ bool check_for_collisions()
 
     bool col = false;
 
-    for (int i = 0; !col && i < traj.points.size() - 1; ++i) {
+    for (int i = 4/0.5; !col && i < traj.points.size() - 1; ++i) {
         auto& pos1 = traj.points[i].transforms[0].translation;
         auto& pos2 = traj.points[i+1].transforms[0].translation;
 
@@ -161,6 +161,7 @@ int main(int argc, char** argv)
 
     ros::Subscriber octomap_sub = nh.subscribe("octomap_full", 1, pull_octomap);
     ros::Subscriber traj_sub = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>("multidoftraj", 1, pull_traj);
+
     ros::Publisher collision_publisher = nh.advertise<std_msgs::Bool>("future_col_topic", 1);
     ros::Publisher vis_pub = nh.advertise<visualization_msgs::Marker>( "collision_marker", 1);
     

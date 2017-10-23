@@ -9,11 +9,13 @@
 Drone::Drone() : client(0)
 {
 	connect();
+    initial_pos = gps();
 }
 
 Drone::Drone(const std::string& ip_addr, uint16_t port) : client(0)
 {
 	connect(ip_addr, port);
+    initial_pos = gps();
 }
 
 Drone::~Drone()
@@ -119,7 +121,10 @@ bool Drone::land()
 coord Drone::gps()
 {
 	auto pos = client->getPosition();
-	return {pos.x(), pos.y(), pos.z()};
+
+	return {pos.x() - initial_pos.x,
+        pos.y() - initial_pos.y,
+        pos.z() - initial_pos.z};
 }
 
 float Drone::get_yaw()
@@ -148,3 +153,4 @@ float Drone::get_pitch()
 
 	return p*180 / M_PI;
 }
+

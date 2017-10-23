@@ -3,6 +3,7 @@
 #include <image_transport/image_transport.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <tf/transform_listener.h>
 //#include "template_library.hpp"
 #include <sstream>
 #include "api/RpcLibClient.hpp"
@@ -31,7 +32,6 @@ using namespace std;
 bool should_panic = false;
 bool future_col = false;
 string ip_addr__global;
-
 
 
 void sigIntHandler(int sig)
@@ -132,6 +132,27 @@ void package_delivery_initialize_params() {
     ros::param::get("/package_delivery/ip_addr",ip_addr__global);
 }
 
+
+coord drone_pos_lookup(tf::TransformListener& listener) {
+    tf::StampedTransform transform;
+
+    try{
+      listener.lookupTransform("/fcu", "/orb_slam2_rgbd",  
+                               ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      ros::Duration(1.0).sleep();
+    }
+
+    coord result;
+    auto tf_translation = transform.getOrigin();
+    result.x = tf_translation.y();
+    result.y = tf_translation.x();
+    result.z = -tf_translation.z();
+}
+
+
 // *** F:DN main function
 int main(int argc, char **argv)
 {
@@ -153,7 +174,7 @@ int main(int argc, char **argv)
 	
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port);
-    int reaction_delay_counter_init_value = 3; 
+    int reaction_delay_counter_init_value = 1; 
     int reaction_delay_counter =  reaction_delay_counter_init_value;
     bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
@@ -165,6 +186,13 @@ int main(int argc, char **argv)
     ros::NodeHandle future_col_nh;
     ros::Subscriber future_col_sub = 
 		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
+
+    auto pos_fun = [&]() {
+        return drone.gps();
+
+        static tf::TransformListener tfListen;
+        return drone_pos_lookup(tfListen);
+    };
 
     
     //----------------------------------------------------------------- 
@@ -190,7 +218,7 @@ int main(int argc, char **argv)
         control_drone(drone);
 	    
         // *** F:DN set drone start position	
-        auto drone_pos = drone.gps();
+        auto drone_pos = pos_fun();
 		start.x = drone_pos.y; start.y = drone_pos.x; start.z = -drone_pos.z;
 		std::cout << "Current position is " << drone_pos.x << " " << drone_pos.y << " " << drone_pos.z << std::endl;
 	    
@@ -208,9 +236,9 @@ int main(int argc, char **argv)
         while (!delivering_mission_complete) {//go toward the destination and come back
             // *** F:DN request client call from the trajectory server and 
             //          follow the path
-            while (dist(drone.gps(), goal) > goal_s_error_margin) {
-                ROS_INFO("Distance to target: %f", dist(drone.gps(), goal));
-                auto drone_pos = drone.gps();
+            while (dist(pos_fun(), goal) > goal_s_error_margin) {
+                ROS_INFO("Distance to target: %f", dist(pos_fun(), goal));
+                auto drone_pos = pos_fun();
                 start.x = drone_pos.y; start.y = drone_pos.x; start.z = -drone_pos.z;
                 get_trajectory_srv.request.start = start;
 
@@ -269,7 +297,7 @@ int main(int argc, char **argv)
 
                     drone.fly_velocity(v_x, 
                             v_y,
-                            v_z + 0.2*(p_z-drone.gps().z));
+                            v_z + 0.2*(p_z-pos_fun().z));
 
                     ros::spinOnce(); // Check whether we should panic
 
@@ -284,7 +312,6 @@ int main(int argc, char **argv)
                             ROS_WARN("Obstacle appeared on trajectory");
                             action_upon_future_col(drone);
                             reaction_delay_counter = reaction_delay_counter_init_value; 
-                            reaction_delay_counter = reaction_delay_counter_init_value; 
                             break;
                         }
                         reaction_delay_counter--;
@@ -295,7 +322,7 @@ int main(int argc, char **argv)
                 drone.fly_velocity(0, 0, 0);
             }
 
-            if (returned_to_start) { //if returned to start, we are done
+            if (true /*returned_to_start*/) { //if returned to start, we are done
                 delivering_mission_complete = true;
             } else { //else, adjust the goal to return back
                 ROS_INFO("Returning to start");

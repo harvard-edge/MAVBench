@@ -36,6 +36,8 @@ public:
 
 private:
 	msr::airlib::RpcLibClient * client;
+    coord initial_pos;
 };
 
 #endif
+
