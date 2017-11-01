@@ -10,6 +10,8 @@
 #include <octomap_msgs/GetOctomap.h>
 #include <octomap_msgs/conversions.h>
 
+#include "timer.h"
+
 // Global variables
 octomap::OcTree * octree = nullptr;
 trajectory_msgs::MultiDOFJointTrajectory traj;
@@ -24,6 +26,8 @@ struct coord {
 template <class T>
 bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 {
+        RESET_TIMER();
+
 	const double pi = 3.14159265359;
 
 	// The drone is modeled as a cylinder.
@@ -74,6 +78,8 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 			}
 		}
 	}
+
+        LOG_ELAPSED(future_collision);
 
 	return false;
 }

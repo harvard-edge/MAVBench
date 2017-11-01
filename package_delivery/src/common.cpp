@@ -39,4 +39,3 @@ void spin_around(Drone &drone) {
     drone.set_yaw(init_yaw);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
-

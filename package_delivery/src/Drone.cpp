@@ -6,6 +6,7 @@
 #include "common/Common.hpp"
 #include "coord.h"
 #include <geometry_msgs/Point.h>
+#include "timer.h"
 
 Drone::Drone() : client(0)
 {
@@ -98,6 +99,7 @@ bool Drone::set_yaw(float y)
 bool Drone::fly_velocity(double vx, double vy, double vz, double duration)
 {
 	try {
+		getCollisionInfo();
 		client->moveByVelocity(vx, vy, vz, duration);
 	} catch(...) {
 		std::cerr << "fly_velocity failed" << std::endl;
@@ -167,6 +169,7 @@ msr::airlib::CollisionInfo Drone::getCollisionInfo()
     sleep(5);
     disarm();
     fprintf(stderr, "Drone Crashed!\n");
+    LOG_TIME(crashed);
     ros::shutdown();
     exit(0);
   }
