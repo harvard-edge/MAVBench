@@ -5,7 +5,8 @@
 #include <set>
 #include <vector>
 #include <limits>
-
+#include <iostream>
+using namespace std;
 class graph
 {
 public:
@@ -43,7 +44,7 @@ public:
 	int size();
 
 	std::set<node_id> node_ids () const;
-
+    friend ostream& operator<<(ostream&, graph& graph_inst);
 private:
 	std::unordered_map<node_id, node> nodes;
 	std::unordered_map<node_id, std::set<struct edge> > adj_list;

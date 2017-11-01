@@ -187,7 +187,7 @@ add_executable(motion_planner src/motion_planner.cpp src/graph.cpp src/global_pl
 add_dependencies(motion_planner package_delivery_generate_messages_cpp)
 target_link_libraries(motion_planner ${catkin_LIBRARIES}  AirLib MavLinkCom rpc pthread  cuda cudart cublas curand )
 
-add_executable(package_delivery src/Drone.cpp src/common.cpp src/package_delivery.cpp)
+add_executable(package_delivery src/Drone.cpp src/common.cpp src/follow_trajectory.cpp src/package_delivery.cpp)
 add_dependencies(package_delivery package_delivery_generate_messages_cpp)
 target_link_libraries(package_delivery ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
@@ -201,6 +201,12 @@ target_link_libraries(panic_pcl ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthrea
 add_executable(future_collision src/future_collision)
 target_link_libraries(future_collision ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
+
+add_executable(scanning src/Drone.cpp src/common.cpp src/follow_trajectory src/scanning.cpp)
+add_dependencies(scanning package_delivery_generate_messages_cpp)
+target_link_libraries(scanning ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
+#
+#
 
 #add_executable(Drone_dummy_service_adv src/Drone_dummy_service_adv.cpp src/Drone.cpp)
 #target_link_libraries(Drone_dummy_service_adv ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})

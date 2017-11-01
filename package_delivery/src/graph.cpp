@@ -1,5 +1,7 @@
 #include "graph.h"
 #include <limits>
+#include <iostream>
+using namespace std;
 
 graph::node_id graph::add_node(const double& x, const double& y, const double& z)
 {
@@ -99,3 +101,19 @@ double graph::cost_of_edge (graph::node_id n1, graph::node_id n2)
 
 	return std::numeric_limits<double>::quiet_NaN();;
 }
+
+
+ostream& operator<<(ostream& os, graph& graph_inst) {
+//for (auto it = graph_inst.nodes.begin(); it != graph_inst.nodes.end();){
+    /*
+    for (const auto& n : graph_inst.nodes){
+    os <<n.second.x <<" " << n.second.y<< " " <<n.second.z<<endl;
+  }
+  */
+    int node_ids_size = graph_inst.node_ids().size();
+	for (int i =0 ; i < node_ids_size; i++) {
+        os <<(graph_inst.get_node(i)).x <<" " << (graph_inst.get_node(i)).y <<endl;
+    }
+
+}
+

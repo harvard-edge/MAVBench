@@ -6,7 +6,7 @@
 #include <tf/transform_listener.h>
 //#include "template_library.hpp"
 #include <sstream>
-#include "api/RpcLibClient.hpp"
+//#include "api/MultirotorRpcLibClient.hpp"
 #include <iostream>
 #include <chrono>
 #include <math.h>
@@ -29,6 +29,7 @@
 #include "common.h"
 
 using namespace std;
+#include "follow_trajectory.h"
 bool should_panic = false;
 bool future_col = false;
 string ip_addr__global;
@@ -269,28 +270,18 @@ int main(int argc, char **argv)
                 // *** F:DN iterate through cmd propopsed and issue them
                 should_panic = future_col = false;
                 int last_point = -1;
+                
+                follow_trajecotry(get_trajectory_srv, drone);
+                /*
                 for (int i = 0; !should_panic && i <get_trajectory_srv.response.multiDOFtrajectory.points.size()-1; ++i) {
                     auto p = get_trajectory_srv.response.multiDOFtrajectory.points[i];
                     auto p_next = get_trajectory_srv.response.multiDOFtrajectory.points[i+1];
 
                     double p_z = -p.transforms[0].translation.z;
-                    /* 
-                       double p_x = p.transforms[0].translation.y;
-                       double p_y = p.transforms[0].translation.x;
-
-                       double p_x_next = p_next.transforms[0].translation.y;
-                       double p_y_next = p_next.transforms[0].translation.x;
-                       double p_z_next = -p_next.transforms[0].translation.z;
-                       */
+                    
                     double v_x = p.velocities[0].linear.y;
                     double v_y = p.velocities[0].linear.x;
                     double v_z = -p.velocities[0].linear.z;
-
-                    /* 
-                       double v_x_next = p_next.velocities[0].linear.y;
-                       double v_y_next = p_next.velocities[0].linear.x;
-                       double v_z_next = -p_next.velocities[0].linear.z;
-                       */
 
                     double segment_dedicated_time = (p_next.time_from_start - p.time_from_start).toSec();
                     auto segment_start_time = std::chrono::system_clock::now();
@@ -319,10 +310,11 @@ int main(int argc, char **argv)
 
                     std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>((1)*segment_dedicated_time));
                 }
+                */
                 drone.fly_velocity(0, 0, 0);
             }
 
-            if (true /*returned_to_start*/) { //if returned to start, we are done
+            if (returned_to_start) { //if returned to start, we are done
                 delivering_mission_complete = true;
             } else { //else, adjust the goal to return back
                 ROS_INFO("Returning to start");

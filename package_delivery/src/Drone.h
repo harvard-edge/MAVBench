@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string>
 #include <opencv2/opencv.hpp>
-#include "api/RpcLibClient.hpp"
+#include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
 #include <geometry_msgs/Pose.h>
 #include "coord.h"
 
@@ -35,7 +35,7 @@ public:
     coord gps();
 
 private:
-	msr::airlib::RpcLibClient * client;
+	msr::airlib::MultirotorRpcLibClient * client;
     coord initial_pos;
 };
 

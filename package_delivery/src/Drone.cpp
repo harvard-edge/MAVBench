@@ -28,7 +28,7 @@ void Drone::connect()
 {
 	if (client != 0)
 		delete client;
-	client = new msr::airlib::RpcLibClient();
+	client = new msr::airlib::MultirotorRpcLibClient();
     client->enableApiControl(true);
 }
 
@@ -36,7 +36,7 @@ void Drone::connect(const std::string& ip_addr, uint16_t port)
 {
 	if (client != 0)
 		delete client;
-	client = new msr::airlib::RpcLibClient(ip_addr, port);
+	client = new msr::airlib::MultirotorRpcLibClient(ip_addr, port);
     client->enableApiControl(true);
 }
 

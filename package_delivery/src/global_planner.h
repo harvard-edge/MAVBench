@@ -6,5 +6,5 @@
 
 std::vector<graph::node> dijkstra_plan(graph& g, graph::node_id start, graph::node_id goal);
 std::vector<graph::node> astar_plan(graph& g, graph::node_id start, graph::node_id goal);
-
+std::vector<graph::node> keep_roadmap_intact_plan(graph& g);
 #endif

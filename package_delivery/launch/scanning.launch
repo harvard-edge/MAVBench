@@ -123,14 +123,13 @@
         <param name="sampling_interval" value="0.5"/>
 
         <!-- options for motion_planning core --> 
-        <param name="motion_planning_core" value="PRM"/>
-        <!-- param name="motion_planning_core" value="RRT"/-->
+        <param name="motion_planning_core" value="lawn_mower"/>
         <!-- param name="motion_planning_core" value="lawn_mower"/-->
 	</node>
 
 	<!-- Demo program that controls drone -->
-	<!-- <node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp"> -->
-	<node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen">
+	<!-- <node pkg="package_delivery" type="scanning" name="scanning" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp"> -->
+	<node pkg="package_delivery" type="scanning" name="scanning" output="screen">
         <param name="ip_addr" value="$(arg host_ip)"/>
         <!-- param name="issue_cmd__time_step" value=".05"/-->
 		<!-- param name="points_to_replan_after" value="1000000000"/-->
