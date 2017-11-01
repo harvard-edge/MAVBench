@@ -34,9 +34,13 @@ public:
     float get_roll();
     coord gps();
 
+    // *** F:DN Collison functions
+    msr::airlib::CollisionInfo getCollisionInfo();
+
 private:
 	msr::airlib::MultirotorRpcLibClient * client;
     coord initial_pos;
+    uint64_t collision_count;
 };
 
 #endif

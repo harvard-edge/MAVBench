@@ -60,12 +60,20 @@ void control_drone(Drone& drone)
 	cout << "\ty x: set yaw to x\n";
 	cout << "\tp: print pitch, roll, yaw, height\n";
 	cout << "\tc: complete drone setup and continue\n";
-	cout << "\tCtrl-c: quit\n";
+	cout << "\tCtrl-c/q: quit\n";
 
 	std::string cmd("");
 
 	while(cmd != "c") {
 		cin >> cmd;
+
+            if (cmd == "q") {
+              cout << "bye~" << endl;
+              raise(SIGINT);
+              return;
+            } else if (cmd == "s") {
+              sleep(5);
+            }
 
 	    if (cmd == "a") {
 	        drone.arm();

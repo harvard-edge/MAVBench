@@ -1,4 +1,5 @@
 #include "Drone.h"
+#include "ros/ros.h"
 #include <iostream>
 #include <vector>
 #include <cstring>
@@ -12,7 +13,7 @@ Drone::Drone() : client(0)
     initial_pos = gps();
 }
 
-Drone::Drone(const std::string& ip_addr, uint16_t port) : client(0)
+Drone::Drone(const std::string& ip_addr, uint16_t port) : client(0), collision_count(0)
 {
 	connect(ip_addr, port);
     initial_pos = gps();
@@ -120,6 +121,7 @@ bool Drone::land()
 
 coord Drone::gps()
 {
+	getCollisionInfo();
 	auto pos = client->getPosition();
 
 	return {pos.x() - initial_pos.x,
@@ -154,3 +156,26 @@ float Drone::get_pitch()
 	return p*180 / M_PI;
 }
 
+msr::airlib::CollisionInfo Drone::getCollisionInfo()
+{
+  auto col_info = client->getCollisionInfo();
+  if (col_info.has_collided) {
+     collision_count ++;
+  }
+  if (collision_count > 10) {
+    land();
+    sleep(5);
+    disarm();
+    fprintf(stderr, "Drone Crashed!\n");
+    ros::shutdown();
+    exit(0);
+  }
+
+  if (col_info.has_collided) {
+  printf("CollisionInfo %s, count %ld, collison %d, penetrate %f\n",
+          col_info.has_collided ? "has collided" : "none", collision_count, col_info.collison_count,
+          col_info.penetration_depth);
+  }
+
+  return col_info;
+}
