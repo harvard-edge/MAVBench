@@ -1,0 +1,164 @@
+<launch>
+<!-- args --> 
+    <!-- Behzad's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.101" /--> 
+    <arg name="host_ip" value="10.157.90.51" /> 
+    <!-- Hasans's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.208" /--> 
+    
+    <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
+    <!-- also planning to prevent stdio stuff(if they really matter)--> 
+    <arg name="DEBUG" value="true" /> 
+    <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
+
+    <!-- set this to "" if you don't want perf -->
+    <arg name="my_launch_prefix" value="" /> 
+    <!-- arg name="my_launch_prefix" value="/home/nvidia/install/perf/perf record -g fp"/ -->
+    
+
+     <arg name="param_file" value="$(find mapping_and_SAR)/resource/exploration.yaml" />
+
+    <!-- starting nodes --> 
+	<!-- Point-cloud publisher -->
+ 	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
+		<!-- IP of the Airsim computer -->
+		<param name="Airsim_ip" value="$(arg host_ip)" />
+
+
+		<!-- Port of the Airsim computer (this is default, do not change!) -->
+		<param name="Airsim_port" value="41451"/>
+
+        <!-- RGB camera parameters (parameters when calibrated) -->
+        <param name="Fx" value="128"/>
+        <param name="Fy" value="128"/>
+        <param name="cx" value="128"/>
+        <param name="cy" value="72"/>
+        <param name="scale_x" value="256"/>  <!-- Width when calibrated!-->
+        <param name="scale_y" value="144"/> <!-- Height when calibrated!-->
+        <param name="width" value="256"/>  <!-- Width when calibrated!-->
+        <param name="height" value="144"/> <!-- Height when calibrated!-->
+        <comment> 
+        <param name="Fx" value="200"/>
+        <param name="Fy" value="200"/>
+        <param name="cx" value="200"/>
+        <param name="cy" value="150"/>
+        <param name="scale_x" value="400"/>  <!-- Width when calibrated!-->
+        <param name="scale_y" value="300"/> <!-- Height when calibrated!-->
+        <param name="width" value="400"/>  <!-- Width when calibrated!-->
+        <param name="height" value="300"/> <!-- Height when calibrated!-->
+		</comment>
+        
+        
+        <param name="maxDist" value="50.0"/> 
+        <!-- Depth baseline -->
+        <param name="Tx" value="0.14"/>
+        <param name="scale" value="0.38"/> 
+    
+		<!-- Topic with odometry information for the vehicle (used to create tf tree) -->
+	    <!-- we are not using the odomTopic since arisim is not providing it at themoment -->	
+        <param name="odomTopic" value="/mavros/local_position/odom"/>
+	</node>
+
+    <!-- publishing pose values --> 
+    <arg name="mav_name" default="airsim_qc" />
+    <node pkg="mapping_and_SAR" type="publish_pose" name="publish_pose" output="screen">
+        <param name="ip_addr" value="$(arg host_ip)"/>
+    </node>
+	
+    
+    <!-- following the tejactory --> 
+    <!-- group ns="$(arg mav_name)" -->
+    <node pkg="mapping_and_SAR" type="follow_trajectory" name="follow_trajectory" output="screen">
+        <rosparam command="load" file="$(arg param_file)" />
+        <param name="mav_name" value="$(arg mav_name)"/>
+        <!-- param name="yaw_t" value=".75"/ -->
+        <param name="ip_addr" value="$(arg host_ip)"/>
+        <param name="segment_dedicated_time" value="1.0"/>
+    </node>
+    <!-- /group --> 
+    
+    <!-- Nodelet manager for this pipeline -->
+	<node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager"/>
+
+	<!-- Convert to point cloud -->
+	<node pkg="nodelet" type="nodelet" name="cloudify"
+	args="load depth_image_proc/point_cloud_xyz depth_transforms_manager --no-bond">
+
+		<!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
+		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
+		<!-- Input: Rectified depth image -->
+		<remap from="image_rect" to="/Airsim/depth"/>
+		<remap from="points" to="points"/>
+    </node>
+	
+    <node pkg="nodelet" type="nodelet" name="cloudify2"
+	args="load depth_image_proc/point_cloud_xyz depth_transforms_manager --no-bond">
+
+		<!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
+		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
+		<!-- Input: Rectified depth image -->
+		<remap from="image_rect" to="/Airsim/depth"/>
+		<remap from="points" to="points2"/>
+    </node>
+	
+	<comment>
+    <!-- Convert to octomap -->
+	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+        <param name="resolution" value="0.5" />
+		
+		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+		<param name="frame_id" type="string" value="fcu" />
+		
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="sensor_model/max_range" value="50" />
+		
+		<!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/points" />
+
+		<!-- Filter ground for binary occupancy map -->
+		<param name="base_frame_id" value="fcu" />
+		<!-- <param name="filter_ground" value="true" />
+		<param name="ground_filter_plane_distance" value="1.00" />
+		<param name="ground_filter/distance" value="0.50" /> -->
+	    <param name="pointcloud_min_z" type="double" value="-2.0" />
+	    <param name="pointcloud_max_z" type="double" value="7.0" />
+	    <param name="occupancy_min_z" type="double" value="-2.00" />
+	    <param name="occupancy_max_z" type="double" value="7.0" />
+		<!-- <param name="ground_filter_plane_distance" value="0.07" />
+		<param name="ground_filter/distance" value="0.04" />
+		<param name="ground_filter/angle" value="0.4" /> -->
+	</node>
+    
+    <!-- Convert to octomap -->
+	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server2">
+        <param name="resolution" value="0.5" />
+        <remap from="occupied_cells_vis_array" to="occupied_cells_vis_array2"/>
+		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+		<param name="frame_id" type="string" value="fcu" />
+		
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="sensor_model/max_range" value="50" />
+		
+		<!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/points2" />
+
+		<!-- Filter ground for binary occupancy map -->
+		<param name="base_frame_id" value="fcu" />
+		<!-- <param name="filter_ground" value="true" />
+		<param name="ground_filter_plane_distance" value="1.00" />
+		<param name="ground_filter/distance" value="0.50" /> -->
+	    <param name="pointcloud_min_z" type="double" value="-2.0" />
+	    <param name="pointcloud_max_z" type="double" value="7.0" />
+	    <param name="occupancy_min_z" type="double" value="-2.00" />
+	    <param name="occupancy_max_z" type="double" value="7.0" />
+		<!-- <param name="ground_filter_plane_distance" value="0.07" />
+		<param name="ground_filter/distance" value="0.04" />
+		<param name="ground_filter/angle" value="0.4" /> -->
+	</node>
+    </comment>
+    
+    <!-- /group --> 
+
+  
+
+</launch>

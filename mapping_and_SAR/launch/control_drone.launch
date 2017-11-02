@@ -1,0 +1,27 @@
+<launch>
+
+<!-- args --> 
+    <!-- Behzad's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.101" /--> 
+    <arg name="host_ip" value="10.157.90.51" /> 
+    <!-- Hasans's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.208" /--> 
+    
+    <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
+    <!-- also planning to prevent stdio stuff(if they really matter)--> 
+    <arg name="DEBUG" value="true" /> 
+    <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
+
+    <!-- set this to "" if you don't want perf -->
+    <arg name="my_launch_prefix" value="" /> 
+    <!-- arg name="my_launch_prefix" value="/home/nvidia/install/perf/perf record -g fp"/ -->
+    
+
+
+    <!-- starting nodes --> 
+    <!-- control drone --> 
+    <node pkg="mapping_and_SAR" type="control_drone" name="control_drone" output="screen">
+        <param name="ip_addr" value="$(arg host_ip)"/>
+    </node>
+
+</launch>
