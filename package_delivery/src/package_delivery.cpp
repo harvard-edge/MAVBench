@@ -27,6 +27,7 @@
 #include "std_msgs/Bool.h"
 #include <signal.h>
 #include "common.h"
+#include "timer.h"
 
 using namespace std;
 #include "follow_trajectory.h"
@@ -60,12 +61,21 @@ void control_drone(Drone& drone)
 	cout << "\ty x: set yaw to x\n";
 	cout << "\tp: print pitch, roll, yaw, height\n";
 	cout << "\tc: complete drone setup and continue\n";
-	cout << "\tCtrl-c: quit\n";
+	cout << "\tCtrl-c/q: quit\n";
 
 	std::string cmd("");
 
 	while(cmd != "c") {
 		cin >> cmd;
+
+            if (cmd == "q") {
+              LOG_TIME(package_delivery);
+              cout << "bye~" << endl;
+              raise(SIGINT);
+              return;
+            } else if (cmd == "s") {
+              sleep(5);
+            }
 
 	    if (cmd == "a") {
 	        drone.arm();
@@ -213,6 +223,7 @@ int main(int argc, char **argv)
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
     ros::Rate loop_rate(package_delivery_loop_rate);
+    LOG_TIME(package_delivery);
     while (ros::ok())
 	{
         // *** F:DN arm, disarm, move around before switching to autonomous mode 

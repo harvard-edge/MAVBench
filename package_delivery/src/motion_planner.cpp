@@ -18,6 +18,7 @@
 #include "graph.h"
 #include "global_planner.h"
 #include "package_delivery/get_trajectory.h"
+#include "timer.h"
 
 // Misc messages
 #include <geometry_msgs/Point.h>
@@ -319,6 +320,7 @@ bool known(octomap::OcTree * octree, double x, double y, double z)
 
 bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2)
 {
+    RESET_TIMER();
     // First, check if anything goes underground
     if (n1.z <= 0 ||
             n2.z <= 0)
@@ -352,12 +354,15 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 			for (double a = 0; a <= pi*2; a += angle_step) {
 				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
 
-				if (octree->castRay(start, direction, end, true, distance))
+				if (octree->castRay(start, direction, end, true, distance)) {
+					LOG_ELAPSED(motion_planner);
 					return true;
+                                }
 			}
 		}
 	}
 
+	LOG_ELAPSED(motion_planner);
 	return false;
 }
 
