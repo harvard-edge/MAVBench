@@ -13,7 +13,7 @@ void log_time(const std::string &fname) {
   auto now = std::chrono::system_clock::now();
   auto now_ms = std::chrono::time_point_cast<std::chrono::nanoseconds>(now);
   auto value = now_ms.time_since_epoch();
-  long timestamp = value.count();
+  long long timestamp = value.count();
   log << timestamp << std::endl;
   log.close();
 }
