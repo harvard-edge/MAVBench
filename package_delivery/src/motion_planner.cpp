@@ -819,7 +819,7 @@ void postprocess(piecewise_trajectory& path)
     for (auto it = path.begin(); it != path.end()-1; ) {
         bool shortened = false;
         for (auto it2 = path.end()-1; it2 != it+1 && !shortened; --it2) {
-            if (/* dist(*it, *it2) <= 20 && */ !collision(octree, *it, *it2)) {
+            if (dist(*it, *it2) <= 20 && !collision(octree, *it, *it2)) {
                 it = path.erase(it+1, it2);
                 shortened = true;
             }
