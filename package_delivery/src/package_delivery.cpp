@@ -45,7 +45,7 @@ void sigIntHandler(int sig)
 double dist(coord t, geometry_msgs::Point m)
 {
     // We must convert between the two coordinate systems
-    return std::sqrt((t.x-m.y)*(t.x-m.y) + (t.y-m.x)*(t.y-m.x) + (t.z+m.z)*(t.z+m.z));
+    return std::sqrt((t.x-m.x)*(t.x-m.x) + (t.y-m.y)*(t.y-m.y) + (t.z+m.z)*(t.z-m.z));
 }
 
 
@@ -134,10 +134,11 @@ void action_upon_panic(Drone& drone) {
     ROS_INFO("Done panicking!");
 }
 
+/*
 void action_upon_future_col(Drone& drone) {
     scan_around(drone, 90);
 }
-
+*/
 
 void package_delivery_initialize_params() {
     ros::param::get("/package_delivery/ip_addr",ip_addr__global);
@@ -158,9 +159,9 @@ coord drone_pos_lookup(tf::TransformListener& listener) {
 
     coord result;
     auto tf_translation = transform.getOrigin();
-    result.x = tf_translation.y();
-    result.y = tf_translation.x();
-    result.z = -tf_translation.z();
+    result.x = tf_translation.x();
+    result.y = tf_translation.y();
+    result.z = tf_translation.z();
 }
 
 
@@ -197,14 +198,14 @@ int main(int argc, char **argv)
     ros::NodeHandle future_col_nh;
     ros::Subscriber future_col_sub = 
 		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
-
+    
     auto pos_fun = [&]() {
         return drone.gps();
 
         static tf::TransformListener tfListen;
         return drone_pos_lookup(tfListen);
     };
-
+    
     
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
@@ -231,13 +232,13 @@ int main(int argc, char **argv)
 	    
         // *** F:DN set drone start position	
         auto drone_pos = pos_fun();
-		start.x = drone_pos.y; start.y = drone_pos.x; start.z = -drone_pos.z;
+		start.x = drone_pos.x; start.y = drone_pos.y; start.z = drone_pos.z;
 		std::cout << "Current position is " << drone_pos.x << " " << drone_pos.y << " " << drone_pos.z << std::endl;
 	    
         // *** F:DN set drone goal 	
         std::cout << "Enter goal in following format: x y z" << std::endl;
         std::cin >> input_x >> input_y >> input_z;
-		goal.x = input_y; goal.y = input_x; goal.z = -1*input_z;
+		goal.x = input_x; goal.y = input_y; goal.z = input_z;
         original_start = start;
 		get_trajectory_srv.request.start = start;
 		get_trajectory_srv.request.goal = goal;
@@ -251,7 +252,7 @@ int main(int argc, char **argv)
             while (dist(pos_fun(), goal) > goal_s_error_margin) {
                 ROS_INFO("Distance to target: %f", dist(pos_fun(), goal));
                 auto drone_pos = pos_fun();
-                start.x = drone_pos.y; start.y = drone_pos.x; start.z = -drone_pos.z;
+                start.x = drone_pos.x; start.y = drone_pos.y; start.z = drone_pos.z;
                 get_trajectory_srv.request.start = start;
 
                 // *** F:DN ask for the trajectory
@@ -273,8 +274,8 @@ int main(int argc, char **argv)
                    */
 
                 // Look towards target
-                double dx = goal.y - drone_pos.x;
-                double dy = goal.x - drone_pos.y;
+                double dx = goal.x - drone_pos.x;
+                double dy = goal.y - drone_pos.y;
                 //ROS_INFO("Turning to %f degrees", std::atan(dy / dx) * 180 / M_PI);
                 drone.set_yaw(std::atan(dy / dx) * 180 / M_PI);
 
@@ -334,6 +335,9 @@ int main(int argc, char **argv)
 
                 start = goal;
                 goal = original_start;
+                ROS_INFO_STREAM("her eis my start "<<start);
+                ROS_INFO_STREAM("her eis my start "<<goal);
+                
                 get_trajectory_srv.request.start = start;
                 get_trajectory_srv.request.goal = goal;
 

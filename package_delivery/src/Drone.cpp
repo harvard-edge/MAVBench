@@ -7,7 +7,7 @@
 #include "coord.h"
 #include <geometry_msgs/Point.h>
 #include "timer.h"
-
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 Drone::Drone() : client(0)
 {
 	connect();
@@ -96,12 +96,32 @@ bool Drone::set_yaw(float y)
 	return true;
 }
 
+bool Drone::set_yaw_based_on_quaternion(geometry_msgs::Quaternion q)
+{
+	float pitch, roll, yaw;
+    Eigen::Quaternion<float,Eigen::DontAlign> q_airsim_style;
+    q_airsim_style.x() = q.x;
+    q_airsim_style.y() = q.y;
+    q_airsim_style.z() = q.z;
+    q_airsim_style.w() = q.w;
+    msr::airlib::VectorMath::toEulerianAngle(q_airsim_style, pitch, roll, yaw);
+	
+    try {
+        this->set_yaw(yaw*180 / M_PI);
+    } catch(...) {
+		std::cerr << "set_yaw_based_on_quaternion failed" << std::endl;
+		return false;
+	}
+	return true;
+}
+
 bool Drone::fly_velocity(double vx, double vy, double vz, double duration)
 {
 	try {
 		getCollisionInfo();
-		client->moveByVelocity(vx, vy, vz, duration);
-	} catch(...) {
+		//client->moveByVelocity(vx, vy, vz, duration);
+		client->moveByVelocity(vy,vx, -1*vz, duration);
+    } catch(...) {
 		std::cerr << "fly_velocity failed" << std::endl;
 		return false;
 	}
@@ -125,10 +145,12 @@ coord Drone::gps()
 {
 	getCollisionInfo();
 	auto pos = client->getPosition();
-
+    /*
 	return {pos.x() - initial_pos.x,
         pos.y() - initial_pos.y,
         pos.z() - initial_pos.z};
+    */
+	return { pos.y() - initial_pos.y, pos.x() - initial_pos.x, -1*pos.z() - initial_pos.z};
 }
 
 float Drone::get_yaw()
@@ -149,6 +171,38 @@ float Drone::get_roll()
 	return r*180 / M_PI;
 }
 
+geometry_msgs::Pose Drone::get_geometry_pose(){
+    geometry_msgs::Pose pose;
+	auto q = client->getOrientation();
+	//auto p = client->getPosition();
+    pose.position.x = client->getPosition().y();
+    pose.position.y = client->getPosition().x();
+    pose.position.z = -1*client->getPosition().z();
+    pose.orientation.x = q.x();
+    pose.orientation.y = q.y();
+    pose.orientation.z = q.z();
+    pose.orientation.w = q.w();
+    return pose;
+}
+geometry_msgs::PoseWithCovariance Drone::get_geometry_pose_with_coveraiance(){
+    geometry_msgs::PoseWithCovariance pose_with_covariance;
+    geometry_msgs::Pose pose;
+	
+    auto q = client->getOrientation();
+    pose.position.x = client->getPosition().y();
+    pose.position.y = client->getPosition().x();
+    pose.position.z = -1*client->getPosition().z();
+    pose.orientation.x = q.x();
+    pose.orientation.y = q.y();
+    pose.orientation.z = q.z();
+    pose.orientation.w = q.w();
+    pose_with_covariance.pose = pose;
+    for (int i = 0; i <36; i++) { 
+        //https://answers.ros.org/question/181689/computing-posewithcovariances-6x6-matrix/ 
+        pose_with_covariance.covariance[i] = 0;
+    } 
+    return pose_with_covariance;
+}
 float Drone::get_pitch()
 {
 	auto q = client->getOrientation();

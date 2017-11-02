@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 	    
         // *** F:DN set drone start position	
         auto drone_pos = drone.gps();
-		start.x = drone_pos.y; start.y = drone_pos.x; start.z = -drone_pos.z;
+		start.x = drone_pos.x; start.y = drone_pos.y; start.z = drone_pos.z;
 		std::cout << "Current position is " << drone_pos.x << " " << drone_pos.y << " " << drone_pos.z << std::endl;
 	    
         // *** F:DN set drone goal 	

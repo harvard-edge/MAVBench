@@ -146,6 +146,9 @@ void postprocess(piecewise_trajectory& path);
 //*** F:DN getting the smoothened trajectory
 bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
 {
+    
+    ROS_INFO_STREAM("here is the start stuff"<<req.start);
+    ROS_INFO_STREAM("here is the goal stuff"<<req.goal);
     dont_pull = false;
 
 	//----------------------------------------------------------------- 

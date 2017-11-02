@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 
   ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
   //ROS_ERROR_STREAM("blah"<<ip_addr__global);
-  Drone drone(ip_addr__global.c_str(), port, true);
+  Drone drone(ip_addr__global.c_str(), port);
 
   //dummy segment publisher
   ros::Publisher seg_pub = nh.advertise <multiagent_collision_check::Segment>("evasionSegment", 1);

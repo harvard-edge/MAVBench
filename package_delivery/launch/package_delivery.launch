@@ -1,11 +1,11 @@
 <launch>
     <!-- args -->
     <!-- Behzad's workstation ip -->
-    <!-- arg name="host_ip" value="10.157.34.101" / -->
+    <arg name="host_ip" value="10.157.90.51" /> 
     <!-- Hasans's workstation ip -->
     <!-- arg name="host_ip" value="10.157.90.49" / -->
     <!-- Wenzhi's workstation ip -->
-    <arg name="host_ip" value="10.157.90.62" />
+    <!-- arg name="host_ip" value="10.157.90.62" /-->
 
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)-->
@@ -139,11 +139,9 @@
     </node>
 
 	<!-- rviz -->
-	<comment>
 	<group if="$(arg DEBUG)">
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
 	</group>
-	</comment>
 
 </launch>
 

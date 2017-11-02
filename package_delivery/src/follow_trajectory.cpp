@@ -38,7 +38,7 @@ void follow_trajecotry(package_delivery::get_trajectory get_trajectory_srv, Dron
         auto p = get_trajectory_srv.response.multiDOFtrajectory.points[i];
         auto p_next = get_trajectory_srv.response.multiDOFtrajectory.points[i+1];
 
-        double p_z = -p.transforms[0].translation.z;
+        //double p_z = p.transforms[0].translation.z;
         /* 
            double p_x = p.transforms[0].translation.y;
            double p_y = p.transforms[0].translation.x;
@@ -47,9 +47,9 @@ void follow_trajecotry(package_delivery::get_trajectory get_trajectory_srv, Dron
            double p_y_next = p_next.transforms[0].translation.x;
            double p_z_next = -p_next.transforms[0].translation.z;
            */
-        double v_x = p.velocities[0].linear.y;
-        double v_y = p.velocities[0].linear.x;
-        double v_z = -p.velocities[0].linear.z;
+        double v_x = p.velocities[0].linear.x;
+        double v_y = p.velocities[0].linear.y;
+        double v_z = p.velocities[0].linear.z;
 
         /* 
            double v_x_next = p_next.velocities[0].linear.y;

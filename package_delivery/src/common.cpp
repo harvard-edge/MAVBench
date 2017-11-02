@@ -4,7 +4,9 @@
 #include <random>
 #include "Drone.h"
 
-
+void action_upon_future_col(Drone& drone) {
+    scan_around(drone, 30);
+}
 float distance(float x, float y, float z) {
   return std::sqrt(x*x + y*y + z*z);
 }
