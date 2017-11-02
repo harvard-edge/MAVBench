@@ -3,11 +3,14 @@ project(mapping_and_SAR)
 set(darknet_include_dir  $ENV{HOME}/darknet/include $ENV{HOME}/darknet/src $ENV{HOME})
 set(darknet_lib_dir $ENV{HOME}/darknet/obj)
 set(darknet_lib_dir $ENV{HOME}/darknet/obj)
+set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
+set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
+
+
 #-- collecting all the files in the darknet_obj folder
 #file(GLOB darknet_obj_files
 #    "*.o"
 #)
-set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/package_delivery/src)
 
 set (Airlib_addr  $ENV{HOME}/AirSim/AirLib)
 set (CUDA_OPENCVLIBS
@@ -85,7 +88,7 @@ include_directories(
     ${EIGEN3_INCLUDE_DIR}
     $ENV{HOME}/AirSim/AirLib/include
     $ENV{HOME}/catkin_ws/src/mav-bench/follow_the_leader/
-    $ENV{HOME}/catkin_ws/src/mav-bench/package_delivery/src
+    ${common_utility_include} 
     ${darknet_include_dir}
     ${CUDA_INCLUDE_DIRS}
 )

@@ -3,8 +3,8 @@ project(package_delivery)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11 -g -fno-omit-frame-pointer)
-
-
+set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
+set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
 
 
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
@@ -143,6 +143,7 @@ include_directories(
   ${OpenCV_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${OCTOMAP_INCLUDE_DIRS}
+  ${common_utility_include} 
   $ENV{HOME}/AirSim/AirLib/include
 )
 
@@ -183,11 +184,11 @@ link_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-add_executable(motion_planner src/motion_planner.cpp src/graph.cpp src/global_planner.cpp src/common.cpp src/Drone.cpp src/timer.cpp)
+add_executable(motion_planner src/motion_planner.cpp src/graph.cpp src/global_planner.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(motion_planner package_delivery_generate_messages_cpp)
 target_link_libraries(motion_planner ${catkin_LIBRARIES}  AirLib MavLinkCom rpc pthread  cuda cudart cublas curand )
 
-add_executable(package_delivery src/Drone.cpp src/common.cpp src/follow_trajectory.cpp src/package_delivery.cpp src/timer.cpp)
+add_executable(package_delivery ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp src/follow_trajectory.cpp src/package_delivery.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(package_delivery package_delivery_generate_messages_cpp)
 target_link_libraries(package_delivery ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
@@ -195,14 +196,14 @@ target_link_libraries(package_delivery ${catkin_LIBRARIES} AirLib MavLinkCom rpc
 #add_executable(panic src/panic.cpp)
 #target_link_libraries(panic ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
-add_executable(panic_pcl src/panic_pcl.cpp src/common.cpp src/Drone.cpp src/timer.cpp)
+add_executable(panic_pcl ${common_utility_src}/panic_pcl.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(panic_pcl ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
-add_executable(future_collision src/future_collision src/Drone.cpp src/timer.cpp)
+add_executable(future_collision src/future_collision ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(future_collision ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
 
-add_executable(scanning src/Drone.cpp src/common.cpp src/follow_trajectory src/scanning.cpp src/timer.cpp)
+add_executable(scanning ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp src/follow_trajectory.cpp src/scanning.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(scanning package_delivery_generate_messages_cpp)
 target_link_libraries(scanning ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 #
