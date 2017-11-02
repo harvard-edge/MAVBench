@@ -26,8 +26,6 @@ struct coord {
 template <class T>
 bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 {
-        RESET_TIMER();
-
 	const double pi = 3.14159265359;
 
 	// The drone is modeled as a cylinder.
@@ -73,20 +71,19 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 					marker.pose.position.y = n1.y;
 					marker.pose.position.z = n1.z;
 
-					LOG_ELAPSED(future_collision);
 					return true;
 				}
 			}
 		}
 	}
 
-        LOG_ELAPSED(future_collision);
 	return false;
 }
 
 
 void pull_octomap(const octomap_msgs::Octomap& msg)
 {
+    RESET_TIMER();
     if (octree != nullptr) {
         delete octree;
     }
@@ -101,6 +98,7 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
     if (octree == nullptr) {
         ROS_ERROR("Octree could not be pulled.");
     }
+    LOG_ELAPSED(future_collision_pull);
 }
 
 
@@ -112,6 +110,7 @@ void pull_traj(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg)
 
 bool check_for_collisions()
 {
+    RESET_TIMER();
     if (octree == nullptr || traj.points.size() < 1) {
         return false;
     }
@@ -126,6 +125,7 @@ bool check_for_collisions()
             col = true;
     }
 
+    LOG_ELAPSED(future_collision);
     return col;
 }
 

@@ -384,6 +384,7 @@ std::vector<graph::node_id> nodes_in_radius(/*const*/ graph& g, graph::node_id n
 
 void generate_octomap(const octomap_msgs::Octomap& msg)
 {
+    RESET_TIMER();
     if (dont_pull)
         return;
 
@@ -401,6 +402,8 @@ void generate_octomap(const octomap_msgs::Octomap& msg)
     if (octree == nullptr) {
         ROS_ERROR("Octree could not be pulled.");
     }
+
+    LOG_ELAPSED(motion_planner_pull);
 }
 graph create_lawnMower_path(geometry_msgs::Point start, int width, int length, int n_pts_per_dir, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id)
 
