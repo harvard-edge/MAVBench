@@ -66,21 +66,21 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
 
 				if (octree->castRay(start, direction, end, true, distance)) {
-                    // ROS_WARN("future collision detected on %f, %f ,%f", n1.x, n1.y, n1.z);
-                    
-                    marker.header.stamp = ros::Time();
-                    marker.pose.position.x = n1.x;
-                    marker.pose.position.y = n1.y;
-                    marker.pose.position.z = n1.z;
-                    
+					// ROS_WARN("future collision detected on %f, %f ,%f", n1.x, n1.y, n1.z);
+
+					marker.header.stamp = ros::Time();
+					marker.pose.position.x = n1.x;
+					marker.pose.position.y = n1.y;
+					marker.pose.position.z = n1.z;
+
+					LOG_ELAPSED(future_collision);
 					return true;
-                }
+				}
 			}
 		}
 	}
 
         LOG_ELAPSED(future_collision);
-
 	return false;
 }
 

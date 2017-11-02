@@ -354,8 +354,10 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 			for (double a = 0; a <= pi*2; a += angle_step) {
 				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
 
-				if (octree->castRay(start, direction, end, true, distance))
+				if (octree->castRay(start, direction, end, true, distance)) {
+					LOG_ELAPSED(motion_planner);
 					return true;
+                                }
 			}
 		}
 	}
