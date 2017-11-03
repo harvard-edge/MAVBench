@@ -1,6 +1,8 @@
 #include "objdetect.h"
 #include <vector>
 #include <opencv2/objdetect/objdetect.hpp>
+#include <ros/ros.h>
+#include <ros/package.h>
 
 #define haar_scaleFactor 1.05
 #define haar_minNeighbors 3
@@ -13,7 +15,7 @@
 // HOG Detector
 HOGDetector::HOGDetector()
 {
-	hog_cpu.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
+    hog_cpu.setSVMDetector(cv::HOGDescriptor::getDefaultPeopleDetector());
 
 #if GPU==1
 #if CV_MAJOR_VERSION==3
@@ -23,9 +25,11 @@ HOGDetector::HOGDetector()
 
     hog_gpu = cv::cuda::HOG::create();
 	hog_gpu->setSVMDetector(hog_gpu->getDefaultPeopleDetector());
+    hog_gpu->setGroupThreshold(0);  
 #else
     hog_gpu.setSVMDetector(cv::gpu::HOGDescriptor::getDefaultPeopleDetector());
 #endif //CV_MAJOR_VERSION==3
+
 
     // Warm up GPUS
     for (int i = 0; i < 3; i++) {
@@ -33,6 +37,8 @@ HOGDetector::HOGDetector()
         //detect_person_gpu(blank_frame);
     }
 #endif //GPU==1
+
+ ROS_INFO_STREAM("after what");	
 }
 
 bounding_box HOGDetector::detect_person(cv::Mat frame)
@@ -44,6 +50,7 @@ bounding_box HOGDetector::detect_person(cv::Mat frame)
 #endif
 }
 
+static const std::string OPENCV_WINDOW = "Image window";
 bounding_box HOGDetector::detect_person_cpu(cv::Mat frame)
 {
 	bounding_box result = {-1.0, -1.0, -1.0, -1.0, -1.0};
@@ -57,7 +64,7 @@ bounding_box HOGDetector::detect_person_cpu(cv::Mat frame)
 #else
 	cv::cvtColor(frame, gray, CV_RGB2GRAY);
 #endif
-
+    	
 	hog_cpu.detectMultiScale(gray, targets, confidences);
 
 	if (targets.size() > 0) {
@@ -84,7 +91,8 @@ bounding_box HOGDetector::detect_person_cpu(cv::Mat frame)
 #if GPU==1
 bounding_box HOGDetector::detect_person_gpu(cv::Mat frame)
 {
-	bounding_box result = {-1.0, -1.0, -1.0, -1.0, -1.0};
+ //ROS_INFO_STREAM("coming to gpu HOG detector");	
+    bounding_box result = {-1.0, -1.0, -1.0, -1.0, -1.0};
 	std::vector<cv::Rect> targets;
 
 	// Convert to grayscale
@@ -96,13 +104,20 @@ bounding_box HOGDetector::detect_person_gpu(cv::Mat frame)
 #endif
 
 #if CV_MAJOR_VERSION==3
-	std::vector<double> confidences;
+	
+    //ROS_INFO_STREAM("MAJFOR 3");	
+    std::vector<double> confidences;
 	cv::cuda::GpuMat image_gpu(gray);
-
-	hog_gpu->detectMultiScale(image_gpu, targets, &confidences);
-
+    //cv::Mat my_pic_temp(image_gpu);
+    //cv::imshow(OPENCV_WINDOW, gray);
+    //cv::waitKey(3);
+    
+    hog_gpu->detectMultiScale(image_gpu, targets, &confidences);
+    
+    //ROS_INFO_STREAM("image size"<<gray.rows<<" " << gray.cols);
 	if (targets.size() > 0) {
-		int max_conf = 0;
+	    //ROS_INFO_STREAM("target size greator than zero");	
+        int max_conf = 0;
 		int max_conf_id = 0;
 
 		for (int i = 0; i < targets.size(); i++) {
@@ -121,7 +136,6 @@ bounding_box HOGDetector::detect_person_gpu(cv::Mat frame)
 
 #else
 	cv::gpu::GpuMat gpu_img;
-
 	gpu_img.upload(gray);
 
 	hog_gpu.detectMultiScale(gpu_img, targets);
@@ -149,7 +163,7 @@ HaarDetector::HaarDetector()
 #if GPU==1
 #if CV_MAJOR_VERSION==3
 	if(cv::cuda::getCudaEnabledDeviceCount() == 0)
-		return -1;
+		return;
 	cv::cuda::setDevice(0);
 
     haar_gpu = cv::cuda::CascadeClassifier::create("OPENCV_FOLDER/data/haarcascades_cuda/haarcascade_fullbody.xml");
@@ -225,7 +239,8 @@ bounding_box HaarDetector::detect_person_gpu(cv::Mat frame)
 		result.w = targets[0].width;
 		result.h = targets[0].height;
 		result.conf = 1.0;
-	}error: (-215) img.type() == CV_8UC1 || img.type() == CV_8UC4 in function detectMultiScale
+	}
+//error: (-215) img.type() == CV_8UC1 || img.type() == CV_8UC4 in function detectMultiScale
 #else
 	int detections_num;
 	cv::Mat faces_downloaded, frameDisp;
@@ -256,11 +271,12 @@ bounding_box HaarDetector::detect_person_gpu(cv::Mat frame)
 
 
 // YOLODetector
-char datacfg[] = "darknet/cfg/coco.data";
-char cfgfile[] = "darknet/cfg/yolo.cfg";
-char weightfile[] = "/media/ubuntu/0403-0201/yolo.weights";
-float thresh = 0.24;
-float hier_thresh = 0.5;
+char datacfg[] = "/home/nvidia/darknet/cfg/coco.data";
+char cfgfile[] = "/home/nvidia/darknet/cfg/yolo.cfg";
+//char weightfile[] = "/media/ubuntu/0403-0201/yolo.weights";
+char weightfile[] = "/home/nvidia/Downloads/yolo.weights";
+float thresh = 0.8;
+float hier_thresh = 0.8;
 
 YOLODetector::YOLODetector()
 {
@@ -269,7 +285,7 @@ YOLODetector::YOLODetector()
 #endif
 
     options = darknet::read_data_cfg(datacfg);
-    names = darknet::get_labels("darknet/data/coco.names");
+    names = darknet::get_labels("/home/nvidia/darknet/data/coco.names");
 
     net = darknet::parse_network_cfg(cfgfile);
     darknet::load_weights(&net, weightfile);
@@ -335,7 +351,7 @@ bounding_box YOLODetector::best_detection(const darknet::image& im, int num, flo
         float prob = probs[i][_class];
 
         if(prob > thresh && prob > max_prob && strcmp("person", names[_class]) == 0){
-    		prob = max_prob;
+    		max_prob = prob;
 
             darknet::box b = boxes[i];
 
@@ -357,9 +373,10 @@ bounding_box YOLODetector::best_detection(const darknet::image& im, int num, flo
             result.y = top;
             result.w = right - left;
             result.h = bot - top;
-            result.conf = 1.0;
+            result.conf = max_prob;
         }
     }
 
     return result;
 }
+

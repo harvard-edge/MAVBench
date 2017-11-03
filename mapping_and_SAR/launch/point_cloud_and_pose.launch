@@ -65,16 +65,6 @@
         <param name="ip_addr" value="$(arg host_ip)"/>
     </node>
 	
-    
-    <!-- following the tejactory --> 
-    <!-- group ns="$(arg mav_name)" -->
-    <node pkg="mapping_and_SAR" type="follow_trajectory" name="follow_trajectory" output="screen">
-        <rosparam command="load" file="$(arg param_file)" />
-        <param name="mav_name" value="$(arg mav_name)"/>
-        <!-- param name="yaw_t" value=".75"/ -->
-        <param name="ip_addr" value="$(arg host_ip)"/>
-        <param name="segment_dedicated_time" value="1.0"/>
-    </node>
     <!-- /group --> 
     
     <!-- Nodelet manager for this pipeline -->

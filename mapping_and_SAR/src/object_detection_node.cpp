@@ -47,8 +47,6 @@ static mapping_and_SAR::OD result;
 void obj_detect_call_back(const sensor_msgs::ImageConstPtr& msg)
 {
     
-    
-    
     const double detect_thresh = 0.8;
     //cv::Mat img;
     cv::Mat depth;
@@ -103,6 +101,7 @@ int main(int argc, char** argv){
   ros::init(argc, argv, "object_detection_node");
   ros::NodeHandle nh;
   
+  ROS_INFO_STREAM("starting object detection"); 
   std::string ns = ros::this_node::getName();
   if (!ros::param::get("/mav_name", mav_name__global)) {
     ROS_FATAL("Could not start object detection node. Parameter missing! Looking for %s",
@@ -112,7 +111,7 @@ int main(int argc, char** argv){
 
   
   ros::Publisher obj_det_pub = nh.advertise <mapping_and_SAR::OD>("/OD_topic", 4);
-  ros::Subscriber raw_image_sub  = nh.subscribe("/stereo/left/image_raw", 1, obj_detect_call_back);
+  ros::Subscriber raw_image_sub  = nh.subscribe("/Airsim/right/image_raw", 1, obj_detect_call_back);
   
   uint16_t port = 41451;
   std::string ip_addr__global;
@@ -122,7 +121,6 @@ int main(int argc, char** argv){
     ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for /ip_addr");
     return -1;
   }
-  
   result.found = false;
   ros::Rate r(2); 
   while (ros::ok()) {

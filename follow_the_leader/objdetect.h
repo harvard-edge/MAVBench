@@ -1,9 +1,9 @@
 #ifndef OBJDETECT_H
 #define OBJDETECT_H
-
 #include <opencv2/opencv.hpp>
 #include "bounding_box.h"
-
+#define GPU 1
+#define CPU 0
 #if GPU==1
 #if CV_MAJOR_VERSION==3
 #include <opencv2/cudaobjdetect.hpp>
@@ -28,7 +28,7 @@ extern "C" {
 #include "darknet/src/option_list.h"
 #include "darknet/src/blas.h"
 image ipl_to_image(IplImage* src);
-#define GPU 0
+#define GPU 1
 #define CUDNN 0
 
 #else
@@ -47,7 +47,7 @@ image ipl_to_image(IplImage* src);
 #include "darknet/src/blas.h"
 image ipl_to_image(IplImage* src);
 void cuda_set_device(int n);
-#define __cplusplus
+#define __cplusplus 201103
 #define CUDNN 0
 
 #else
@@ -64,13 +64,15 @@ void cuda_set_device(int n);
 #include "darknet/src/blas.h"
 image ipl_to_image(IplImage* src);
 void cuda_set_device(int n);
-#define __cplusplus
+#define __cplusplus 201103
 
 #endif // CUDNN==0
 
 #endif //GPU==1
 }
 }
+
+
 
 class HOGDetector{
 public:
@@ -116,6 +118,7 @@ private:
 #endif // GPU==1
 };
 
+
 class YOLODetector{
 public:
 	YOLODetector();
@@ -134,5 +137,7 @@ public:
 	FRCNNDetector();
 	bounding_box detect_person(cv::Mat frame);
 };
+
+
 
 #endif

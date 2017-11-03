@@ -122,7 +122,7 @@ int main(int argc, char** argv)
   
   
   double segment_dedicated_time = yaw_t + dt;
-  ROS_INFO("before controol drone");
+  //ROS_INFO("before controol drone");
   control_drone(drone);
 
 
