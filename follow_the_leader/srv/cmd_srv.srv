@@ -1,0 +1,7 @@
+string cmd
+int64 img_id
+bounding_box_msg bb
+---
+string status
+int64 img_id
+bounding_box_msg bb

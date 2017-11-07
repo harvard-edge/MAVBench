@@ -7,7 +7,7 @@
 #include <math.h>
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-#include "drone.h"
+#include "Drone.h"
 #include "objdetect.h"
 #include "track.h"
 #include "pid.h"

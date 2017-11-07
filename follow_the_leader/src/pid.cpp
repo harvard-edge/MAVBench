@@ -1,4 +1,5 @@
 #include "pid.h"
+#include <iostream>
 
 PID::PID(double Kp, double Ki, double Kd, double max, double min) :
 	_Kp(Kp), _Ki(Ki), _Kd(Kd), _max(max), _min(min), _integral(0), _prev_error(0)
@@ -19,8 +20,9 @@ double PID::calculate(double sensor, double target, double dt)
 	_prev_error = error;
 
 	result = prop + integ + deriv;
-
-	if (result >= _max)
+    std::cout<<"prop is "<<prop << "result is"<<result <<std::endl;
+	
+    if (result >= _max)
 		return _max;
 	else if (result <= _min)
 		return _min;
