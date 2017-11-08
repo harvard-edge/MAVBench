@@ -1,0 +1,26 @@
+some points about parameters:
+  - you want the extension_range < sensor_max_range. This is because it doesn't make sense
+  to make an atempt to extend a branch by an amount that is bigger than "visibility_range"
+  cause you run into an unknown (which will be dismissed)
+  -system/bb? is for collision avoidance. This needs to be set to the dimension of the 
+  drone
+  -bb?/min and max determine the size of the map that you'd like to explore (if
+  softBounds is set to false)
+  -dt determines how long to sleep between two points. however, since set_yaw takes 
+  some time aswell (inaddition to the translation), we need to segment_dedicated_time job
+  is that. Note that we even sleep a bit longer (1.5*segment_dedicated_time) to account for other computation
+  
+nbvp/tree/initial_iterations: determines how many iterations (if we found at least 
+ one gain>0 path) before wanting to leave iterate. Note that if no gain found,
+ we use cuttoff_iterations as the termination criteria
+
+- degressive_coeff is important cause it prevents the agent to oscilate. This is because when you cover some area, there are more potential for further areas (possibly even in the other direction to
+  have unmapped areas), however, you want to make sure you cover what's closest, that way you won't keep oscilating.
+
+  - gain/free is important because it allows you to have opportunities to move around
+
+- I think it makes sense to have:
+    nbvp/gain/range + nbvp/tree/extension_range > sensor_max_range. This is because
+    this way, we still will consider the gain of areas thare further than what 
+    is (and was at the point of visit) visible
+
