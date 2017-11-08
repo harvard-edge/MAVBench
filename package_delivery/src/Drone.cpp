@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <chrono>
 #include "common/Common.hpp"
 #include "coord.h"
 #include <geometry_msgs/Point.h>
@@ -9,13 +10,13 @@
 Drone::Drone() : client(0)
 {
 	connect();
-    initial_pos = gps();
+    initial_gps = gps();
 }
 
 Drone::Drone(const std::string& ip_addr, uint16_t port) : client(0)
 {
 	connect(ip_addr, port);
-    initial_pos = gps();
+    initial_gps = gps();
 }
 
 Drone::~Drone()
@@ -84,8 +85,17 @@ bool Drone::takeoff(double h)
 
 bool Drone::set_yaw(float y)
 {
+    float yaw_rate = 10.0;
+    float time_to_spin = (y-get_yaw()) / yaw_rate;
+
+    if (time_to_spin < 0) {
+        yaw_rate *= -1;
+        time_to_spin *= -1;
+    }
+
 	try {
 		client->rotateToYaw(y, 60, 5);
+        // client->rotateByYawRate(yaw_rate, time_to_spin);
 	}catch(...){
 		std::cerr << "set_yaw failed" << std::endl;
 		return false;
@@ -122,9 +132,31 @@ coord Drone::gps()
 {
 	auto pos = client->getPosition();
 
-	return {pos.x() - initial_pos.x,
-        pos.y() - initial_pos.y,
-        pos.z() - initial_pos.z};
+	return {pos.x() - initial_gps.x,
+        pos.y() - initial_gps.y,
+        pos.z() - initial_gps.z};
+}
+
+coord Drone::position(std::string localization_method)
+{
+    tf::StampedTransform transform;
+
+    try{
+      tfListen.lookupTransform("/world", "/"+localization_method,
+                               ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      ros::Duration(1.0).sleep();
+    }
+
+    coord result;
+    auto tf_translation = transform.getOrigin();
+    result.x = tf_translation.y();
+    result.y = tf_translation.x();
+    result.z = -tf_translation.z();
+
+    return result;
 }
 
 float Drone::get_yaw()
@@ -152,5 +184,11 @@ float Drone::get_pitch()
     msr::airlib::VectorMath::toEulerianAngle(q, p, y, r);
 
 	return p*180 / M_PI;
+}
+
+int Drone::collisions()
+{
+    auto col_info = client->getCollisionInfo();
+    return col_info.collison_count;
 }
 

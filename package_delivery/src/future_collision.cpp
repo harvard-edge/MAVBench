@@ -128,7 +128,7 @@ void future_collision_initialize_params() {
     ros::param::get("/motion_planner/drone_radius", drone_radius__global);
     ros::param::get("/motion_planner/drone_height", drone_height__global);
 
-    marker.header.frame_id = "fcu";
+    marker.header.frame_id = "world";
     marker.ns = "my_namespace";
     marker.id = 0;
     marker.type = visualization_msgs::Marker::SPHERE;

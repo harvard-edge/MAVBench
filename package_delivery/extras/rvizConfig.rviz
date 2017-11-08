@@ -60,7 +60,7 @@ Visualization Manager:
         All Enabled: true
         camera:
           Value: true
-        fcu:
+        world:
           Value: true
         world:
           Value: true
@@ -71,7 +71,7 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          fcu:
+          world:
             camera:
               {}
       Update Interval: 0
@@ -167,7 +167,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
-    Fixed Frame: fcu
+    Fixed Frame: world
     Frame Rate: 30
   Name: root
   Tools:
