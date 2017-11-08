@@ -8,17 +8,12 @@
 #include <algorithm>
 #include <iostream>
 #include <thread>
-#include <functional>
-#include <limits>
-#include <signal.h>
-
 // My headers
 #include "common.h"
 #include "Drone.h"
 #include "graph.h"
 #include "global_planner.h"
 #include "package_delivery/get_trajectory.h"
-#include "timer.h"
 
 // Misc messages
 #include <geometry_msgs/Point.h>
@@ -43,15 +38,6 @@
 #include <mav_trajectory_generation_ros/ros_visualization.h>
 
 
-// Type-defs
-using piecewise_trajectory = std::vector<graph::node>;
-using smooth_trajectory = mav_trajectory_generation::Trajectory;
-using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
-
-
-// Parameters
-graph::node_id start_id,  goal_id;
-std::string motion_planning_core_str;
 bool DEBUG__global;
 double drone_height__global;
 double drone_radius__global;
@@ -65,13 +51,16 @@ double max_dist_to_connect_at__global;
 double sampling_interval__global;
 double v_max__global, a_max__global;
 int max_roadmap_size__global;
-std::function<piecewise_trajectory (geometry_msgs::Point, geometry_msgs::Point, int, int , int, octomap::OcTree *)> motion_planning_core;
 
+
+// Type-defs
+using piecewise_trajectory = std::vector<graph::node>;
+using smooth_trajectory = mav_trajectory_generation::Trajectory;
+using PointCloud = pcl::PointCloud<pcl::PointXYZ>;
 
 //*** F:DN global variables
 octomap::OcTree * octree = nullptr;
 trajectory_msgs::MultiDOFJointTrajectory traj_topic;
-bool dont_pull = false; // TODO: get rid of this
 
 // The following block of global variables only exist for debugging purposes
 visualization_msgs::MarkerArray smooth_traj_markers;
@@ -80,13 +69,6 @@ octomap_msgs::Octomap omp;
 PointCloud::Ptr pcl_ptr{new pcl::PointCloud<pcl::PointXYZ>};
 visualization_msgs::Marker graph_conn_list;
 ros::Publisher graph_conn_pub;
-
-// ** F:DN closes program as soon as Ctrl-C is pressed
-void sigIntHandler(int sig)
-{
-    ros::shutdown();
-    exit(0);
-}
 
 // *** F:DN calculating the distance between two nodes in the graph.
 double dist(const graph::node& n1, const graph::node& n2);
@@ -115,17 +97,21 @@ void generate_octomap(const octomap_msgs::Octomap& msg);
 // *** F:DN Initializes the PRM.
 graph create_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id);
 
-piecewise_trajectory lawn_mower(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
+piecewise_trajectory lawn_mower(geometry_msgs::Point start, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
+
+
 
 // *** F:DN Increases the density of the PRM.
-void extend_PRM(graph &roadmap, octomap::OcTree * octree);
+void grow_PRM(graph &roadmap, octomap::OcTree * octree);
 
 
 // ***F:DN Use the PRM sampling method to find a piecewise path
-piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
+piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree);
+
 
 // ***F:DN Use the RRT sampling method to find a piecewise path
-piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
+piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree);
+
 
 // *** F:DN Optimize and smoothen a piecewise path without causing any new collisions.
 smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree);
@@ -146,19 +132,28 @@ void postprocess(piecewise_trajectory& path);
 //*** F:DN getting the smoothened trajectory
 bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
 {
-    
-    ROS_INFO_STREAM("here is the start stuff"<<req.start);
-    ROS_INFO_STREAM("here is the goal stuff"<<req.goal);
-    dont_pull = false;
-
 	//----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
 	piecewise_trajectory piecewise_path;
 	smooth_trajectory smooth_path;
-    // auto motion_planning_core = RRT; // TODO: parameter
-    // auto motion_planning_core = PRM;
-
+    
+    //TODO: dynamically assign the function, for the time being, comment in,out
+    auto motion_planning_core = lawn_mower; //default
+    /* 
+    auto motion_planning_core = PRM; //default
+    
+    if (req.app_name == "scanning"){
+        auto motion_planning_core = lawn_mower;
+    }else if (req.app_name == "package_delivery"){
+    //auto motion_planning_core = RRT;
+        auto motion_planning_core = PRM;
+    }else {
+        ROS_ERROR("We don't support this application. Don't be too demanding");
+        ROS_ERROR("Shutting down the main thread now");
+        ros::shutdown();
+    }
+    */
 
     //----------------------------------------------------------------- 
     // *** F:DN Body 
@@ -167,9 +162,23 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     	ROS_ERROR("Octomap is not available.");
     	return false;
     }
-
-    piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length ,req.n_pts_per_dir, octree);
+    
+    //TODO: dynamically assign the function
+    //*** F:DN temporary solution, comment in, out to pick the right app
+    //*** F:DN for scanning 
+    piecewise_path = motion_planning_core(req.start, req.width, req.length ,req.n_pts_per_dir, octree);
+    //*** F:DN for package_delivery
     //piecewise_path = motion_planning_core(req.start, req.goal, octree);
+    
+    /* 
+    if (req.app_name== "scanning"){
+        piecewise_path = motion_planning_core(req.start, req.width, req.length ,req.n_pts_per_dir, octree);
+    }else if (req.app_name == "package_delivery"){
+        piecewise_path = motion_planning_core(req.start, req.goal, octree);
+    }
+    */
+
+
 
     if (piecewise_path.size() == 0) {
         ROS_ERROR("Empty path returned");
@@ -178,16 +187,12 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 
     ROS_INFO("Path size: %d. Now post-processing...", piecewise_path.size());
 
-    if (motion_planning_core_str != "lawn_mower") {
-        postprocess(piecewise_path);
-    }
+    //postprocess(piecewise_path);
 
     ROS_INFO("Path size: %d. Now smoothening...", piecewise_path.size());
 
     // Smoothen the path and build the multiDOFtrajectory response
-    //if ( motion_planning_core_str != "lawn_mower") {
-     smooth_path = smoothen_the_shortest_path(piecewise_path, octree);
-    //}
+    smooth_path = smoothen_the_shortest_path(piecewise_path, octree);
 	
     create_response(res, smooth_path);
 
@@ -200,40 +205,24 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 
 // *** F:DN initializing all the global variables 
 void motion_planning_initialize_params() {
-
     ros::param::get("motion_planner/max_roadmap_size", max_roadmap_size__global);
     ros::param::get("/motion_planner/sampling_interval", sampling_interval__global);
     ros::param::get("/motion_planner/rrt_step_size", rrt_step_size__global);
     ros::param::get("/motion_planner/rrt_bias", rrt_bias__global);
     ros::param::get("/motion_planner/x_dist_to_sample_from__low_bound", x_dist_to_sample_from__low_bound__global);
     ros::param::get("/motion_planner/x_dist_to_sample_from__high_bound", x_dist_to_sample_from__high_bound__global);
-
     ros::param::get("/motion_planner/y_dist_to_sample_from__low_bound", y_dist_to_sample_from__low_bound__global);
     ros::param::get("/motion_planner/y_dist_to_sample_from__high_bound", y_dist_to_sample_from__high_bound__global);
     ros::param::get("/motion_planner/z_dist_to_sample_from__low_bound", z_dist_to_sample_from__low_bound__global);
     ros::param::get("/motion_planner/z_dist_to_sample_from__high_bound", z_dist_to_sample_from__high_bound__global);
     ros::param::get("/motion_planner/nodes_to_add_to_roadmap", nodes_to_add_to_roadmap__global);
     ros::param::get("/motion_planner/max_dist_to_connect_at", max_dist_to_connect_at__global);
-
     ros::param::get("/motion_planner/drone_radius", drone_radius__global);
     ros::param::get("/motion_planner/drone_height", drone_height__global);
     ros::param::get("/motion_planner/v_max", v_max__global);
     ros::param::get("/motion_planner/a_max", a_max__global);
     ros::param::get("ros_DEBUG", DEBUG__global);
     //std::cout<<"max_dist_to_"<<max_dist_to_connect_at__global<<std::endl;
-    
-    ros::param::get("/motion_planner/motion_planning_core", motion_planning_core_str);
-    if (motion_planning_core_str == "PRM")
-        motion_planning_core = PRM;
-    else if (motion_planning_core_str == "RRT")
-        motion_planning_core = RRT;
-    else if (motion_planning_core_str == "lawn_mower")
-        motion_planning_core = lawn_mower;
-    else{
-        std::cout<<"this motion planning type is note defined"<<std::endl;
-        exit(0);
-    }
-
 }
 
 
@@ -243,14 +232,14 @@ int main(int argc, char ** argv)
     //----------------------------------------------------------------- 
     // *** F:DN variables	
     //----------------------------------------------------------------- 
+    graph::node_id start_id,  goal_id;
     graph roadmap;
     std::vector<graph::node> piecewise_path;
 	octomap::OcTree * octree;
     ros::init(argc, argv, "motion_planner");
     ros::NodeHandle nh;
     motion_planning_initialize_params();
-    signal(SIGINT, sigIntHandler);
-
+    
     // *** F:DN topics and services
     ros::Subscriber octomap_sub = nh.subscribe("octomap_full", 1, generate_octomap);
     ros::ServiceServer service = nh.advertiseService("get_trajectory_srv", get_trajectory_fun);
@@ -262,14 +251,13 @@ int main(int argc, char ** argv)
     graph_conn_pub = nh.advertise<visualization_msgs::Marker>("graph_conns", 100);
 	
 	
-    pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "world";
+    pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "fcu";
     graph_conn_list.type = visualization_msgs::Marker::LINE_LIST;
     graph_conn_list.action = visualization_msgs::Marker::ADD;
     graph_conn_list.scale.x = 0.1;
     graph_conn_list.pose.orientation.w = 1;
     graph_conn_list.color.r = 1;
     graph_conn_list.color.a = 1;
-
     /* //TODO place a sanity check making sure that panic distance is smaller than halo
     float panic_distance = ros::param::get("/panic_pcl/safe_distance",panic_distance);
     float  
@@ -287,9 +275,9 @@ int main(int argc, char ** argv)
             smooth_traj_vis_pub.publish(smooth_traj_markers);
             piecewise_traj_vis_pub.publish(piecewise_traj_markers);
             graph_conn_pub.publish(graph_conn_list);
-            octo_pub.publish(omp);
-            pcl_pub.publish(pcl_ptr);
-        }
+        }	
+        octo_pub.publish(omp);
+		pcl_pub.publish(pcl_ptr);
         traj_pub.publish(traj_topic);
 		ros::spinOnce();
 		pub_rate.sleep();
@@ -323,21 +311,27 @@ bool known(octomap::OcTree * octree, double x, double y, double z)
 
 bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2)
 {
-    RESET_TIMER();
-    // First, check if anything goes underground
-    if (n1.z <= 0 ||
-            n2.z <= 0)
-        return true;
-            
-    const double pi = 3.14159265359;
+	const double pi = 3.14159265359;
 
 	// The drone is modeled as a cylinder.
 	// Angles are in radians and lengths are in meters.
+
     
-    double height = drone_height__global; 
+    static double height = [] () {
+        double h;
+        h = drone_height__global; 
+        //ros::param::get("/motion_planner/drone_height__global", h);
+        return h;
+    } ();
+
 
     //static double height = drone_heigh__global;
-    double radius = drone_radius__global; 
+    static double radius = [] () {
+        double r;
+        r = drone_radius__global; 
+        //ros::param::get("/motion_planner/drone_radius__global", r);
+        return r;
+    } ();
 
 	const double angle_step = pi/4;
 	const double radius_step = radius/3;
@@ -357,15 +351,12 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 			for (double a = 0; a <= pi*2; a += angle_step) {
 				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
 
-				if (octree->castRay(start, direction, end, true, distance)) {
-					LOG_ELAPSED(motion_planner);
+				if (octree->castRay(start, direction, end, true, distance))
 					return true;
-                                }
 			}
 		}
 	}
 
-	LOG_ELAPSED(motion_planner);
 	return false;
 }
 
@@ -387,10 +378,6 @@ std::vector<graph::node_id> nodes_in_radius(/*const*/ graph& g, graph::node_id n
 
 void generate_octomap(const octomap_msgs::Octomap& msg)
 {
-    RESET_TIMER();
-    if (dont_pull)
-        return;
-
     if (octree != nullptr) {
         delete octree;
     }
@@ -405,9 +392,8 @@ void generate_octomap(const octomap_msgs::Octomap& msg)
     if (octree == nullptr) {
         ROS_ERROR("Octree could not be pulled.");
     }
-
-    LOG_ELAPSED(motion_planner_pull);
 }
+
 graph create_lawnMower_path(geometry_msgs::Point start, int width, int length, int n_pts_per_dir, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id)
 
 {
@@ -429,14 +415,13 @@ graph create_lawnMower_path(geometry_msgs::Point start, int width, int length, i
     //*** F:DN generate all the nodes
         for (int i = 0 ; i < n_pts_per_dir; i++) {
             for (int j = 0 ; j < n_pts_per_dir; j++) {
-
-                ROS_INFO("%f %f", x, y);
                 if (i==0 && j==0) {
                     graph::node_id cur_node_id = roadmap.add_node(
                             x, y, start.z);
                 }
                 else{
                     graph::node_id cur_node_id = roadmap.add_node(x, y, start.z);
+                    ROS_INFO("%f %f", x, y);
                     roadmap.connect(cur_node_id, prev_node_id, 
                             dist(roadmap.get_node(cur_node_id), 
                                 roadmap.get_node(prev_node_id)));
@@ -445,29 +430,8 @@ graph create_lawnMower_path(geometry_msgs::Point start, int width, int length, i
                 y +=y_step;
                 prev_node_id = cur_node_id; 
             }
-	   
-            /*
-            if ((i+1)  < n_pts_per_dir) { 
-                    
-                    ROS_INFO("%f %f", x, y);
-		    x += (x_step/3); 
-	            cur_node_id = roadmap.add_node(x, y, start.z);
-		    roadmap.connect(cur_node_id, prev_node_id, 
-				    dist(roadmap.get_node(cur_node_id), 
-					    roadmap.get_node(prev_node_id)));
-		    prev_node_id = cur_node_id; 
-                    ROS_INFO("%f %f", x, y);
-		    x += (x_step/3); 
-		    cur_node_id = roadmap.add_node(x, y, start.z);
-		    roadmap.connect(cur_node_id, prev_node_id, 
-				    dist(roadmap.get_node(cur_node_id), 
-					    roadmap.get_node(prev_node_id)));
-		    prev_node_id = cur_node_id; 
-		    x += (x_step/3);
-	    } 
-             */          
-	    x += x_step;
-	    y_step *= -1;
+            y_step *= -1;
+            x += x_step; 
     }
    
     // ***F:DN returning back the the origin
@@ -484,6 +448,7 @@ graph create_lawnMower_path(geometry_msgs::Point start, int width, int length, i
 	}
     return roadmap;
 }
+
 
 graph create_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id)
 {
@@ -502,37 +467,14 @@ graph create_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap:
 	// Check whether the path is even possible.
 	// The path is impossible if the start or end coordinates are in an occupied part of the octomap.
 	
-    /*
 	if (occupied(octree, start.x, start.y, start.z)) {
 		ROS_ERROR("Start is already occupied!");
 		success = false;
 	}
-    */
 
 	if (occupied(octree, goal.x, goal.y, goal.z)) {
 		ROS_ERROR("Goal is already occupied!");
 		success	= false;
-	}
-
-    // Free space around the start since is assumed to be open
-    const double pi = 3.14159265359;
-
-    double height = drone_height__global*1.5; 
-    double radius = drone_radius__global*1.5;
-
-	const double angle_step = pi/16;
-	const double radius_step = radius/10;
-	const double height_step = height/8;
-
-	for (double h = -height/2; h <= height/2; h += height_step) {
-		for (double r = 0; r <= radius; r += radius_step) {
-			for (double a = 0; a <= pi*2; a += angle_step) {
-                octomap::OcTreeNode * otn = octree->search(start.x + r*std::cos(a), start.y + r*std::sin(a), start.z + h);
-                if (otn != NULL) {
-                    otn->setValue(-std::numeric_limits<double>::infinity());
-                }
-			}
-		}
 	}
 
 	// If the path is believed to be possible, then add the start and end nodes.
@@ -548,11 +490,12 @@ graph create_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap:
 			roadmap.connect(start_id, goal_id);
 		}
 	}
+
 	return roadmap;
 }
 
 
-void extend_PRM(graph &roadmap, octomap::OcTree * octree)
+void grow_PRM(graph &roadmap, octomap::OcTree * octree)
 {    
 	//-----------------------------------------------------------------
 	// *** F:DN parameters 
@@ -583,8 +526,8 @@ void extend_PRM(graph &roadmap, octomap::OcTree * octree)
     //std::cout<<x_dist_to_sample_from__low_bound__global<<" " <<x_dist_to_sample_from__high_bound__global<<" "<<y_dist_to_sample_from__low_bound__global<<" " << y_dist_to_sample_from__high_bound__global << " " <<z_dist_to_sample_from__low_bound__global<<" " <<z_dist_to_sample_from__high_bound__global<<std::endl;
     //std::cout<<"max_dist_to_"<<max_dist_to_connect_at__global<<std::endl;
     
-    static std::random_device random_seed;
-    static std::mt19937 rd_mt(random_seed()); //a pseudo-random number generator
+    
+    static std::mt19937 rd_mt(350); //a pseudo-random number generator
     static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound__global, x_dist_to_sample_from__high_bound__global); 
 	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound__global, y_dist_to_sample_from__high_bound__global); 
 	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound__global, z_dist_to_sample_from__high_bound__global); 
@@ -608,6 +551,7 @@ void extend_PRM(graph &roadmap, octomap::OcTree * octree)
 	for (const auto& n : nodes_added) {
 		auto nearest_nodes = nodes_in_radius(roadmap, n, max_dist_to_connect_at__global, octree);
 		for (const auto& n2 : nearest_nodes) {
+            //ROS_WARN("hey");
             roadmap.connect(n, n2, dist(roadmap.get_node(n), roadmap.get_node(n2)));
 		}
 	}	
@@ -676,7 +620,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 {
     // Variables for visualization for debugging purposes
 	double distance = 0.5; 
-	std::string frame_id = "world";
+	std::string frame_id = "fcu";
 
 	// Setup optimizer
 	mav_trajectory_generation::Vertex::Vector vertices;
@@ -707,7 +651,8 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	mav_trajectory_generation::PolynomialOptimization<N> opt(dimension);
 
 	// Optimize until no collisions are present
-	bool col;
+ 	
+    bool col;
 	do {
 		ROS_INFO("Checking for collisions...");
 		col = false;
@@ -724,7 +669,8 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 		mav_trajectory_generation::Segment::Vector segments;
 		opt.getSegments(&segments);
 
-		// Loop through the vector of segments looking for collisions
+	 
+        // Loop through the vector of segments looking for collisions
 		for (int i = 0; !col && i < segments.size(); ++i) {
 			const double time_step = 0.1;
 			double segment_len = segments[i].getTime();
@@ -741,9 +687,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 				graph::node n2 = {pos2.x(), pos2.y(), pos2.z()};
 
 				// Check for a collision between two near points on the segment
-				
-                
-            if (motion_planning_core_str != "lawn_mower") {
+			    /*	
                 if (collision(octree, n1, n2)) {
 					// Add a new vertex in the middle of the segment we are currently on
 					mav_trajectory_generation::Vertex middle(dimension);
@@ -764,12 +708,13 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 
 					break;
 				}
-            }
+                */
 			}
 		}
 	} while (col);
-
-	// Return the collision-free smooth trajectory
+    
+	
+    // Return the collision-free smooth trajectory
 	mav_trajectory_generation::Trajectory trajectory;
 	opt.getTrajectory(&trajectory);
 
@@ -808,14 +753,6 @@ void publish_graph(graph& g)
             graph_conn_list.points.push_back(p2);
         }
 	}
-
-    if (DEBUG__global) {
-        dont_pull = true;
-        // Visualize graph immediately (a temporary debugging technique)
-        graph_conn_pub.publish(graph_conn_list);
-        ros::spinOnce();
-        dont_pull = false;
-    }
 }
 
 
@@ -824,11 +761,10 @@ void postprocess(piecewise_trajectory& path)
     // We use the greedy approach to shorten the path here.
     // We connect non-adjacent nodes in the path that do not have collisions.
 
-     
     for (auto it = path.begin(); it != path.end()-1; ) {
         bool shortened = false;
         for (auto it2 = path.end()-1; it2 != it+1 && !shortened; --it2) {
-            if (dist(*it, *it2) <= 20 && !collision(octree, *it, *it2)) {
+            if (!collision(octree, *it, *it2)) {
                 it = path.erase(it+1, it2);
                 shortened = true;
             }
@@ -839,7 +775,7 @@ void postprocess(piecewise_trajectory& path)
     }
 }
 
-piecewise_trajectory lawn_mower(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
+piecewise_trajectory lawn_mower(geometry_msgs::Point start, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
 {
 	//----------------------------------------------------------------- 
 	// *** F:DN variables	
@@ -887,7 +823,10 @@ piecewise_trajectory lawn_mower(geometry_msgs::Point start, geometry_msgs::Point
     return result;
 }
 
-piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal,int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
+
+
+
+piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree)
 {
 	//----------------------------------------------------------------- 
 	// *** F:DN variables	
@@ -895,7 +834,8 @@ piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal,i
     piecewise_trajectory result;
 	graph::node_id start_id, goal_id;
 	auto generate_shortest_path = dijkstra_plan; // TODO: parameter
-	// auto generate_shortest_path = astar_plan;
+	//auto generate_shortest_path = keep_roadmap_intact_plan; // TODO: parameter
+    // auto generate_shortest_path = astar_plan;
 	//int max_roadmap_size__global;
 
     //ros::param::get("motion_planner/max_roadmap_size__global", max_roadmap_size__global);
@@ -917,16 +857,16 @@ piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal,i
 
     // Grow PRM and re-run path-planner until we find a path
     while(result.empty()) {
-      	if (roadmap.size() > max_roadmap_size__global) {
-            ROS_ERROR("Path not found!");
-            return result;
-      	}
-
-        extend_PRM(roadmap, octree);
+        grow_PRM(roadmap, octree);
 
         ROS_INFO("Roadmap size: %d", roadmap.size());
 
         publish_graph(roadmap);
+
+      	if (roadmap.size() > max_roadmap_size__global) {
+            ROS_ERROR("Path not found!");
+            return result;
+      	}
 
 		result = generate_shortest_path(roadmap, start_id, goal_id);
     }
@@ -938,13 +878,11 @@ graph create_RRT(geometry_msgs::Point start, graph::node_id &start_id)
 {
 	graph rrt;
 
-
 	start_id = -1;
 	graph::node s = {start.x, start.y, start.z, start_id};
     s.parent = graph::invalid_id();
 
     rrt.add_node(s);
-
 
 	return rrt;
 }
@@ -952,12 +890,10 @@ graph create_RRT(geometry_msgs::Point start, graph::node_id &start_id)
 graph::node_id closest_node_to_coordinate(graph& g, double x, double y, double z)
 {
     auto node_ids = g.node_ids();
-
     graph::node goal = {x, y, z};
 
     return *min_element(node_ids.begin(), node_ids.end(), [&g, &goal] (graph::node_id n1, graph::node_id n2) { return dist(g.get_node(n1), goal) < dist(g.get_node(n2), goal); });
 }
-
 
 
 
@@ -966,7 +902,9 @@ graph::node_id extend_RRT(graph& rrt, geometry_msgs::Point goal, bool& reached_g
     graph::node_id result;
     reached_goal = false;
 
-    static std::mt19937 rd_mt(351); //a pseudo-random number generator
+    
+
+    static std::mt19937 rd_mt(350); //a pseudo-random number generator
     static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound__global, x_dist_to_sample_from__high_bound__global); 
 	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound__global, y_dist_to_sample_from__high_bound__global); 
 	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound__global, z_dist_to_sample_from__high_bound__global); 
@@ -1036,7 +974,7 @@ piecewise_trajectory build_reverse_path(graph g, graph::node_id goal)
     return result;
 }
 
-piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
+piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree)
 {
     piecewise_trajectory result;
     graph::node_id start_id, goal_id;
@@ -1050,7 +988,10 @@ piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, 
     for (bool finished = false; !finished;
             goal_id = extend_RRT(rrt, goal, finished)) {
 
-        publish_graph(rrt);
+        // Visualize RRT (a temporary debugging technique)
+        // publish_graph(rrt);
+        // graph_conn_pub.publish(graph_conn_list);
+        // ros::spinOnce();
 
         if (iterations >= 1000000000) {
             publish_graph(rrt);

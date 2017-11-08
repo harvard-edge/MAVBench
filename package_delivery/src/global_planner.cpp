@@ -6,6 +6,15 @@
 #include <cmath>
 #include <iostream>
 
+
+std::vector<graph::node> keep_roadmap_intact_plan(graph& g) {
+	int node_ids_size = g.node_ids().size();
+    std::vector<graph::node> result;
+	for (int i =0 ; i < node_ids_size; i++) {
+		result.push_back(g.get_node(i));
+	}
+	return result;
+}
 std::vector<graph::node> dijkstra_plan(graph& g, graph::node_id start, graph::node_id goal)
 {
 	auto node_ids = g.node_ids();

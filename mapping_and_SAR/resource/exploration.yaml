@@ -1,0 +1,59 @@
+system/v_max: .5
+system/dyaw_max: 0.75
+#system/dyaw_max: 3.14
+system/camera/pitch: [0.0]
+system/camera/horizontal: [180.0]
+system/camera/vertical: [180.0]
+system/bbx/x: 1
+system/bbx/y: 1
+system/bbx/z: .5
+system/bbx/overshoot: 0.5
+
+nbvp/gain/free: 0.05
+nbvp/gain/occupied: 0.0
+nbvp/gain/unmapped: 1.0
+nbvp/gain/area: 1.0
+nbvp/gain/probabilistic: 0.0
+nbvp/gain/range: 3.0
+nbvp/gain/zero: 0.0
+
+
+
+nbvp/gain/degressive_coeff: 0.25
+
+nbvp/tree/extension_range: 3.0
+nbvp/tree/exact_root: true
+nbvp/tree/initial_iterations: 15
+nbvp/tree/cuttoff_iterations: 80
+nbvp/dt: 1
+
+follow_trajectory/yaw_t: 1.0
+nbvp/t_offset: 0.0
+
+
+nbvp/log/throttle: 0.25
+nbvp/log/on: true
+
+# bounding box: necessary to limit the simulation 
+# scenario (smaller than actual gazebo scenario)
+bbx/minX: -15.0
+bbx/minY: -30.0
+bbx/minZ: 2.0
+bbx/maxX: 15.0
+bbx/maxY: 30.0
+bbx/maxZ: 4.0
+bbx/softBounds: false
+
+#bbx/minX: -2.0
+#bbx/minY: -2.0
+#bbx/minZ: -0.0
+#bbx/maxX: 2.0
+#bbx/maxY: 2.0
+#bbx/maxZ: 2.0
+#bbx/softBounds: false
+
+
+
+
+pcl_throttle: 0.0
+inspection_throttle: 0.5

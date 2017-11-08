@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<package>
+  <name>mapping_and_SAR</name>
+
+  <version>0.0.0</version>
+  <description>The package that interfaces with airsim</description>
+
+  <maintainer email="behzadboro@gmail.com">BehzadBoroujerdian</maintainer>
+
+  <license>ASL 2.0</license>
+
+  <author>Behzad boroujerdian</author>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>nbvplanner</build_depend>
+  <build_depend>trajectory_msgs</build_depend>
+  <build_depend>mav_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  
+  <run_depend>nbvplanner</run_depend>
+  <run_depend>trajectory_msgs</run_depend>
+  <run_depend>mav_msgs</run_depend>
+  <run_depend>tf</run_depend>
+
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>image_transport</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>pcl_conversions</build_depend>
+  <build_depend>pcl_ros</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>message_generation</build_depend>
+  <build_depend>trajectory_msgs</build_depend>
+  <build_depend>nlopt</build_depend>
+
+  <run_depend>cv_bridge</run_depend>
+  <run_depend>image_transport</run_depend>
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>pcl_conversions</run_depend>
+  <run_depend>pcl_ros</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>trajectory_msgs</run_depend>
+  <run_depend>nlopt</run_depend>
+
+</package>

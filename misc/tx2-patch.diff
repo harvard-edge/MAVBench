@@ -1,0 +1,173 @@
+diff --git a/AirLib/include/common/VectorMath.hpp b/AirLib/include/common/VectorMath.hpp
+index a5bb238..b2f1458 100644
+--- a/AirLib/include/common/VectorMath.hpp
++++ b/AirLib/include/common/VectorMath.hpp
+@@ -227,18 +227,18 @@ public:
+         // roll (x-axis rotation)
+         RealT t0 = +2.0f * (q.w() * q.x() + q.y() * q.z());
+         RealT t1 = +1.0f - 2.0f * (q.x() * q.x() + ysqr);
+-        roll = std::atan2f(t0, t1);
++        roll = std::atan2(t0, t1);
+ 
+         // pitch (y-axis rotation)
+         RealT t2 = +2.0f * (q.w() * q.y() - q.z() * q.x());
+         t2 = ((t2 > 1.0f) ? 1.0f : t2);
+         t2 = ((t2 < -1.0f) ? -1.0f : t2);
+-        pitch = std::asinf(t2);
++        pitch = asinf(t2);
+ 
+         // yaw (z-axis rotation)
+         RealT t3 = +2.0f * (q.w() * q.z() + q.x() * q.y());
+         RealT t4 = +1.0f - 2.0f * (ysqr + q.z() * q.z());  
+-        yaw = std::atan2f(t3, t4);
++        yaw = std::atan2(t3, t4);
+     }
+ 
+     static Vector3T toAngularVelocity(const QuaternionT& start, const QuaternionT& end, RealT delta_sec)
+diff --git a/AirLib/include/common/common_utils/Utils.hpp b/AirLib/include/common/common_utils/Utils.hpp
+index d3c3a44..2899a1a 100644
+--- a/AirLib/include/common/common_utils/Utils.hpp
++++ b/AirLib/include/common/common_utils/Utils.hpp
+@@ -20,6 +20,7 @@
+ #include <iomanip>
+ #include <iostream>
+ #include <limits>
++#include <limits.h>
+ #include <queue>
+ #include "type_utils.hpp"
+ 
+diff --git a/MavLinkCom/MavLinkTest/main.cpp b/MavLinkCom/MavLinkTest/main.cpp
+index cb56e42..7a0f280 100644
+--- a/MavLinkCom/MavLinkTest/main.cpp
++++ b/MavLinkCom/MavLinkTest/main.cpp
+@@ -719,19 +719,19 @@ void mavlink_dcm_to_euler(const float dcm[3][3], float* roll, float* pitch, floa
+ 
+     if (fabsf(theta - static_cast<float>(M_PI_2)) < 1.0e-3f) {
+         phi = 0.0f;
+-        psi = (atan2f(dcm[1][2] - dcm[0][1],
++        psi = (atan2(dcm[1][2] - dcm[0][1],
+             dcm[0][2] + dcm[1][1]) + phi);
+ 
+     }
+     else if (fabsf(theta + static_cast<float>(M_PI_2)) < 1.0e-3f) {
+         phi = 0.0f;
+-        psi = atan2f(dcm[1][2] - dcm[0][1],
++        psi = atan2(dcm[1][2] - dcm[0][1],
+             dcm[0][2] + dcm[1][1] - phi);
+ 
+     }
+     else {
+-        phi = atan2f(dcm[2][1], dcm[2][2]);
+-        psi = atan2f(dcm[1][0], dcm[0][0]);
++        phi = atan2(dcm[2][1], dcm[2][2]);
++        psi = atan2(dcm[1][0], dcm[0][0]);
+     }
+ 
+     *roll = phi;
+diff --git a/MavLinkCom/mavlink/mavlink_conversions.h b/MavLinkCom/mavlink/mavlink_conversions.h
+index 9baee26..f09716f 100644
+--- a/MavLinkCom/mavlink/mavlink_conversions.h
++++ b/MavLinkCom/mavlink/mavlink_conversions.h
+@@ -71,17 +71,17 @@ MAVLINK_HELPER void mavlink_dcm_to_euler(const float dcm[3][3], float* roll, flo
+ 
+     if (fabsf(theta - (float)M_PI_2) < 1.0e-3f) {
+         phi = 0.0f;
+-        psi = (atan2f(dcm[1][2] - dcm[0][1],
++        psi = (atan2(dcm[1][2] - dcm[0][1],
+                 dcm[0][2] + dcm[1][1]) + phi);
+ 
+     } else if (fabsf(theta + (float)M_PI_2) < 1.0e-3f) {
+         phi = 0.0f;
+-        psi = atan2f(dcm[1][2] - dcm[0][1],
++        psi = atan2(dcm[1][2] - dcm[0][1],
+                   dcm[0][2] + dcm[1][1] - phi);
+ 
+     } else {
+-        phi = atan2f(dcm[2][1], dcm[2][2]);
+-        psi = atan2f(dcm[1][0], dcm[0][0]);
++        phi = atan2(dcm[2][1], dcm[2][2]);
++        psi = atan2(dcm[1][0], dcm[0][0]);
+     }
+ 
+     *roll = phi;
+diff --git a/build.sh b/build.sh
+index fb39802..9f57277 100755
+--- a/build.sh
++++ b/build.sh
+@@ -11,15 +11,15 @@ set -x
+ git submodule update --init --recursive 
+ 
+ # check for libc++
+-if [[ !(-d "./llvm-build/output/lib") ]]; then
+-    echo "ERROR: clang++ and libc++ is necessary to compile AirSim and run it in Unreal engine"
+-    echo "please run setup.sh first."
+-    exit 1
+-fi
+-
++#if [[ !(-d "./llvm-build/output/lib") ]]; then
++#    echo "ERROR: clang++ and libc++ is necessary to compile AirSim and run it in Unreal engine"
++#    echo "please run setup.sh first."
++#    exit 1
++#fi
++#
+ # set up paths of clang compiler
+-export CC="clang-3.9"
+-export CXX="clang++-3.9"
++export CC="gcc"
++export CXX="g++"
+ 
+ #install EIGEN library
+ if [[ !(-d "./AirLib/deps/eigen3/Eigen") ]]; then 
+diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
+index 5e31535..6529991 100644
+--- a/cmake/CMakeLists.txt
++++ b/cmake/CMakeLists.txt
+@@ -4,10 +4,10 @@ project(AirSim)
+ add_subdirectory("rpclib_wrapper")
+ add_subdirectory("AirLib")
+ add_subdirectory("MavLinkCom")
+-add_subdirectory("AirLibUnitTests")
+-add_subdirectory("HelloDrone")
+-add_subdirectory("HelloCar")
+-add_subdirectory("DroneShell")
+-add_subdirectory("DroneServer")
+-
++#add_subdirectory("AirLibUnitTests")
++#add_subdirectory("HelloDrone")
++#add_subdirectory("HelloCar")
++#add_subdirectory("DroneShell")
++#add_subdirectory("DroneServer")
++#
+ 
+diff --git a/cmake/MavLinkCom/CMakeLists.txt b/cmake/MavLinkCom/CMakeLists.txt
+index 45ff74e..cd0ec8a 100644
+--- a/cmake/MavLinkCom/CMakeLists.txt
++++ b/cmake/MavLinkCom/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ cmake_minimum_required(VERSION 3.5.0)
+ project(MavLinkCom)
+ 
+-add_subdirectory("MavLinkTest")
++#add_subdirectory("MavLinkTest")
+ 
+ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../cmake-modules") 
+ INCLUDE("${CMAKE_CURRENT_LIST_DIR}/../cmake-modules/CommonSetup.cmake")
+diff --git a/cmake/cmake-modules/CommonSetup.cmake b/cmake/cmake-modules/CommonSetup.cmake
+index db327a3..a6fa82c 100644
+--- a/cmake/cmake-modules/CommonSetup.cmake
++++ b/cmake/cmake-modules/CommonSetup.cmake
+@@ -63,7 +63,7 @@ macro(CommonSetup)
+                 -std=c++14 -ggdb -Wall -Wextra -Wstrict-aliasing -Wunreachable-code -Wcast-qual -Wctor-dtor-privacy \
+                 -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wswitch-default \
+                 -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wstrict-overflow=5 -Wswitch-default -Wundef \
+-                -Wno-variadic-macros -Wno-parentheses -Wno-unused-function -Wno-unused -Wno-documentation -fdiagnostics-show-option -ferror-limit=10 \
++                -Wno-variadic-macros -Wno-parentheses -Wno-unused-function -Wno-unused -Wno-documentation -fdiagnostics-show-option \
+                 -pthread \
+                 ${RPC_LIB_DEFINES} ${CMAKE_CXX_FLAGS}")
+ 
+diff --git a/external/rpclib b/external/rpclib
+--- a/external/rpclib
++++ b/external/rpclib
+@@ -1 +1 @@
+-Subproject commit 9885c01db61c6defd412b0c08602d9af5ddf2633
++Subproject commit 9885c01db61c6defd412b0c08602d9af5ddf2633-dirty

@@ -10,6 +10,8 @@
 #include <octomap_msgs/GetOctomap.h>
 #include <octomap_msgs/conversions.h>
 
+#include "timer.h"
+
 // Global variables
 octomap::OcTree * octree = nullptr;
 trajectory_msgs::MultiDOFJointTrajectory traj;
@@ -62,15 +64,15 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
 
 				if (octree->castRay(start, direction, end, true, distance)) {
-                    // ROS_WARN("future collision detected on %f, %f ,%f", n1.x, n1.y, n1.z);
-                    
-                    marker.header.stamp = ros::Time();
-                    marker.pose.position.x = n1.x;
-                    marker.pose.position.y = n1.y;
-                    marker.pose.position.z = n1.z;
-                    
+					// ROS_WARN("future collision detected on %f, %f ,%f", n1.x, n1.y, n1.z);
+
+					marker.header.stamp = ros::Time();
+					marker.pose.position.x = n1.x;
+					marker.pose.position.y = n1.y;
+					marker.pose.position.z = n1.z;
+
 					return true;
-                }
+				}
 			}
 		}
 	}
@@ -81,6 +83,7 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 
 void pull_octomap(const octomap_msgs::Octomap& msg)
 {
+    RESET_TIMER();
     if (octree != nullptr) {
         delete octree;
     }
@@ -95,6 +98,7 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
     if (octree == nullptr) {
         ROS_ERROR("Octree could not be pulled.");
     }
+    LOG_ELAPSED(future_collision_pull);
 }
 
 
@@ -106,6 +110,7 @@ void pull_traj(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg)
 
 bool check_for_collisions()
 {
+    RESET_TIMER();
     if (octree == nullptr || traj.points.size() < 1) {
         return false;
     }
@@ -120,6 +125,7 @@ bool check_for_collisions()
             col = true;
     }
 
+    LOG_ELAPSED(future_collision);
     return col;
 }
 
