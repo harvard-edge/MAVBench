@@ -163,7 +163,6 @@ coord Drone::position(std::string localization_method)
     }
     catch (tf::TransformException ex){
       ROS_ERROR("%s",ex.what());
-      ros::Duration(1.0).sleep();
     }
 
     coord result;
@@ -171,6 +170,48 @@ coord Drone::position(std::string localization_method)
     result.x = tf_translation.x();
     result.y = tf_translation.y();
     result.z = tf_translation.z();
+
+    return result;
+}
+
+geometry_msgs::Pose Drone::pose(std::string localization_method)
+{
+    geometry_msgs::Pose result;
+
+    tf::StampedTransform transform;
+    try{
+      tfListen.lookupTransform("/world", "/"+localization_method,
+                               ros::Time(0), transform);
+    }
+    catch (tf::TransformException ex){
+      ROS_ERROR("%s",ex.what());
+      return result;
+    }
+
+    tf::Vector3 tf_translation = transform.getOrigin();
+    result.position.x = tf_translation.x();
+    result.position.y = tf_translation.y();
+    result.position.z = tf_translation.z();
+
+    tf::Quaternion tf_rotation = transform.getRotation();
+    result.orientation.x = tf_rotation.x();
+    result.orientation.y = tf_rotation.y();
+    result.orientation.z = tf_rotation.z();
+    result.orientation.w = tf_rotation.w();
+    
+    return result;
+}
+
+geometry_msgs::PoseWithCovariance Drone::pose_with_covariance(std::string localization_method)
+{
+    geometry_msgs::PoseWithCovariance result;
+
+    result.pose = pose(localization_method);
+
+    for (int i = 0; i <36; i++) { 
+        //https://answers.ros.org/question/181689/computing-posewithcovariances-6x6-matrix/ 
+        result.covariance[i] = 0;
+    }
 
     return result;
 }
@@ -206,6 +247,7 @@ geometry_msgs::Pose Drone::get_geometry_pose(){
     pose.orientation.w = q.w();
     return pose;
 }
+
 geometry_msgs::PoseWithCovariance Drone::get_geometry_pose_with_coveraiance(){
     geometry_msgs::PoseWithCovariance pose_with_covariance;
     geometry_msgs::Pose pose;
