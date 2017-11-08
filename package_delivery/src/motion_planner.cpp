@@ -262,7 +262,7 @@ int main(int argc, char ** argv)
     graph_conn_pub = nh.advertise<visualization_msgs::Marker>("graph_conns", 100);
 	
 	
-    pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "fcu";
+    pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "world";
     graph_conn_list.type = visualization_msgs::Marker::LINE_LIST;
     graph_conn_list.action = visualization_msgs::Marker::ADD;
     graph_conn_list.scale.x = 0.1;
@@ -583,7 +583,8 @@ void extend_PRM(graph &roadmap, octomap::OcTree * octree)
     //std::cout<<x_dist_to_sample_from__low_bound__global<<" " <<x_dist_to_sample_from__high_bound__global<<" "<<y_dist_to_sample_from__low_bound__global<<" " << y_dist_to_sample_from__high_bound__global << " " <<z_dist_to_sample_from__low_bound__global<<" " <<z_dist_to_sample_from__high_bound__global<<std::endl;
     //std::cout<<"max_dist_to_"<<max_dist_to_connect_at__global<<std::endl;
     
-    static std::mt19937 rd_mt(350); //a pseudo-random number generator
+    static std::random_device random_seed;
+    static std::mt19937 rd_mt(random_seed()); //a pseudo-random number generator
     static std::uniform_real_distribution<> x_dist(x_dist_to_sample_from__low_bound__global, x_dist_to_sample_from__high_bound__global); 
 	static std::uniform_real_distribution<> y_dist(y_dist_to_sample_from__low_bound__global, y_dist_to_sample_from__high_bound__global); 
 	static std::uniform_real_distribution<> z_dist(z_dist_to_sample_from__low_bound__global, z_dist_to_sample_from__high_bound__global); 
@@ -675,7 +676,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 {
     // Variables for visualization for debugging purposes
 	double distance = 0.5; 
-	std::string frame_id = "fcu";
+	std::string frame_id = "world";
 
 	// Setup optimizer
 	mav_trajectory_generation::Vertex::Vector vertices;

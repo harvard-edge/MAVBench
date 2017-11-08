@@ -34,6 +34,7 @@ using namespace std;
 bool should_panic = false;
 bool future_col = false;
 string ip_addr__global;
+string localization_method;
 
 
 void sigIntHandler(int sig)
@@ -101,6 +102,8 @@ void control_drone(Drone& drone)
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd != "c") {
 			cout << "Unknown command" << endl;
+            ros::shutdown();
+            exit(0);
 		}
 	}
 }
@@ -136,34 +139,15 @@ void action_upon_panic(Drone& drone) {
 
 /*
 void action_upon_future_col(Drone& drone) {
-    scan_around(drone, 90);
+    // scan_around(drone, 90);
+    scan_around(drone, 20);
 }
 */
 
 void package_delivery_initialize_params() {
     ros::param::get("/package_delivery/ip_addr",ip_addr__global);
+    ros::param::get("/package_delivery/localization_method",localization_method);
 }
-
-
-coord drone_pos_lookup(tf::TransformListener& listener) {
-    tf::StampedTransform transform;
-
-    try{
-      listener.lookupTransform("/fcu", "/orb_slam2_rgbd",  
-                               ros::Time(0), transform);
-    }
-    catch (tf::TransformException ex){
-      ROS_ERROR("%s",ex.what());
-      ros::Duration(1.0).sleep();
-    }
-
-    coord result;
-    auto tf_translation = transform.getOrigin();
-    result.x = tf_translation.x();
-    result.y = tf_translation.y();
-    result.z = tf_translation.z();
-}
-
 
 // *** F:DN main function
 int main(int argc, char **argv)
@@ -198,15 +182,12 @@ int main(int argc, char **argv)
     ros::NodeHandle future_col_nh;
     ros::Subscriber future_col_sub = 
 		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
-    
-    auto pos_fun = [&]() {
-        return drone.gps();
 
-        static tf::TransformListener tfListen;
-        return drone_pos_lookup(tfListen);
+    auto pos_fun = [&]() {
+        return drone.position(localization_method);
     };
-    
-    
+
+
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
@@ -229,6 +210,14 @@ int main(int argc, char **argv)
 	{
         // *** F:DN arm, disarm, move around before switching to autonomous mode 
         control_drone(drone);
+
+        // Take-off
+        /*do {
+            float z = pos_fun().z;
+            float k = 0.5;
+            drone.fly_velocity(0,0, k*(-4 - z));
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        } while (-pos_fun().z > 4.5 || -pos_fun().z < 3.5); */
 	    
         // *** F:DN set drone start position	
         auto drone_pos = pos_fun();
@@ -347,6 +336,11 @@ int main(int argc, char **argv)
 
         ROS_INFO("Delivered the package and returned!");
         delivering_mission_complete = false;
+
+        // Get collision info
+        // int collisions = drone.collisions();
+        // ROS_INFO("Collision count: %d", collisions);
+
         loop_rate.sleep();
     }
 

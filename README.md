@@ -8,11 +8,30 @@ cd $catkin_ws/src
 git clone https://hngenc@bitbucket.org/zaddan/mav-bench.git
 ```
 
-## To build the package_delivery package:
+## To install SLAM packages
 
+### ORB-SLAM2
+Run the following commands (replacing $catkin_ws with the location of your catkin workspace and hngenc with your own username):
+```shell
+cd $catkin_ws/src/mav-bench
+git clone https://hngenc@bitbucket.org/hngenc/orb_slam2.git
+cd orb_slam2
+./build.sh
+./build_ros.sh
+```
+
+To run ORB-SLAM2, run the following command:
+```shell
+cd $catkin_ws/src/mav-bench/orb_slam2
+./scripts/run_rgbd.sh cameras/airsim-rgbd.yaml
+```
+
+Right now, we only have support for ORB-SLAM2's RGBD mode.
+
+## To build the package_delivery package:
 Run the following commands:
 ```shell
-cd $catkin_ws/src/MAV-Bench
+cd $catkin_ws/src/mav-bench
 ./prereqs.sh
 ```
 
@@ -34,9 +53,9 @@ wget -O $catkin_ws/build/glog_catkin/glog_src-prefix/src/glog_src/config.guess '
 wget -O $catkin_ws/build/glog_catkin/glog_src-prefix/src/glog_src/config.sub 'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD'
 ```
 
-## To run the motion-planning package:
+## To run the package_delivery package:
+change the host_ip (located in the package_delivery.launch file to the ip of the host (where airsim is running))
 ```shell
-change the host_ip (located in the package_delivery.launch file to the ip of the host(where airsim is running))
-roslaunch mavbench package_delivery.launch
+roslaunch package_delivery package_delivery.launch
 ```
 
