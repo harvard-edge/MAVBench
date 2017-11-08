@@ -38,8 +38,9 @@
 using namespace std;
 std::string ip_addr__global;
 std::queue<bounding_box> bb_queue; //uesd to buffer imags while detection is running
-const int image_w = 256, image_h = 144; //this must be equal to the img being pulled in from airsim
-float vx__K = (float)3.0/(image_h/2); 
+//const int image_w = 256, image_h = 144; //this must be equal to the img being pulled in from airsim
+const int image_w = 400, image_h = 400; //this must be equal to the img being pulled in from airsim
+float vx__K = (float)2.0/(image_h/2); 
 float vy__K = (float)3.0/(image_w/2); 
 float vz__K = (float)1.0;
 
@@ -116,7 +117,7 @@ void fly_towards_target(Drone& drone, const bounding_box& bb,
         double dt)
 {
 	static float hover_height = drone.gps().z;
-	const float height_ratio = 0.5;
+	const float height_ratio = 0.3;
 
 	auto yaw = drone.get_yaw();
 	if (yaw > 15 || yaw < -15) {
@@ -128,16 +129,15 @@ void fly_towards_target(Drone& drone, const bounding_box& bb,
     double bb__cntr__y =  bb.y + bb.h/2;
     
     double img__cntr =  img_width / 2;
-    ROS_INFO_STREAM("bb h is "<<bb.h<< " height ration is"<<height_ratio*img_height);	
-    
-    ROS_INFO_STREAM("result for vy");
+    //ROS_INFO_STREAM("bb h is "<<bb.h<< " height ration is"<<height_ratio*img_height);	
+    ROS_INFO_STREAM("result for vy"<<"bb.h"<<bb.h);
     double vy = pid_vy.calculate(bb.h, height_ratio*img_height,  dt); //get closer to the person
-    ROS_INFO_STREAM("result for vx");
+    //ROS_INFO_STREAM("result for vx");
     double vx = pid_vx.calculate(img__cntr, bb__cntr__x, dt); //keep the person in the center of the img 
-    ROS_INFO_STREAM("result for vz");
+    //ROS_INFO_STREAM("result for vz");
     double vz = pid_vz.calculate(drone.gps().z, hover_height, dt); //for hovering at the same point
 
-    ROS_INFO_STREAM("velocities"<<vx<< " " << vy<< " " << vz);	
+    //ROS_INFO_STREAM("velocities"<<vx<< " " << vy<< " " << vz);	
     drone.fly_velocity(vx, vy, vz);
 }
 
@@ -165,7 +165,6 @@ int main(int argc, char **argv)
 
     while (ros::ok())
 	{
-         
         while(!bb_queue.empty()) {
             ROS_INFO_STREAM("queue size"<<bb_queue.size()); 
             auto bb = bb_queue.front(); 

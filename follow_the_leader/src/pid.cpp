@@ -20,7 +20,8 @@ double PID::calculate(double sensor, double target, double dt)
 	_prev_error = error;
 
 	result = prop + integ + deriv;
-    std::cout<<"prop is "<<prop << "result is"<<result <<std::endl;
+    
+    //std::cout<<"error"<<error<<"result is"<<result <<std::endl;
 	
     if (result >= _max)
 		return _max;

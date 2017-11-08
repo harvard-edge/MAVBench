@@ -39,7 +39,7 @@ tracker_t * tracker = nullptr;
 bool tracker_defined;
 std::string status;
 int tracking_count; //number of times tracking has run after detection
-int max_tracking_count; //number of times tracking is allowed to run before running detection again
+int max_tracking_count = 30; //number of times tracking is allowed to run before running detection again
 int img_id;
 std::queue<cv_bridge::CvImage> img_queue; //uesd to buffer imags while detection is running
 
@@ -82,18 +82,12 @@ bounding_box tracking(ros::ServiceClient &resume_detection_client){
     //ROS_INFO_STREAM("buffer size"<<img_queue.size());
     while (!img_queue.empty())  {
        auto img = img_queue.front(); 
-       ROS_INFO_STREAM("height is "<<img.image.rows);
-       ROS_INFO_STREAM("widh is "<<img.image.cols);
-
-
        img_queue.pop(); 
-       //ROS_INFO_STREAM("detct img_id"<<img_id<< "track_img_id  " << img.header.seq);
        if (img.header.seq >= img_id) {
-           if (img.header.seq == img_id) {
-            ROS_INFO_STREAM("found equal");
-           }
+           //if (img.header.seq == img_id) {
+            //ROS_INFO_STREAM("found equal");
+           //}
            if (!tracker_defined) {
-               ROS_INFO_STREAM("instantiating a new ptr");
                //ROS_INFO_STREAM("boundign box of the tracking instantiation"<<bb.x<<" " <<bb.y<< " " << bb.w << " " <<bb.h);
                tracker = new tracker_t(bb, img.image);
                tracker_defined = true;;
@@ -108,17 +102,25 @@ bounding_box tracking(ros::ServiceClient &resume_detection_client){
            cv::waitKey(3);
            //cv::waitKey(500);
            //cv::destroyAllWindows();
-           if (bb.conf < tracking_threshold) {
-               ROS_INFO_STREAM("strike is "<<strike); 
-               strike++;
-
-           }
-           else {
-               bb_queue.push(bb);
-           }
+           
        }
    }
-   if (strike > max_strike || tracking_count > max_tracking_count) { //termination of tracker
+    
+    //only the last bb is push. This is b/c we only buffer the images 
+    //so the tracker won't lose it, however, the most recent bb should 
+    // be passed to the pid so we can respond according to the latest bb(where
+    // the target is at the moement)
+    if (bb.conf < tracking_threshold) {
+        ROS_INFO_STREAM("strike is "<<strike); 
+        strike++;
+
+    }
+    else {
+        ROS_INFO_STREAM("bb.h"<<bb.h); 
+        bb_queue.push(bb);
+    }
+
+    if (strike > max_strike || tracking_count > max_tracking_count) { //termination of tracker
                               //reseting all the data structures, varaibles
        //delete tracker; 
        tracking_count = 0; 
@@ -162,7 +164,6 @@ int main(int argc, char** argv)
     while (ros::ok()) {
         if (status == "start_tracking") { 
             tracking(resume_detection_client); 
-             
             while(!bb_queue.empty()) {
                 auto bb = bb_queue.front(); 
                 follow_the_leader::bounding_box_msg bb_msg;
@@ -171,6 +172,7 @@ int main(int argc, char** argv)
                 bb_msg.w =  bb.w;
                 bb_msg.h =  bb.h;
                 bb_msg.conf =  bb.conf;
+                ROS_INFO_STREAM("bb_msg"<<bb_msg.h); 
                 bb_publisher.publish(bb_msg);
                 bb_queue.pop();
             }

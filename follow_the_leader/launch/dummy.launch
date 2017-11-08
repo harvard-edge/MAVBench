@@ -1,0 +1,97 @@
+<launch>
+    <!-- args --> 
+    <!-- Behzad's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.101" /--> 
+    <arg name="host_ip" value="10.157.90.51" /> 
+    <!-- Hasans's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.208" /--> 
+
+    <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
+    <!-- also planning to prevent stdio stuff(if they really matter)--> 
+    <arg name="DEBUG" value="true" /> 
+    <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
+
+    <comment>
+    <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
+    <!-- IP of the Airsim computer -->
+    <param name="Airsim_ip" value="$(arg host_ip)" />
+
+    <!-- Port of the Airsim computer (this is default, do not change!) -->
+    <param name="Airsim_port" value="41451"/>
+
+    <!-- RGB camera parameters (parameters when calibrated) -->
+    <param name="Fx" value="128"/>
+    <param name="Fy" value="128"/>
+    <param name="cx" value="128"/>
+    <param name="cy" value="72"/>
+    <param name="scale_x" value="256"/>  <!-- Width when calibrated!-->
+    <param name="scale_y" value="144"/> <!-- Height when calibrated!-->
+    <param name="width" value="256"/>  <!-- Width when calibrated!-->
+    <param name="height" value="144"/> <!-- Height when calibrated!-->
+    <comment> 
+    <param name="Fx" value="200"/>
+    <param name="Fy" value="200"/>
+    <param name="cx" value="200"/>
+    <param name="cy" value="150"/>
+    <param name="scale_x" value="400"/>  <!-- Width when calibrated!-->
+    <param name="scale_y" value="300"/> <!-- Height when calibrated!-->
+    <param name="width" value="400"/>  <!-- Width when calibrated!-->
+    <param name="height" value="300"/> <!-- Height when calibrated!-->
+    </comment>
+
+    <param name="maxDist" value="50.0"/> 
+    <!-- Depth baseline -->
+    <param name="Tx" value="0.14"/>
+    <param name="scale" value="0.38"/> 
+
+    <!-- Topic with odometry information for the vehicle (used to create tf tree) -->
+    <!-- we are not using the odomTopic since arisim is not providing it at themoment -->	
+    <param name="odomTopic" value="/mavros/local_position/odom"/>
+    </node>
+    </comment>
+    
+    <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
+    <!-- IP of the Airsim computer -->
+    <param name="ip_addr" type="string" value="$(arg host_ip)" />
+    <param name="Airsim_ip" value="$(arg host_ip)" />
+    <!-- Port of the Airsim computer (this is default, do not change!) -->
+    <param name="Airsim_port" value="41451"/>
+
+    <!-- RGB camera parameters (parameters when calibrated) -->
+    <param name="Fx" value="128"/>
+    <param name="Fy" value="128"/>
+    <param name="cx" value="128"/>
+    <param name="cy" value="72"/>
+    <param name="scale_x" value="256"/>  <!-- Width when calibrated!-->
+    <param name="scale_y" value="144"/> <!-- Height when calibrated!-->
+    <param name="width" value="256"/>  <!-- Width when calibrated!-->
+    <param name="height" value="144"/> <!-- Height when calibrated!-->
+    <comment> 
+    <param name="Fx" value="200"/>
+    <param name="Fy" value="200"/>
+    <param name="cx" value="200"/>
+    <param name="cy" value="150"/>
+    <param name="scale_x" value="400"/>  <!-- Width when calibrated!-->
+    <param name="scale_y" value="300"/> <!-- Height when calibrated!-->
+    <param name="width" value="400"/>  <!-- Width when calibrated!-->
+    <param name="height" value="300"/> <!-- Height when calibrated!-->
+    </comment>
+
+
+    <param name="maxDist" value="50.0"/> 
+    <!-- Depth baseline -->
+    <param name="Tx" value="0.14"/>
+    <param name="scale" value="0.38"/> 
+
+    <!-- Topic with odometry information for the vehicle (used to create tf tree) -->
+    <!-- we are not using the odomTopic since arisim is not providing it at themoment -->	
+    <param name="odomTopic" value="/mavros/local_position/odom"/>
+    </node>
+    
+    <node pkg="follow_the_leader" type="dummy_node" name="dummy_node"  output="screen"/>
+    <param name="ip_addr" type="string" value="$(arg host_ip)" />
+    <!-- param name="mav_name" type="string" value="$(arg mav_name)" / -->
+   
+
+
+</launch>
