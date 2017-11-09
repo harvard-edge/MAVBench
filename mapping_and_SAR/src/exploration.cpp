@@ -49,7 +49,7 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
   ros::Publisher trajectory_pub = nh.advertise < trajectory_msgs::MultiDOFJointTrajectory
       > (mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
-  ROS_INFO("Started exploration");
+  //ROS_INFO("Started exploration");
   uint16_t port = 41451;
   std::string ip_addr__global;
   
@@ -69,7 +69,7 @@ int main(int argc, char** argv)
   path_to_follow_marker.scale.x = 0.3;
 
 
-  ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
+  //ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
   //ROS_ERROR_STREAM("blah"<<ip_addr__global);
   Drone drone(ip_addr__global.c_str(), port);
 
@@ -154,7 +154,7 @@ int main(int argc, char** argv)
 
   // This is the initialization motion, necessary that the known free space allows the planning
   // of initial paths.
-  ROS_INFO("Starting the planner: Performing initialization motion");
+  //ROS_INFO("Starting the planner: Performing initialization motion");
   for (double i = 0; i <= 1.0; i = i + 0.25) {
     
       
@@ -176,7 +176,7 @@ int main(int argc, char** argv)
     tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), -2*M_PI * i);
     trajectory_point.setFromYaw(tf::getYaw(quat));
     mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-    ROS_INFO_STREAM("sending out trajectories"); 
+    //ROS_INFO_STREAM("sending out trajectories"); 
     samples_array.points.push_back(trajectory_point_msg);
     trajectory_pub.publish(samples_array);
     ros::Duration(1.0).sleep();
