@@ -3,41 +3,55 @@
   <arg name="enable_logging" default="true" />
   <arg name="enable_ground_truth" default="true" />
   <arg name="log_file" default="$(arg mav_name)" />
-
-  <!-- Behzad's workstation ip --> 
-  <!-- arg name="host_ip" value="10.157.34.101" /--> 
-  <arg name="host_ip" value="10.157.90.51" /> 
-  <!-- Hasans's workstation ip --> 
-  <!-- arg name="host_ip" value="10.157.34.208" /--> 
-
-
+  <arg name="DEBUG" value="true" />
+  
   <node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world fcu 100" />
 
-
-  <include file="$(find mapping_and_SAR)/launch/mav_inspector.launch">
-  <arg name="mav_name" value="$(arg mav_name)" />
-  <arg name="waypoint_x" value="0.0" />
-  <arg name="waypoint_y" value="0.0" />
-  <arg name="waypoint_z" value="1.0" />
-  <arg name="param_file" value="$(find mapping_and_SAR)/resource/exploration.yaml" />
-  <arg name="enable_logging" value="$(arg enable_logging)" />
-  <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
-  <arg name="log_file" value="$(arg log_file)" />
-
-  <!-- the following is for octomap --> 
-  <arg name="tf_frame" value="fcu" />
-  <arg name="pcl_topic" value="/points" />
-  <arg name="resolution" value="0.4" />
-  <arg name="visualize_max_z" value="10" />
-  <arg name="sensor_max_range" value="8.0" />
+    <!-- Behzad's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.101" /--> 
+    <arg name="host_ip" value="10.157.90.51" /> 
+    <!-- Hasans's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.208" /--> 
+    
+    <include file="$(find mapping_and_SAR)/launch/mav_inspector_SAR.launch">
+    <arg name="mav_name" value="$(arg mav_name)" />
+    <arg name="waypoint_x" value="0.0" />
+    <arg name="waypoint_y" value="0.0" />
+    <arg name="waypoint_z" value="1.0" />
+    <arg name="param_file" value="$(find mapping_and_SAR)/resource/exploration.yaml" />
+    <arg name="enable_logging" value="$(arg enable_logging)" />
+    <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+    <arg name="log_file" value="$(arg log_file)" />
+    <!-- the following is for octomap --> 
+    <arg name="tf_frame" value="fcu" />
+    <arg name="pcl_topic" value="/points" />
+    <arg name="resolution" value="0.4" />
+    <arg name="visualize_max_z" value="10" />
+    <arg name="sensor_max_range" value="8.0" />
   </include>
+    
+  <!-- point cloud and pose -->
+  <include file="$(find mapping_and_SAR)/launch/point_cloud_and_pose.launch"/>
 
 
-  
-  
-  
+  <arg name="param_file" value="$(find mapping_and_SAR)/resource/exploration.yaml" />
+  <!-- following the tejactory --> 
+  <!-- group ns="$(arg mav_name)" -->
+  <node pkg="mapping_and_SAR" type="follow_trajectory" name="follow_trajectory" output="screen">
+  <rosparam command="load" file="$(arg param_file)" />
+  <param name="mav_name" value="$(arg mav_name)"/>
+  <!-- param name="yaw_t" value=".75"/ -->
+  <param name="ip_addr" value="$(arg host_ip)"/>
+  <param name="segment_dedicated_time" value="1.0"/>
+  </node>
+
+    
+  <!--comment-->
   <!-- rviz -->
   <!-- group if="$(arg DEBUG)" -->
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mapping_and_SAR)/extras/rvizConfig.rviz"/>
 
-  </launch>
+  
+
+
+</launch>

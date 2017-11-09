@@ -206,7 +206,9 @@ target_link_libraries(future_collision ${catkin_LIBRARIES} AirLib MavLinkCom rpc
 add_executable(scanning ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp src/follow_trajectory.cpp src/scanning.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(scanning package_delivery_generate_messages_cpp)
 target_link_libraries(scanning ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
-#
+
+
+
 #
 
 #add_executable(Drone_dummy_service_adv src/Drone_dummy_service_adv.cpp src/Drone.cpp)

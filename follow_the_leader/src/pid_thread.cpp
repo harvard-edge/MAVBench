@@ -39,11 +39,19 @@ using namespace std;
 std::string ip_addr__global;
 std::queue<bounding_box> bb_queue; //uesd to buffer imags while detection is running
 //const int image_w = 256, image_h = 144; //this must be equal to the img being pulled in from airsim
-const int image_w = 400, image_h = 400; //this must be equal to the img being pulled in from airsim
-float vx__K = (float)2.0/(image_h/2); 
-float vy__K = (float)3.0/(image_w/2); 
-float vz__K = (float)1.0;
+int image_w__global;// = 400;
+int  image_h__global; //= 400; //this must be equal to the img being pulled in from airsim
+float vx__P__global; //= (float)2.0/(image_h/2); 
+float vy__P__global; //= (float)3.0/(image_w/2); 
+float vz__P__global; //= (float)1.0;
 
+float vx__I__global; //= .05;
+float vy__I__global; //= .05;
+float vz__I__global; //= .05;
+
+float vx__D__global; //= .1;
+float vy__D__global; //= .1;
+float vz__D__global; //= .1;
 
 
 void sigIntHandler(int sig)
@@ -152,15 +160,35 @@ int main(int argc, char **argv)
     signal(SIGINT, sigIntHandler);
  
     uint16_t port = 41451;
-    ros::param::get("/pid_node/ip_addr",ip_addr__global);
-    //ROS_ERROR_STREAM("blah"<<ip_addr__global);
+
+    if(!ros::param::get("/pid_node/ip_addr__global",ip_addr__global) ||
+            !ros::param::get("/pid_node/vx__P__global",vx__P__global)||
+            !ros::param::get("/pid_node/vy__P__global",vy__P__global)||
+            !ros::param::get("/pid_node/vz__P__global",vz__P__global)||
+
+            !ros::param::get("/pid_node/vx__I__global",vx__I__global)||
+            !ros::param::get("/pid_node/vy__I__global",vy__I__global)||
+            !ros::param::get("/pid_node/vz__I__global",vz__I__global)||
+
+            !ros::param::get("/pid_node/vx__D__global",vx__D__global)||
+            !ros::param::get("/pid_node/vy__D__global",vy__D__global)||
+            !ros::param::get("/pid_node/vz__D__global",vz__D__global)||
+
+            !ros::param::get("/pid_node/image_w__global",image_w__global)||
+            !ros::param::get("/pid_node/image_h__global",image_h__global)){
+        ROS_FATAL("you did not specify all the parameters");
+        return -1; 
+    }
+            //ROS_ERROR_STREAM("blah"<<ip_addr__global);
+    int loop_rate = 10; 
+    float dt = ((float)1)/(float)loop_rate;
     Drone drone(ip_addr__global.c_str(), port);
-	ros::Rate pub_rate(10);
+	ros::Rate pub_rate(loop_rate);
     ros::Subscriber bb_sub = nh.subscribe("/bb_topic", 4, bb_cb);
     control_drone(drone);
-    PID pid_vx(vx__K, 0, 0, 2, -2);
-    PID pid_vy(vy__K, 0, 0, 2, -2);
-	PID pid_vz(vz__K, 0, 0, 0.5, -0.5); //at the moment only for keeping drone stable
+    PID pid_vx(vx__P__global, vx__I__global, vx__D__global, 2, -2);
+    PID pid_vy(vy__P__global, vy__I__global, vy__D__global, 2, -2);
+	PID pid_vz(vz__P__global, vz__I__global, vz__D__global, 0.5, -0.5); //at the moment only for keeping drone stable
 
 
     while (ros::ok())
@@ -169,7 +197,7 @@ int main(int argc, char **argv)
             ROS_INFO_STREAM("queue size"<<bb_queue.size()); 
             auto bb = bb_queue.front(); 
             bb_queue.pop(); 
-            fly_towards_target(drone, bb, image_h, image_w, pid_vx, pid_vy, pid_vz, 1); // dt is not currently used
+            fly_towards_target(drone, bb, image_h__global, image_w__global, pid_vx, pid_vy, pid_vz, dt); // dt is not currently used
         }
         ros::spinOnce(); 
         pub_rate.sleep();
