@@ -65,7 +65,7 @@
       <remap from="peer_pose_2" to="$(arg peer_vehicle_pose_topic_2)"/>
       <remap from="peer_pose_3" to="$(arg peer_vehicle_pose_topic_3)"/>
       <param name="tf_frame" type="string" value="world" />
-      <param name="robot_frame" type="string" value="camera" />
+      <param name="robot_frame" type="string" value="ground_truth" />
       <remap from="disparity" to="/Airsim/disparity"/>
       <remap from="pointcloud" to="/points2"/>
       <remap from="cam0/camera_info" to="/Airsim/left/camera_info"/>

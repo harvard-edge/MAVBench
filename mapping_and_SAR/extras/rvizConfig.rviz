@@ -65,7 +65,7 @@ Visualization Manager:
           Value: true
         airsim_qc/vi_sensor/camera_right_link:
           Value: true
-        camera:
+        ground_truth:
           Value: true
         world:
           Value: false
@@ -87,7 +87,7 @@ Visualization Manager:
               {}
             airsim_qc/vi_sensor/camera_right_link:
               {}
-            camera:
+            ground_truth:
               {}
       Update Interval: 0
       Value: true
