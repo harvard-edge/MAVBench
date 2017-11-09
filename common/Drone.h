@@ -39,6 +39,9 @@ public:
 
     // *** F:DN Localization functions
     coord position(std::string localization_method); 
+    geometry_msgs::Pose pose(std::string localization_method);
+    geometry_msgs::PoseWithCovariance pose_with_covariance(std::string localization_method);
+
     coord gps();
 
     // *** F:DN Query data
@@ -50,7 +53,6 @@ public:
 
     // *** F:DN Collison functions
     msr::airlib::CollisionInfo getCollisionInfo();
-    //int collisions();
 
 private:
     msr::airlib::MultirotorRpcLibClient * client;
