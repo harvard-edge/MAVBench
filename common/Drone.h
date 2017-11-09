@@ -10,52 +10,45 @@
 #include <geometry_msgs/Pose.h>
 #include "coord.h"
 #include "common/VectorMath.hpp"
-#include <tf/transform_listener.h>
-#include <geometry_msgs/PoseWithCovarianceStamped.h>
+#include <geometry_msgs/Pose.h>
 #include "coord.h"
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 
 //#include "configs.h"
 // Control functions
 
 class Drone {
 public:
-    Drone();
-    Drone(const std::string& ip_addr, uint16_t port);
+	Drone();
+	Drone(const std::string& ip_addr, uint16_t port);
 
-    ~Drone();
-
-    // *** F:DN Connection functions
-    void connect();
-    void connect(const std::string& ip_addr, uint16_t port);
+	~Drone();
 
 	// *** F:DN Control functions
+	void connect();
+	void connect(const std::string& ip_addr, uint16_t port);
+
+	// *** F:DN Camera functions
     void arm();
     void disarm();
     bool takeoff(double h);
     bool set_yaw(float y);
     bool fly_velocity(double vx, double vy, double vz, double duration = 3);
     bool land();
-    bool set_yaw_based_on_quaternion(geometry_msgs::Quaternion q);
-
-    // *** F:DN Localization functions
-    coord position(std::string localization_method); 
-    coord gps();
-
-    // *** F:DN Query data
     float get_pitch();
     float get_yaw();
     float get_roll();
+    coord gps();
+    bool set_yaw_based_on_quaternion(geometry_msgs::Quaternion q);
     geometry_msgs::Pose get_geometry_pose();
     geometry_msgs::PoseWithCovariance get_geometry_pose_with_coveraiance();
 
     // *** F:DN Collison functions
     msr::airlib::CollisionInfo getCollisionInfo();
-    //int collisions();
 
 private:
-    msr::airlib::MultirotorRpcLibClient * client;
-    coord initial_gps;
-    tf::TransformListener tfListen;
+	msr::airlib::MultirotorRpcLibClient * client;
+    coord initial_pos;
     uint64_t collision_count;
 };
 
