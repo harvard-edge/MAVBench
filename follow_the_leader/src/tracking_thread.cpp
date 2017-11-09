@@ -129,7 +129,7 @@ bounding_box tracking(ros::ServiceClient &resume_detection_client){
        img_queue = std::queue<cv_bridge::CvImage>();
        resume_detection_client.call(resume_detection_obj);
        status = "waiting_for_main"; 
-       cv::destroyAllWindows();
+       //cv::destroyAllWindows();
    }
 }
 
