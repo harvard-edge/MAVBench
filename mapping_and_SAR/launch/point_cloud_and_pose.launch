@@ -22,7 +22,8 @@
 	<!-- Point-cloud publisher -->
  	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
 		<!-- IP of the Airsim computer -->
-		<param name="Airsim_ip" value="$(arg host_ip)" />
+        <param name="localization_method" value="ground_truth" />
+        <param name="Airsim_ip" value="$(arg host_ip)" />
 
 
 		<!-- Port of the Airsim computer (this is default, do not change!) -->
@@ -97,7 +98,7 @@
         <param name="resolution" value="0.5" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="fcu" />
+		<param name="frame_id" type="string" value="world" />
 		
 		<!-- maximum range to integrate (speedup!) -->
 		<param name="sensor_model/max_range" value="50" />
@@ -106,7 +107,7 @@
 		<remap from="cloud_in" to="/points" />
 
 		<!-- Filter ground for binary occupancy map -->
-		<param name="base_frame_id" value="fcu" />
+		<param name="base_frame_id" value="world" />
 		<!-- <param name="filter_ground" value="true" />
 		<param name="ground_filter_plane_distance" value="1.00" />
 		<param name="ground_filter/distance" value="0.50" /> -->
@@ -124,7 +125,7 @@
         <param name="resolution" value="0.5" />
         <remap from="occupied_cells_vis_array" to="occupied_cells_vis_array2"/>
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="fcu" />
+		<param name="frame_id" type="string" value="world" />
 		
 		<!-- maximum range to integrate (speedup!) -->
 		<param name="sensor_model/max_range" value="50" />
@@ -133,7 +134,7 @@
 		<remap from="cloud_in" to="/points2" />
 
 		<!-- Filter ground for binary occupancy map -->
-		<param name="base_frame_id" value="fcu" />
+		<param name="base_frame_id" value="world" />
 		<!-- <param name="filter_ground" value="true" />
 		<param name="ground_filter_plane_distance" value="1.00" />
 		<param name="ground_filter/distance" value="0.50" /> -->

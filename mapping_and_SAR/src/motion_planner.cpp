@@ -251,7 +251,7 @@ int main(int argc, char ** argv)
     graph_conn_pub = nh.advertise<visualization_msgs::Marker>("graph_conns", 100);
 	
 	
-    pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "fcu";
+    pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "world";
     graph_conn_list.type = visualization_msgs::Marker::LINE_LIST;
     graph_conn_list.action = visualization_msgs::Marker::ADD;
     graph_conn_list.scale.x = 0.1;
@@ -620,7 +620,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 {
     // Variables for visualization for debugging purposes
 	double distance = 0.5; 
-	std::string frame_id = "fcu";
+	std::string frame_id = "world";
 
 	// Setup optimizer
 	mav_trajectory_generation::Vertex::Vector vertices;

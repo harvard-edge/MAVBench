@@ -67,7 +67,7 @@ Visualization Manager:
           Value: true
         camera:
           Value: true
-        fcu:
+        world:
           Value: false
         world:
           Value: true
@@ -80,7 +80,7 @@ Visualization Manager:
         airsim_qc/vi_sensor/base_link:
           {}
         world:
-          fcu:
+          world:
             airsim_qc/vi_sensor/camera_depth_optical_center_link:
               {}
             airsim_qc/vi_sensor/camera_left_link:
@@ -176,7 +176,7 @@ Visualization Manager:
   Enabled: true
   Global Options:
     Background Color: 135; 104; 144
-    Fixed Frame: fcu
+    Fixed Frame: world
     Frame Rate: 30
   Name: root
   Tools:

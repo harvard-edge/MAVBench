@@ -113,7 +113,7 @@ int main(int argc, char **argv)
         drone_pose_stamped.pose = drone_pose;
         //drone_pose_stamped.header.seq //this is incremented by roscp
         drone_pose_stamped.header.stamp = ros::Time::now();
-        drone_pose_stamped.header.frame_id = "fcu"; //possible change
+        drone_pose_stamped.header.frame_id = "world"; //possible change
                 
         pose_pub.publish(drone_pose_stamped);
 	 	

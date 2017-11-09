@@ -63,7 +63,7 @@ int main(int argc, char** argv)
   //behzad change for visualization purposes
   ros::Publisher path_to_follow_marker_pub = nh.advertise<visualization_msgs::Marker>("path_to_follow_topic", 1000);
   geometry_msgs::Point p_marker;
-  path_to_follow_marker.header.frame_id = "fcu";
+  path_to_follow_marker.header.frame_id = "world";
   path_to_follow_marker.type = visualization_msgs::Marker::CUBE_LIST;
   path_to_follow_marker.action = visualization_msgs::Marker::ADD;
   path_to_follow_marker.scale.x = 0.3;
@@ -221,7 +221,7 @@ int main(int argc, char** argv)
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
-    planSrv.request.header.frame_id = "fcu";
+    planSrv.request.header.frame_id = "world";
     if (ros::service::call("nbvplanner", planSrv)) {
       n_seq++;
       if (planSrv.response.path.size() == 0) {
@@ -231,7 +231,7 @@ int main(int argc, char** argv)
       for (int i = 0; i < planSrv.response.path.size(); i++) {
         samples_array.header.seq = n_seq;
         samples_array.header.stamp = ros::Time::now();
-        samples_array.header.frame_id = "fcu";
+        samples_array.header.frame_id = "world";
         samples_array.points.clear();
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);
