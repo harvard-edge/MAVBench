@@ -62,6 +62,7 @@ void control_drone(Drone& drone)
 	cout << "\ty x: set yaw to x\n";
 	cout << "\tp: print pitch, roll, yaw, height\n";
 	cout << "\tc: complete drone setup and continue\n";
+	cout << "\ts: sleep for 5 seconds\n";
 	cout << "\tCtrl-c/q: quit\n";
 
 	std::string cmd("");
@@ -72,14 +73,15 @@ void control_drone(Drone& drone)
             if (cmd == "q") {
               LOG_TIME(package_delivery);
               cout << "bye~" << endl;
-              raise(SIGINT);
+              ros::shutdown();
+              exit(0);
               return;
-            } else if (cmd == "s") {
-              sleep(5);
             }
 
 	    if (cmd == "a") {
 	        drone.arm();
+                } else if (cmd == "s") {
+			sleep(5);
 		} else if (cmd == "d") {
 			drone.disarm();
 		} else if (cmd == "t") {
