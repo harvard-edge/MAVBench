@@ -184,7 +184,7 @@ int main(int argc, char **argv)
 		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
 
     auto pos_fun = [&]() {
-        return drone.position(localization_method);
+        return drone.position();
     };
 
 

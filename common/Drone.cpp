@@ -8,19 +8,31 @@
 #include <geometry_msgs/Point.h>
 #include "timer.h"
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
+//#include "common/VectorMath.hpp"
 Drone::Drone() : client(0)
 {
 	connect();
     initial_gps = {0, 0, 0};
     initial_gps = gps();
+    this->localization_method = "ground_truth";
 }
 
-Drone::Drone(const std::string& ip_addr, uint16_t port) : client(0), collision_count(0)
+Drone::Drone(const std::string& ip_addr, uint16_t port) : client(0), collision_count(0), 
+    localization_method("ground_truth")
 {
 	connect(ip_addr, port);
     initial_gps = {0, 0, 0};
     initial_gps = gps();
-    printf("\n\n\ninitial gps is %f %f %f\n\n\n", initial_gps.x, initial_gps.y, initial_gps.z);
+    //this->localization_method = "ground_truth";
+}
+
+Drone::Drone(const std::string& ip_addr, uint16_t port, std::string localization_method) : client(0), collision_count(0),
+    localization_method("ground_truth")
+{
+	connect(ip_addr, port);
+    initial_gps = {0, 0, 0};
+    initial_gps = gps();
+    //this->localization_method = localization_method;
 }
 
 Drone::~Drone()
@@ -37,6 +49,9 @@ void Drone::connect()
     client->enableApiControl(true);
 }
 
+void Drone::set_localization_method(std::string localization_method) {
+    this->localization_method = localization_method;
+}
 void Drone::connect(const std::string& ip_addr, uint16_t port)
 {
 	if (client != 0)
@@ -165,12 +180,12 @@ coord Drone::gps()
 }
 
 
-coord Drone::position(std::string localization_method)
+coord Drone::position()
 {
     tf::StampedTransform transform;
 
     try{
-      tfListen.lookupTransform("/world", "/"+localization_method,
+      tfListen.lookupTransform("/world", "/"+(this->localization_method),
                                ros::Time(0), transform);
     }
     catch (tf::TransformException ex){
@@ -186,13 +201,13 @@ coord Drone::position(std::string localization_method)
     return result;
 }
 
-geometry_msgs::Pose Drone::pose(std::string localization_method)
+geometry_msgs::Pose Drone::pose()
 {
     geometry_msgs::Pose result;
 
     tf::StampedTransform transform;
     try{
-      tfListen.lookupTransform("/world", "/"+localization_method,
+      tfListen.lookupTransform("/world", "/"+(this->localization_method),
                                ros::Time(0), transform);
     }
     catch (tf::TransformException ex){
@@ -214,11 +229,11 @@ geometry_msgs::Pose Drone::pose(std::string localization_method)
     return result;
 }
 
-geometry_msgs::PoseWithCovariance Drone::pose_with_covariance(std::string localization_method)
+geometry_msgs::PoseWithCovariance Drone::pose_with_covariance()
 {
     geometry_msgs::PoseWithCovariance result;
 
-    result.pose = pose(localization_method);
+    result.pose = pose();
 
     for (int i = 0; i <36; i++) { 
         //https://answers.ros.org/question/181689/computing-posewithcovariances-6x6-matrix/ 
@@ -230,8 +245,10 @@ geometry_msgs::PoseWithCovariance Drone::pose_with_covariance(std::string locali
 
 float Drone::get_yaw()
 {
-	auto q = client->getOrientation();
-	float p, r, y;
+	//auto q = client->getOrientation();
+	auto pose = this->pose();
+    msr::airlib::Quaternionr q(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
+    float p, r, y;
     msr::airlib::VectorMath::toEulerianAngle(q, p, y, r);
 
 	return y*180 / M_PI;
@@ -239,13 +256,18 @@ float Drone::get_yaw()
 
 float Drone::get_roll()
 {
-	auto q = client->getOrientation();
-	float p, r, y;
+	//auto q = client->getOrientation();
+	auto pose = this->pose();
+   msr::airlib::Quaternionr q(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
+
+    
+    float p, r, y;
     msr::airlib::VectorMath::toEulerianAngle(q, p, y, r);
 
 	return r*180 / M_PI;
 }
 
+/*
 geometry_msgs::Pose Drone::get_geometry_pose(){
     geometry_msgs::Pose pose;
 	auto q = client->getOrientation();
@@ -259,7 +281,8 @@ geometry_msgs::Pose Drone::get_geometry_pose(){
     pose.orientation.w = q.w();
     return pose;
 }
-
+*/
+/*
 geometry_msgs::PoseWithCovariance Drone::get_geometry_pose_with_coveraiance(){
     geometry_msgs::PoseWithCovariance pose_with_covariance;
     geometry_msgs::Pose pose;
@@ -279,10 +302,17 @@ geometry_msgs::PoseWithCovariance Drone::get_geometry_pose_with_coveraiance(){
     } 
     return pose_with_covariance;
 }
+*/
+
 float Drone::get_pitch()
 {
-	auto q = client->getOrientation();
-	float p, r, y;
+	
+    auto pose = this->pose();
+    msr::airlib::Quaternionr q(pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w);
+     //auto q = client->getOrientation();
+	
+    
+    float p, r, y;
     msr::airlib::VectorMath::toEulerianAngle(q, p, y, r);
 
 	return p*180 / M_PI;

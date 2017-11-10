@@ -21,13 +21,14 @@ class Drone {
 public:
     Drone();
     Drone(const std::string& ip_addr, uint16_t port);
-
+    Drone(const std::string& ip_addr, uint16_t port, std::string localization_method);
+    
     ~Drone();
 
     // *** F:DN Connection functions
     void connect();
     void connect(const std::string& ip_addr, uint16_t port);
-
+    void set_localization_method(std::string localization_method);
 	// *** F:DN Control functions
     void arm();
     void disarm();
@@ -38,9 +39,9 @@ public:
     bool set_yaw_based_on_quaternion(geometry_msgs::Quaternion q);
 
     // *** F:DN Localization functions
-    coord position(std::string localization_method); 
-    geometry_msgs::Pose pose(std::string localization_method);
-    geometry_msgs::PoseWithCovariance pose_with_covariance(std::string localization_method);
+    coord position(); 
+    geometry_msgs::Pose pose();
+    geometry_msgs::PoseWithCovariance pose_with_covariance();
 
     coord gps();
 
@@ -48,13 +49,14 @@ public:
     float get_pitch();
     float get_yaw();
     float get_roll();
-    geometry_msgs::Pose get_geometry_pose();
-    geometry_msgs::PoseWithCovariance get_geometry_pose_with_coveraiance();
+    //geometry_msgs::Pose get_geometry_pose();
+    //geometry_msgs::PoseWithCovariance get_geometry_pose_with_coveraiance();
 
     // *** F:DN Collison functions
     msr::airlib::CollisionInfo getCollisionInfo();
 
 private:
+    std::string localization_method; 
     msr::airlib::MultirotorRpcLibClient * client;
     coord initial_gps;
     tf::TransformListener tfListen;

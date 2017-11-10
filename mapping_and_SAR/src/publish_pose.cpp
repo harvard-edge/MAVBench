@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 	{
         //control_drone(drone);
         
-        geometry_msgs::PoseWithCovariance  drone_pose = drone.get_geometry_pose_with_coveraiance();
+        geometry_msgs::PoseWithCovariance  drone_pose = drone.pose_with_covariance();
         geometry_msgs::PoseWithCovarianceStamped drone_pose_stamped; 
         drone_pose_stamped.pose = drone_pose;
         //drone_pose_stamped.header.seq //this is incremented by roscp

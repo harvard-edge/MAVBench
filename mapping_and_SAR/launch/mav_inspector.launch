@@ -58,6 +58,7 @@
       <remap from="cam1/camera_info" to="/$(arg mav_name)$(arg subscript)/vi_sensor/right/camera_info"/>
       <remap from="pointcloud_throttled" to="$(arg pcl_topic)"/>
       <remap from="pose" to="/pose_topic"/>
+      <!--remap from="pose" to="$(arg localization_method)"/-->
       <remap from="nbvplanner" to="/$(arg mav_name)$(arg subscript)/nbvplanner"/>
       <remap from="peer_pose_1" to="$(arg peer_vehicle_pose_topic_1)"/>
       <remap from="peer_pose_2" to="$(arg peer_vehicle_pose_topic_2)"/>
