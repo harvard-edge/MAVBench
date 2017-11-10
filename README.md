@@ -20,13 +20,16 @@ cd $catkin_ws/src/mav-bench
 
 ## To install SLAM packages
 
+### first install glew
+sudo apt-get install libglew-dev
+### then install pangolan(follow the instruction on their github page)
 ### ORB-SLAM2
 Run the following commands (replacing $catkin_ws with the location of your catkin workspace and hngenc with your own username):
 ```shell
 cd $catkin_ws/src/mav-bench
 git clone https://hngenc@bitbucket.org/hngenc/orb_slam2.git
-cd orb_slam2
-./build.sh
+cd orb_slam2 
+./build.sh (if this step fails, it's possibly that the processor ran out of ram. The soltion is to chance the build.sh to force the build process to use less cores (e.g. make -j1))
 ./build_ros.sh
 ```
 

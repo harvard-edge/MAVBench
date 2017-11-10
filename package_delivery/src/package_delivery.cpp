@@ -266,7 +266,7 @@ int main(int argc, char **argv)
                 double dx = goal.x - drone_pos.x;
                 double dy = goal.y - drone_pos.y;
                 //ROS_INFO("Turning to %f degrees", std::atan(dy / dx) * 180 / M_PI);
-                drone.set_yaw(std::atan(dy / dx) * 180 / M_PI);
+                drone.set_yaw(std::atan(dx / dy) * 180 / M_PI);
 
                 // *** F:DN iterate through cmd propopsed and issue them
                 should_panic = future_col = false;

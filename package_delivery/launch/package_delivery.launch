@@ -10,8 +10,8 @@
     <!-- arg name="host_ip" value="10.157.90.62" /-->
 
     <!-- Set the localization method -->
-    <!-- arg name="localization_method" value="orb_slam2_rgbd" / -->
-    <arg name="localization_method" value="ground_truth" />
+    <arg name="localization_method" value="orb_slam2_rgbd" />
+    <!-- arg name="localization_method" value="ground_truth" /-->
 
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)-->

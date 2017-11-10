@@ -117,7 +117,7 @@ bool check_for_collisions()
 
     bool col = false;
 
-    for (int i = 4/0.5; !col && i < traj.points.size() - 1; ++i) {
+    for (int i = 4*2; !col && i < traj.points.size() - 1; ++i) {
         auto& pos1 = traj.points[i].transforms[0].translation;
         auto& pos2 = traj.points[i+1].transforms[0].translation;
 
