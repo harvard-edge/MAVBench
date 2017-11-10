@@ -28,7 +28,7 @@
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
 #include <nbvplanner/nbvp_srv.h>
-#include <mapping_and_SAR/OD.h>
+#include <mapping_and_sar/OD.h>
 #include "common/Common.hpp"
 #include <fstream>
 #include "Drone.h"
@@ -42,7 +42,7 @@ static const std::string OPENCV_WINDOW = "Image window";
 static std::string mav_name__global;
 YOLODetector detector;
 
-static mapping_and_SAR::OD result;
+static mapping_and_sar::OD result;
 
 void obj_detect_call_back(const sensor_msgs::ImageConstPtr& msg)
 {
@@ -67,7 +67,7 @@ void obj_detect_call_back(const sensor_msgs::ImageConstPtr& msg)
         //ROS_INFO_STREAM("blah blah");
     bb = detector.detect_person(cv_ptr->image);
     //ROS_INFO_STREAM("after detection");	
-    //mapping_and_SAR::OD result; 
+    //mapping_and_sar::OD result; 
     
 
     if(bb.conf >= detect_thresh) {
@@ -110,7 +110,7 @@ int main(int argc, char** argv){
   }
 
   
-  ros::Publisher obj_det_pub = nh.advertise <mapping_and_SAR::OD>("/OD_topic", 4);
+  ros::Publisher obj_det_pub = nh.advertise <mapping_and_sar::OD>("/OD_topic", 4);
   ros::Subscriber raw_image_sub  = nh.subscribe("/Airsim/right/image_raw", 1, obj_detect_call_back);
   
   uint16_t port = 41451;

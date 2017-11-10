@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 	package_delivery::get_trajectory get_trajectory_srv;
 	
     uint16_t port = 41451;
-    Drone drone(ip_addr__global.c_str(), port);
+    Drone drone(ip_addr__global.c_str(), port, localization_method);
     int reaction_delay_counter_init_value = 1; 
     int reaction_delay_counter =  reaction_delay_counter_init_value;
     bool delivering_mission_complete = false; //if true, we have delivered the 

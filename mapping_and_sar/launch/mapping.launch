@@ -20,14 +20,14 @@
     <!-- Hasans's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.208" /--> 
     
-    <include file="$(find mapping_and_SAR)/launch/mav_inspector.launch">
+    <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="host_ip" value="$(arg host_ip)"/>
     <arg name="localization_method" value="$(arg localization_method)"/>
     <arg name="waypoint_x" value="0.0" />
     <arg name="waypoint_y" value="0.0" />
     <arg name="waypoint_z" value="1.0" />
-    <arg name="param_file" value="$(find mapping_and_SAR)/resource/exploration.yaml" />
+    <arg name="param_file" value="$(find mapping_and_sar)/resource/exploration.yaml" />
     <arg name="enable_logging" value="$(arg enable_logging)" />
     <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
     <arg name="log_file" value="$(arg log_file)" />
@@ -40,13 +40,13 @@
   </include>
     
   <!-- point cloud and pose -->
-  <include file="$(find mapping_and_SAR)/launch/point_cloud_and_pose.launch"/>
+  <include file="$(find mapping_and_sar)/launch/point_cloud_and_pose.launch"/>
 
 
-  <arg name="param_file" value="$(find mapping_and_SAR)/resource/exploration.yaml" />
+  <arg name="param_file" value="$(find mapping_and_sar)/resource/exploration.yaml" />
   <!-- following the tejactory --> 
   <!-- group ns="$(arg mav_name)" -->
-  <node pkg="mapping_and_SAR" type="follow_trajectory" name="follow_trajectory" output="screen">
+  <node pkg="mapping_and_sar" type="follow_trajectory" name="follow_trajectory" output="screen">
   <rosparam command="load" file="$(arg param_file)" />
   <param name="mav_name" value="$(arg mav_name)"/>
   <!-- param name="yaw_t" value=".75"/ -->
@@ -58,7 +58,7 @@
   <!--comment-->
   <!-- rviz -->
   <!-- group if="$(arg DEBUG)" -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mapping_and_SAR)/extras/rvizConfig.rviz"/>
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mapping_and_sar)/extras/rvizConfig.rviz"/>
 
   
 

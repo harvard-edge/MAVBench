@@ -71,7 +71,7 @@
       <remap from="cam1/camera_info" to="/Airsim/right/camera_info"/>
       <rosparam command="load" file="$(arg param_file)" />
     </node>
-    <node name="exploration" pkg="mapping_and_SAR" type="exploration" output="screen" >
+    <node name="exploration" pkg="mapping_and_sar" type="exploration" output="screen" >
           <rosparam command="load" file="$(arg param_file)" />
     </node>
   </group>

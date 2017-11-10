@@ -30,7 +30,7 @@
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <multiagent_collision_check/Segment.h>
 
-#include <mapping_and_SAR/OD.h>
+#include <mapping_and_sar/OD.h>
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
 #include <nbvplanner/nbvp_srv.h>
@@ -41,7 +41,7 @@
 
 visualization_msgs::Marker path_to_follow_marker;
 
-void OD_callback(const mapping_and_SAR::OD::ConstPtr& msg){
+void OD_callback(const mapping_and_sar::OD::ConstPtr& msg){
     /* 
     if (msg->found) {
         ROS_INFO_STREAM("found the object at the location" << msg->point.x<< " " 
@@ -59,7 +59,7 @@ int main(int argc, char** argv)
   ros::Publisher trajectory_pub = nh.advertise < trajectory_msgs::MultiDOFJointTrajectory
       > (mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
   ROS_INFO("Started Search and rescue");
-  ros::Subscriber obj_det_sub = nh.subscribe <mapping_and_SAR::OD>("/OD_topic", 2, OD_callback);
+  ros::Subscriber obj_det_sub = nh.subscribe <mapping_and_sar::OD>("/OD_topic", 2, OD_callback);
   
   uint16_t port = 41451;
   std::string ip_addr__global;

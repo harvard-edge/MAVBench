@@ -31,7 +31,7 @@ using namespace std;
 bool should_panic = false;
 bool future_col = false;
 string ip_addr__global;
-
+string localization_method;
 
 
 
@@ -112,7 +112,7 @@ void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
 
 void package_delivery_initialize_params() {
     ros::param::get("/scanning/ip_addr",ip_addr__global);
-    ;
+    ros::param::get("/package_delivery/localization_method",localization_method);
 }
 
 // *** F:DN main function
@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 	package_delivery::get_trajectory get_trajectory_srv;
 	
     uint16_t port = 41451;
-    Drone drone(ip_addr__global.c_str(), port);
+    Drone drone(ip_addr__global.c_str(), port, localization_method);
     
     bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin

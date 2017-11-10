@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(mapping_and_SAR)
+project(mapping_and_sar)
 set(darknet_include_dir  $ENV{HOME}/darknet/include $ENV{HOME}/darknet/src $ENV{HOME})
 set(darknet_lib_dir $ENV{HOME}/darknet/obj)
 set(darknet_lib_dir $ENV{HOME}/darknet/obj)

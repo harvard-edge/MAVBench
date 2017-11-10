@@ -16,7 +16,7 @@
     <!-- arg name="my_launch_prefix" value="/home/nvidia/install/perf/perf record -g fp"/ -->
     
 
-     <arg name="param_file" value="$(find mapping_and_SAR)/resource/exploration.yaml" />
+     <arg name="param_file" value="$(find mapping_and_sar)/resource/exploration.yaml" />
 
     <!-- starting nodes --> 
 	<!-- Point-cloud publisher -->
@@ -62,7 +62,7 @@
 
     <!-- publishing pose values --> 
     <arg name="mav_name" default="airsim_qc" />
-    <node pkg="mapping_and_SAR" type="publish_pose" name="publish_pose" output="screen">
+    <node pkg="mapping_and_sar" type="publish_pose" name="publish_pose" output="screen">
         <param name="ip_addr" value="$(arg host_ip)"/>
     </node>
 	
