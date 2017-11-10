@@ -9,6 +9,9 @@
     <!-- Wenzhi's workstation ip -->
     <!-- arg name="host_ip" value="10.157.90.62" /-->
 
+    <!-- orb slam location--> 
+    <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
+
     <!-- Set the localization method -->
     <arg name="localization_method" value="orb_slam2_rgbd" />
     <!-- arg name="localization_method" value="ground_truth" /-->
@@ -145,7 +148,13 @@
         <param name="localization_method" value="$(arg localization_method)" />
     </node>
 
-	<!-- rviz -->
+    <!-- node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="/home/nvidia/catkin_ws/src/orb_slam2/Vocabulary/ORBvoc.txt /home/nvidia/catkin_ws/src/orb_slam2/cameras/airsim-rgbd.yaml
+    /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth"/-->
+	
+    <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth"/>
+	
+    
+    <!-- rviz -->
 	<group if="$(arg DEBUG)">
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
 	</group>
