@@ -13,9 +13,9 @@
     <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
     <!-- Set the localization method -->
-    <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
-    <!--arg name="localization_method" value="ground_truth" /-->
-    <arg name="localization_method" value="gps" />
+    <arg name="localization_method" value="orb_slam2_rgbd" />
+    <!-- arg name="localization_method" value="ground_truth" /-->
+    <!-- arg name="localization_method" value="gps" /-->
     
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)-->
@@ -149,12 +149,7 @@
         <param name="localization_method" value="$(arg localization_method)" />
     </node>
 
-    <!-- node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="/home/nvidia/catkin_ws/src/orb_slam2/Vocabulary/ORBvoc.txt /home/nvidia/catkin_ws/src/orb_slam2/cameras/airsim-rgbd.yaml
-    /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth"/-->
-	
-    
-    <!-- node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw
-    /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth"/-->
+    <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth"/>
 	
     
     <!-- rviz -->

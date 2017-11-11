@@ -80,7 +80,7 @@ void control_drone(Drone& drone)
 			cin >> x;
 			drone.set_yaw(x);
 		} else if (cmd == "p") {
-			auto pos = drone.gps();
+			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd == "s") {
             spin_around(drone); 

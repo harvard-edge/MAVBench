@@ -178,9 +178,9 @@ void take_commands_and_follow(list<trajectory_msgs::MultiDOFJointTrajectoryPoint
         //ROS_INFO_STREAM("cur_p x,y,z"<< cur_p.transforms[0].translation.x<<" "<< cur_p.transforms[0].translation.y<< " " << cur_p.transforms[0].translation.z);
         //ROS_INFO_STREAM("v x,y,z"<< v_x<< " " << v_y<<" "<< v_z);
         
-        drone.fly_velocity(v_x + 0.2*(cur_p.transforms[0].translation.x-drone.gps().x),
-                v_y + 0.2*(cur_p.transforms[0].translation.y-drone.gps().y),
-                v_z + 0.2*(cur_p.transforms[0].translation.z-drone.gps().z), segment_dedicated_time);
+        drone.fly_velocity(v_x + 0.2*(cur_p.transforms[0].translation.x-drone.pose().position.x),
+                v_y + 0.2*(cur_p.transforms[0].translation.y-drone.pose().position.y),
+                v_z + 0.2*(cur_p.transforms[0].translation.z-drone.pose().position.z), segment_dedicated_time);
         
         /* 
         drone.fly_velocity(v_x, 
@@ -197,10 +197,15 @@ int main(int argc, char **argv){
     ros::init(argc, argv, "follow_trajectory", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
     signal(SIGINT, sigIntHandler);
+    std::string localization_method; 
     ros::param::get("/follow_trajectory/ip_addr",ip_addr__global);
     ros::param::get("/follow_trajectory/mav_name",mav_name);
+    if(!ros::param::get("/package_delivery/localization_method",localization_method))  {
+      ROS_FATAL_STREAM("Could not start search and rescue cause localization_method not provided");
+    return -1; 
+    }
     uint16_t port = 41451;
-    Drone drone(ip_addr__global.c_str(), port);
+    Drone drone(ip_addr__global.c_str(), port, localization_method);
     //double segment_dedicated_time = 1;
     first_point_ever = true;
 

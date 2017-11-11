@@ -69,6 +69,7 @@
       <rosparam command="load" file="$(arg param_file)" />
     </node>
     <node name="SAR" pkg="mapping_and_sar" type="SAR" output="screen" >
+          <param name="localization_method" type="string" value="$(arg localization_method)"/>
           <rosparam command="load" file="$(arg param_file)" />
     </node>
   </group>

@@ -63,15 +63,20 @@ int main(int argc, char** argv)
   
   uint16_t port = 41451;
   std::string ip_addr__global;
-  
+  std::string localization_method; 
   std::string ns = ros::this_node::getName();
   if (!ros::param::get("/ip_addr", ip_addr__global)) {
     ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
               (ns + "/ip_addr").c_str());
     return -1;
   }
+    
+  if(!ros::param::get("/package_delivery/localization_method",localization_method))  {
+      ROS_FATAL_STREAM("Could not start search and rescue cause localization_method not provided");
+    return -1; 
+  }
   
-  //behzad change for visualization purposes
+    //behzad change for visualization purposes
   ros::Publisher path_to_follow_marker_pub = nh.advertise<visualization_msgs::Marker>("path_to_follow_topic", 1000);
   geometry_msgs::Point p_marker;
   path_to_follow_marker.header.frame_id = "fcu";
@@ -82,7 +87,7 @@ int main(int argc, char** argv)
 
   //ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
   //ROS_ERROR_STREAM("blah"<<ip_addr__global);
-  Drone drone(ip_addr__global.c_str(), port);
+  Drone drone(ip_addr__global.c_str(), port, localization_method);
 
   //dummy segment publisher
   ros::Publisher seg_pub = nh.advertise <multiagent_collision_check::Segment>("evasionSegment", 1);
@@ -169,9 +174,9 @@ int main(int argc, char** argv)
    
     //behzad change, so the starting point is adjusted based on the drone 
     // starting postion (as opposed to being hardcoded)
-    trajectory_point.position_W.x() = drone.gps().x;
-    trajectory_point.position_W.y() = drone.gps().y;
-    trajectory_point.position_W.z() = drone.gps().z;
+    trajectory_point.position_W.x() = drone.pose().position.x;
+    trajectory_point.position_W.y() = drone.pose().position.y;
+    trajectory_point.position_W.z() = drone.pose().position.z;
     //ROS_INFO_STREAM("blah "<< trajectory_point.position_W.x()  <<" " << trajectory_point.position_W.y()  <<" " << trajectory_point.position_W.z());
 
     samples_array.header.seq = n_seq;

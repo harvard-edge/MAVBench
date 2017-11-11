@@ -48,6 +48,7 @@
   <rosparam command="load" file="$(arg param_file)" />
   <param name="mav_name" value="$(arg mav_name)"/>
   <!-- param name="yaw_t" value=".75"/ -->
+  <param name="localization_method" type="string" value="$(arg localization_method)"/>
   <param name="ip_addr" value="$(arg host_ip)"/>
   <param name="segment_dedicated_time" value="1.0"/>
   </node>

@@ -12,8 +12,8 @@
 Drone::Drone() : client(0)
 {
 	connect();
-    initial_gps = {0, 0, 0};
-    initial_gps = gps();
+    //initial_gps = {0, 0, 0};
+    //initial_gps = gps();
     this->localization_method = "ground_truth";
 }
 
@@ -21,16 +21,15 @@ Drone::Drone(const std::string& ip_addr, uint16_t port) : client(0), collision_c
     localization_method("ground_truth")
 {
 	connect(ip_addr, port);
-    initial_gps = {0, 0, 0};
-    initial_gps = gps();
-    //this->localization_method = "ground_truth";
+    //initial_gps = {0, 0, 0};
+    //initial_gps = gps();
 }
 
 Drone::Drone(const std::string& ip_addr, uint16_t port, std::string localization_method) : client(0), collision_count(0)
 {
 	connect(ip_addr, port);
-    initial_gps = {0, 0, 0};
-    initial_gps = gps();
+    //initial_gps = {0, 0, 0};
+    //initial_gps = gps();
     this->localization_method = localization_method;
 }
 
@@ -157,19 +156,12 @@ bool Drone::land()
 
 	return true;
 }
-
+/*
 coord Drone::gps()
 {
 	getCollisionInfo();
 	auto pos = client->getPosition();
-    /*
-	return {pos.x() - initial_gps.x,
-        pos.y() - initial_gps.y,
-        pos.z() - initial_gps.z};
-    */
-    // printf("\n\n\n initial gps is %f %f %f\n\n\n", initial_gps.x, initial_gps.y, initial_gps.z);
-    // printf("\n\n\n pose is %f %f %f\n\n\n", initial_gps.x, initial_gps.y, initial_gps.z);
-
+ 
     coord curr_pos = {pos.y(), pos.x(), -pos.z()};
     coord result = {curr_pos.x - initial_gps.x,
                     curr_pos.y - initial_gps.y,
@@ -177,7 +169,7 @@ coord Drone::gps()
     
     return result;
 }
-
+*/
 
 geometry_msgs::Pose Drone::pose()
 {
@@ -195,7 +187,8 @@ geometry_msgs::Pose Drone::pose()
         result.orientation.w = q.w();
     }else{
      */
-     tf::StampedTransform transform;
+    //std::cout<<"localization method is"<<this->localization_method<<std::endl;
+    tf::StampedTransform transform;
         try{
             tfListen.lookupTransform("/world", "/"+(this->localization_method),
                     ros::Time(0), transform);

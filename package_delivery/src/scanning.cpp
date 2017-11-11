@@ -87,7 +87,7 @@ void control_drone(Drone& drone)
 			cin >> x;
 			drone.set_yaw(x);
 		} else if (cmd == "p") {
-			auto pos = drone.gps();
+			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd != "c") {
 			cout << "Unknown command" << endl;
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
         control_drone(drone);
 	    
         // *** F:DN set drone start position	
-        auto drone_pos = drone.gps();
+        auto drone_pos = drone.pose().position;
 		start.x = drone_pos.x; start.y = drone_pos.y; start.z = drone_pos.z;
 		std::cout << "Current position is " << drone_pos.x << " " << drone_pos.y << " " << drone_pos.z << std::endl;
 	    

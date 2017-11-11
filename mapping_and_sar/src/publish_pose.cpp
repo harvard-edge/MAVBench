@@ -75,7 +75,7 @@ void control_drone(Drone& drone)
 			cin >> x;
 			drone.set_yaw(x);
 		} else if (cmd == "p") {
-			auto pos = drone.gps();
+			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd != "c") {
 			cout << "Unknown command" << endl;
@@ -94,16 +94,22 @@ int main(int argc, char **argv)
     // ROS node initialization
     ros::init(argc, argv, "publish_pose", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
+    
+    
+    std::string localization_method; 
     signal(SIGINT, sigIntHandler);
  
     ros::Publisher pose_pub = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_topic", 10);
     uint16_t port = 41451;
     ros::param::get("/publish_pose/ip_addr",ip_addr__global);
     //ROS_ERROR_STREAM("blah"<<ip_addr__global);
-    Drone drone(ip_addr__global.c_str(), port);
-	ros::Rate pub_rate(5);
-
-
+    ros::Rate pub_rate(5);
+    if(!ros::param::get("/package_delivery/localization_method",localization_method))  {
+        ROS_FATAL_STREAM("Could not start search and rescue cause localization_method not provided");
+        return -1; 
+    }
+    
+    Drone drone(ip_addr__global.c_str(), port, localization_method);
     while (ros::ok())
 	{
         //control_drone(drone);
