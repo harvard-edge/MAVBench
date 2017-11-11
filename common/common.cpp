@@ -4,6 +4,8 @@
 #include <random>
 #include "Drone.h"
 
+
+
 void action_upon_future_col(Drone& drone) {
     scan_around(drone, 30);
 }

@@ -121,23 +121,7 @@ void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
     future_col = msg->data;
 }
 
-void action_upon_panic(Drone& drone) {
-    float yaw = drone.get_yaw();
 
-    while (should_panic) {
-        drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        ros::spinOnce();
-        ROS_INFO("Panicking..");
-    }
-    ROS_INFO("Panicking one last time...");
-    drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0, 0.75);
-    std::this_thread::sleep_for(std::chrono::milliseconds(850));
-
-    spin_around(drone);
-    should_panic = true;
-    ROS_INFO("Done panicking!");
-}
 
 /*
 void action_upon_future_col(Drone& drone) {
