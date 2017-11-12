@@ -112,8 +112,8 @@ catkin_package(
 )
 
 
-#add_executable(control_drone src/control_drone.cpp src/common.cpp src/Drone.cpp)
-#target_link_libraries(control_drone ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread )
+#add_executable(control_drone_node ${common_utility_src}/control_drone_node.cpp ${common_utility_src}/control_drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
+#target_link_libraries(control_drone_node ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread )
 
 add_executable(publish_pose src/publish_pose.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(publish_pose ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread )
@@ -121,11 +121,11 @@ target_link_libraries(publish_pose ${catkin_LIBRARIES} AirLib MavLinkCom rpc pth
 add_executable(follow_trajectory src/follow_trajectory.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(follow_trajectory ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread)
 
-add_executable(SAR src/SAR.cpp  ${common_utility_src}/Drone.cpp src/control_drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/timer.cpp)
+add_executable(SAR src/SAR.cpp  ${common_utility_src}/Drone.cpp ${common_utility_src}/control_drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(SAR ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${CUDA_OPENCVLIBS})
 add_dependencies(SAR ${catkin_EXPORTED_TARGETS})
 
-add_executable(exploration src/exploration.cpp src/control_drone.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/timer.cpp)
+add_executable(exploration src/exploration.cpp ${common_utility_src}/control_drone.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(exploration ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${CUDA_OPENCVLIBS})
 add_dependencies(exploration ${catkin_EXPORTED_TARGETS})
 

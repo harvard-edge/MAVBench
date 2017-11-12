@@ -30,14 +30,73 @@
 #include "common.h"
 #include <cstring>
 #include <string>
+
 using namespace std;
-std::string ip_addr__global;
-void sigIntHandler(int sig)
+
+void control_drone(Drone& drone)
 {
-    ros::shutdown();
-    exit(0);
+	cout << "Initialize drone:\n";
+	cout << "\ta: arm\n";
+	cout << "\td: disarm\n";
+	cout << "\tt h: takeoff to h m\n";
+	cout << "\tl: land\n";
+	cout << "\tf x y z d: fly at (x,y,z) m/s for d s\n";
+	cout << "\ty x: set yaw to x\n";
+	cout << "\tp: print pitch, roll, yaw, height\n";
+	cout << "\tc: complete drone setup and continue\n";
+	cout << "\ts: sleep for 5 seconds\n";
+	cout << "\tr: rotate slowlyd\n";
+    cout << "\tCtrl-c/q: quit\n";
+
+	std::string cmd("");
+
+	while(cmd != "c") {
+		cin >> cmd;
+
+            if (cmd == "q") {
+              //LOG_TIME(package_delivery);
+              cout << "bye~" << endl;
+              ros::shutdown();
+              exit(0);
+              return;
+            }
+
+	    if (cmd == "a") {
+	        drone.arm();
+           } else if (cmd == "s") {
+               sleep(5);
+		} else if (cmd == "d") {
+			drone.disarm();
+		} else if (cmd == "t") {
+			double height;
+			cin >> height;
+			cin.ignore(numeric_limits<streamsize>::max(), '\n');
+			drone.takeoff(height);
+		} else if (cmd == "l") {
+			drone.land();
+		} else if (cmd == "f") {
+			double x,y,z,d;
+			cin >> x >> y >> z >> d;
+			drone.fly_velocity(x, y, z, d);
+		} else if (cmd == "y") {
+			double x;
+			cin >> x;
+			drone.set_yaw(x);
+		} else if (cmd == "p") {
+			auto pos = drone.pose().position;
+			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
+        } else if (cmd == "r") {
+            spin_slowly(drone, 20);          
+        }else if (cmd != "c") {
+			cout << "Unknown command" << endl;
+            ros::shutdown();
+            exit(0);
+		}
+	}
 }
 
+
+/*
 void control_drone(Drone& drone)
 {
 	cout << "Initialize drone:\n";
@@ -86,31 +145,8 @@ void control_drone(Drone& drone)
 		}
 	}
 }
+*/
 
 
 
 
-// *** F:DN main function
-int main(int argc, char **argv)
-{
-    
-    // ROS node initialization
-    ros::init(argc, argv, "control_drone", ros::init_options::NoSigintHandler);
-    ros::NodeHandle n;
-    signal(SIGINT, sigIntHandler);
- 
-    uint16_t port = 41451;
-    ros::param::get("/control_drone/ip_addr",ip_addr__global);
-    //ROS_ERROR_STREAM("blah"<<ip_addr__global);
-    Drone drone(ip_addr__global.c_str(), port);
-	ros::Rate pub_rate(5);
-
-
-    while (ros::ok())
-	{
-        control_drone(drone);
-        pub_rate.sleep();
-    }
-    
-
-}

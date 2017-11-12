@@ -13,6 +13,7 @@
 #include <chrono>
 #include <thread>
 //#include "controllers/DroneControllerBase.hpp"
+#include "control_drone.h"
 #include "common/Common.hpp"
 #include <fstream>
 #include "Drone.h"
@@ -48,7 +49,7 @@ double dist(coord t, geometry_msgs::Point m)
 }
 
 
-
+/*
 void control_drone(Drone& drone)
 {
 	cout << "Initialize drone:\n";
@@ -94,7 +95,7 @@ void control_drone(Drone& drone)
 		}
 	}
 }
-
+*/
 
 // *** F:DN call back function for the panic_topic subscriber
 void panic_call_back(const std_msgs::Bool::ConstPtr& msg) {
@@ -112,7 +113,7 @@ void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
 
 void package_delivery_initialize_params() {
     ros::param::get("/scanning/ip_addr",ip_addr__global);
-    ros::param::get("/package_delivery/localization_method",localization_method);
+    ros::param::get("/scanning/localization_method",localization_method);
 }
 
 // *** F:DN main function
@@ -138,7 +139,7 @@ int main(int argc, char **argv)
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
     
-    bool delivering_mission_complete = false; //if true, we have delivered the 
+    //bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
@@ -146,9 +147,9 @@ int main(int argc, char **argv)
     ros::Subscriber panic_sub =  
 		panic_nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
     ros::NodeHandle future_col_nh;
-    ros::Subscriber future_col_sub = 
-		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
-
+    //ros::Subscriber future_col_sub = 
+    //		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
+    future_col = false; //this is hardcode because scanning does not provide this feature
     
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
