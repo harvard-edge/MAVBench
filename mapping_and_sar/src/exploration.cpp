@@ -60,8 +60,8 @@ int main(int argc, char** argv)
     return -1;
   }
   
-    if(!ros::param::get("/package_delivery/localization_method",localization_method))  {
-      ROS_FATAL_STREAM("Could not start search and rescue cause localization_method not provided");
+    if(!ros::param::get("/localization_method",localization_method))  {
+      ROS_FATAL_STREAM("Could not start exploration localization_method not provided");
       return -1;
     }
   
@@ -75,6 +75,7 @@ int main(int argc, char** argv)
   path_to_follow_marker.action = visualization_msgs::Marker::ADD;
   path_to_follow_marker.scale.x = 0.3;
 
+  ROS_INFO("before anything in exploration");
 
   //ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
   //ROS_ERROR_STREAM("blah"<<ip_addr__global);
@@ -130,7 +131,7 @@ int main(int argc, char** argv)
   
   
   double segment_dedicated_time = yaw_t + dt;
-  //ROS_INFO("before controol drone");
+  ROS_INFO("before controol drone");
   control_drone(drone);
 
 
@@ -163,6 +164,9 @@ int main(int argc, char** argv)
   // This is the initialization motion, necessary that the known free space allows the planning
   // of initial paths.
   //ROS_INFO("Starting the planner: Performing initialization motion");
+  
+  
+ /* 
   for (double i = 0; i <= 1.0; i = i + 0.25) {
     
       
@@ -190,7 +194,8 @@ int main(int argc, char** argv)
     trajectory_pub.publish(samples_array);
     ros::Duration(1.0).sleep();
   }
-  
+  */
+  spin_slowly(drone, 30);
   
   trajectory_point.position_W.x() -= 0.;
   trajectory_point.position_W.y() -= 0.;

@@ -49,7 +49,8 @@ void control_drone(Drone& drone)
 	cout << "\ty x: set yaw to x\n";
 	cout << "\tp: print pitch, roll, yaw, height\n";
 	cout << "\tc: complete drone setup and continue\n";
-	cout << "\tCtrl-c: quit\n";
+	cout << "\tr: rotate slowlyd\n";
+    cout << "\tCtrl-c: quit\n";
 
 	std::string cmd("");
 
@@ -78,7 +79,7 @@ void control_drone(Drone& drone)
 		} else if (cmd == "p") {
 			auto pos = drone.gps();
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
-        } else if (cmd == "s") {
+        } else if (cmd == "r") {
             spin_around(drone); 
         }else if (cmd != "c") {
 			cout << "Unknown command" << endl;

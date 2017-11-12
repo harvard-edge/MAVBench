@@ -83,7 +83,7 @@ void control_drone(Drone& drone)
 			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd == "s") {
-            spin_around(drone); 
+            spin_slowly(drone, 30); 
         }else if (cmd != "c") {
 			cout << "Unknown command" << endl;
 		}

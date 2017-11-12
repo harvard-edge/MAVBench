@@ -71,8 +71,8 @@ int main(int argc, char** argv)
     return -1;
   }
     
-  if(!ros::param::get("/package_delivery/localization_method",localization_method))  {
-      ROS_FATAL_STREAM("Could not start search and rescue cause localization_method not provided");
+  if(!ros::param::get("/localization_method",localization_method))  {
+      ROS_FATAL_STREAM("Could not start SAR cause localization_method not provided");
     return -1; 
   }
   

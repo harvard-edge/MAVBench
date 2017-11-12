@@ -200,8 +200,8 @@ int main(int argc, char **argv){
     std::string localization_method; 
     ros::param::get("/follow_trajectory/ip_addr",ip_addr__global);
     ros::param::get("/follow_trajectory/mav_name",mav_name);
-    if(!ros::param::get("/package_delivery/localization_method",localization_method))  {
-      ROS_FATAL_STREAM("Could not start search and rescue cause localization_method not provided");
+    if(!ros::param::get("/follow_trajectory/localization_method",localization_method))  {
+      ROS_FATAL_STREAM("Could not start follow trajectory cause localization_method not provided");
     return -1; 
     }
     uint16_t port = 41451;

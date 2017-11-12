@@ -104,8 +104,8 @@ int main(int argc, char **argv)
     ros::param::get("/publish_pose/ip_addr",ip_addr__global);
     //ROS_ERROR_STREAM("blah"<<ip_addr__global);
     ros::Rate pub_rate(5);
-    if(!ros::param::get("/package_delivery/localization_method",localization_method))  {
-        ROS_FATAL_STREAM("Could not start search and rescue cause localization_method not provided");
+    if(!ros::param::get("/publish_pose/localization_method",localization_method))  {
+        ROS_FATAL_STREAM("Could not start pubslish pose cause localization_method not provided");
         return -1; 
     }
     

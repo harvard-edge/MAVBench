@@ -64,6 +64,7 @@
     <!-- publishing pose values --> 
     <arg name="mav_name" default="airsim_qc" />
     <node pkg="mapping_and_sar" type="publish_pose" name="publish_pose" output="screen">
+        <param name="localization_method" value="$(arg localization_method)"/>
         <param name="ip_addr" value="$(arg host_ip)"/>
     </node>
 	
