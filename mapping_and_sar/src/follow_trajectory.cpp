@@ -71,12 +71,13 @@ void control_drone(Drone& drone)
 	}
 }
 */
+/*
 void sigIntHandler(int sig)
 {
     ros::shutdown();
     exit(0);
 }
-
+*/
 void callback_trajactory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg)//, Drone drone)//, bool &too_close)
 {
     for (int i = 0; i < msg->points.size(); ++i) {
