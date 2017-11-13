@@ -83,6 +83,8 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    //Drone drone(ip_addr__global.c_str(), port);
+    //control_drone(drone);
     ros::Subscriber raw_image_sub  = nh.subscribe("/Airsim/right/image_raw", 1, sample_images_cb);
     //ros::ServiceServer detect_server = 
     //    nh.advertiseService("detect", detection_cb);
