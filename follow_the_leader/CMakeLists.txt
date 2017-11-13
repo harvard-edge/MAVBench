@@ -120,8 +120,8 @@ catkin_package(
 )
 
 
-add_executable(control_drone ${common_utility_src}/control_drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
-target_link_libraries(control_drone ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread )
+#add_executable(control_drone ${common_utility_src}/control_drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
+#target_link_libraries(control_drone ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread )
 
 #add_executable(follow_the_leader src/main.cpp src/misc.cpp src/error.cpp src/log__class.cpp src/objdetect.cpp src/track.cpp src/pid.cpp kcf/kcftracker.cpp kcf/fhog.cpp ${common_utility_src}/Drone.cpp)
 #target_link_libraries(follow_the_leader ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread )
@@ -151,12 +151,14 @@ target_link_libraries(tracking_node ${CUDA_OPENCVLIBS}  ${catkin_LIBRARIES}  ${C
 add_dependencies(tracking_node ${catkin_EXPORTED_TARGETS})
 
 
-add_executable(main_follow_the_leader_node src/main_follow_the_leader.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/objdetect.cpp ${common_utility_src}/timer.cpp)
+add_executable(main_follow_the_leader_node src/main_follow_the_leader.cpp ${common_utility_src}/control_drone.cpp
+   ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/objdetect.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(main_follow_the_leader_node ${CUDA_OPENCVLIBS}  ${catkin_LIBRARIES}  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_curand_LIBRARY} darknet AirLib MavLinkCom rpc pthread)
 add_dependencies(main_follow_the_leader_node ${catkin_EXPORTED_TARGETS})
 
 
-add_executable(pid_node src/pid_thread.cpp src/pid.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/objdetect.cpp ${common_utility_src}/timer.cpp)
+add_executable(pid_node src/pid_thread.cpp src/pid.cpp ${common_utility_src}/control_drone.cpp
+    ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/objdetect.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(pid_node ${CUDA_OPENCVLIBS}  ${catkin_LIBRARIES}  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_curand_LIBRARY} darknet AirLib MavLinkCom rpc pthread)
 add_dependencies(pid_node ${catkin_EXPORTED_TARGETS})
 

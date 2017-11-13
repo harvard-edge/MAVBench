@@ -5,6 +5,12 @@
 #include "Drone.h"
 
 
+void sigIntHandler(int sig)
+{
+    ros::shutdown();
+    exit(0);
+}
+
 
 void action_upon_future_col(Drone& drone) {
     scan_around(drone, 30);

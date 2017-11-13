@@ -37,12 +37,13 @@ bool future_col = false;
 string ip_addr__global;
 string localization_method;
 
-
+/*
 void sigIntHandler(int sig)
 {
     ros::shutdown();
     exit(0);
 }
+*/
 
 double dist(coord t, geometry_msgs::Point m)
 {

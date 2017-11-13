@@ -145,9 +145,9 @@ int main(int argc, char** argv)
     
     tracker_defined = false; 
     //std_msgs::Bool panic_msg;
-    ros::init(argc, argv, "tracking_node");
+    ros::init(argc, argv, "tracking_node", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
-    
+    signal(SIGINT, sigIntHandler);
     
     ros::Publisher bb_publisher = nh.advertise <follow_the_leader::bounding_box_msg>("/bb_topic", 4);
     ros::Subscriber raw_image_sub  = nh.subscribe("/Airsim/right/image_raw", 1, sample_images_cb);

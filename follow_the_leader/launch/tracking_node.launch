@@ -11,7 +11,7 @@
     <arg name="DEBUG" value="true" /> 
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
 
-
+    <comment>
     <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
     <!-- IP of the Airsim computer -->
     <param name="Airsim_ip" value="$(arg host_ip)" />
@@ -50,6 +50,7 @@
     <!-- we are not using the odomTopic since arisim is not providing it at themoment -->	
     <param name="odomTopic" value="/mavros/local_position/odom"/>
     </node>
+    </comment>
 
     <!-- obj detection node --> 
     <param name="ip_addr" type="string" value="$(arg host_ip)" />
