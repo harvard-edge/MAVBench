@@ -9,10 +9,14 @@
     <!-- Wenzhi's workstation ip -->
     <!-- arg name="host_ip" value="10.157.90.62" /-->
 
-    <!-- Set the localization method -->
-    <arg name="localization_method" value="orb_slam2_rgbd" />
-    <!-- arg name="localization_method" value="ground_truth" /> -->
+    <!-- orb slam location--> 
+    <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
+    <!-- Set the localization method -->
+    <!-- arg name="localization_method" value="orb_slam2_rgbd" / -->
+    <arg name="localization_method" value="ground_truth" />
+    <!-- arg name="localization_method" value="gps" /-->
+    
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)-->
     <arg name="DEBUG" value="true" />
@@ -145,20 +149,20 @@
         <param name="localization_method" value="$(arg localization_method)" />
     </node>
 
-    <!-- SLAM -->
-    <group if="$(eval localization_method == 'orb_slam2_rgbd')">
-    <!-- Put code that automatically runs ORB-SLAM2 here -->
-    </group>
-
     <node pkg="slam_loss" type="slam_loss.py" name="slam_loss">
         <param name="localization_method" value="$(arg localization_method)" />
-        <param name="timeout" value="2" />
+        <param name="timeout" value="1.0" />
     </node>
 
-	<!-- rviz -->
+	<group if="$(eval localization_method == 'orb_slam2_rgbd')">
+    <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw
+    /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth"/>
+	</group>
+    
+    <!-- rviz -->
 	<group if="$(arg DEBUG)">
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
-	</group>
+    </group>
 
 </launch>
 

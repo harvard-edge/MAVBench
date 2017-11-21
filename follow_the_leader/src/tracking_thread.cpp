@@ -32,14 +32,15 @@
 #include "follow_the_leader/cmd_srv.h"
 
 int strike;
-int max_strike = 5;
-int tracking_threshold = .7;
+int max_strike; //= 1;
+double min_allowed_tracking_treshold;
+float tracking_threshold;// = .9;
 typedef KCFtracker tracker_t;
 tracker_t * tracker = nullptr;
 bool tracker_defined;
 std::string status;
 int tracking_count; //number of times tracking has run after detection
-int max_tracking_count = 30; //number of times tracking is allowed to run before running detection again
+int max_n_track_before_det_count; //= 30; //number of times tracking is allowed to run before running detection again
 int img_id;
 std::queue<cv_bridge::CvImage> img_queue; //uesd to buffer imags while detection is running
 
@@ -111,17 +112,20 @@ bounding_box tracking(ros::ServiceClient &resume_detection_client){
     // be passed to the pid so we can respond according to the latest bb(where
     // the target is at the moement)
     if (bb.conf < tracking_threshold) {
-        ROS_INFO_STREAM("strike is "<<strike); 
+        ROS_INFO_STREAM("conf is  "<<bb.conf); 
         strike++;
 
     }
     else {
-        ROS_INFO_STREAM("bb.h"<<bb.h); 
+        //ROS_INFO_STREAM("bb.h"<<bb.h); 
         bb_queue.push(bb);
     }
 
-    if (strike > max_strike || tracking_count > max_tracking_count) { //termination of tracker
-                              //reseting all the data structures, varaibles
+
+    if (strike > max_strike || tracking_count > max_n_track_before_det_count || (bb.conf < min_allowed_tracking_treshold)) { //termination of tracker
+       
+        //reseting all the data structures, varaibles
+       //ROS_INFO_STREAM 
        //delete tracker; 
        tracking_count = 0; 
        strike = 0; 
@@ -145,14 +149,33 @@ int main(int argc, char** argv)
     
     tracker_defined = false; 
     //std_msgs::Bool panic_msg;
-    ros::init(argc, argv, "tracking_node");
+    ros::init(argc, argv, "tracking_node", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
-    
+    signal(SIGINT, sigIntHandler);
     
     ros::Publisher bb_publisher = nh.advertise <follow_the_leader::bounding_box_msg>("/bb_topic", 4);
     ros::Subscriber raw_image_sub  = nh.subscribe("/Airsim/right/image_raw", 1, sample_images_cb);
     ros::ServiceServer track_server = 
         nh.advertiseService("track", tracking_cb);
+
+
+    if(!ros::param::get("/tracking_node/max_n_track_before_det_count",max_n_track_before_det_count))  {
+      ROS_FATAL_STREAM("Could not start tracking_node cause max_n_track_before_det_count not provided");
+      return -1;
+    }
+    if (!ros::param::get("/tracking_node/tracking_threshold", tracking_threshold)) {
+        ROS_FATAL("Could not start tracing_node cause tracking_threshol dmissing! Looking for");
+        return -1;
+    }
+    if(!ros::param::get("/tracking_node/max_strike",max_strike))  {
+      ROS_FATAL_STREAM("Could not start tracking_node cause max_strike not provided");
+      return -1;
+    }
+    if(!ros::param::get("/tracking_node/min_allowed_tracking_treshold",min_allowed_tracking_treshold))  {
+      ROS_FATAL_STREAM("Could not start tracking_node cause min_allowed_tracking_treshold not provided");
+      return -1;
+    }
+
 
     ros::ServiceClient resume_detection_client = 
         nh.serviceClient<follow_the_leader::cmd_srv>("resume_detection");
@@ -172,7 +195,7 @@ int main(int argc, char** argv)
                 bb_msg.w =  bb.w;
                 bb_msg.h =  bb.h;
                 bb_msg.conf =  bb.conf;
-                ROS_INFO_STREAM("bb_msg"<<bb_msg.h); 
+                //ROS_INFO_STREAM("bb_msg"<<bb_msg.h); 
                 bb_publisher.publish(bb_msg);
                 bb_queue.pop();
             }

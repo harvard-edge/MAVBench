@@ -43,7 +43,7 @@ public:
     geometry_msgs::Pose pose();
     geometry_msgs::PoseWithCovariance pose_with_covariance();
 
-    coord gps();
+    //coord gps();
 
     // *** F:DN Query data
     float get_pitch();
@@ -58,7 +58,7 @@ public:
 private:
     std::string localization_method; 
     msr::airlib::MultirotorRpcLibClient * client;
-    coord initial_gps;
+    //coord initial_gps;
     tf::TransformListener tfListen;
     uint64_t collision_count;
 };

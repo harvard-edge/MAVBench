@@ -31,6 +31,25 @@
 extern bool should_panic;
 extern bool future_col;
 
+void action_upon_panic(Drone& drone) {
+    float yaw = drone.get_yaw();
+
+    while (should_panic) {
+        drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        ros::spinOnce();
+        ROS_INFO("Panicking..");
+    }
+    ROS_INFO("Panicking one last time...");
+    drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0, 0.75);
+    std::this_thread::sleep_for(std::chrono::milliseconds(850));
+
+    spin_around(drone);
+    should_panic = true;
+    ROS_INFO("Done panicking!");
+}
+
+
 void follow_trajecotry(package_delivery::get_trajectory get_trajectory_srv, Drone &drone) {
     int reaction_delay_counter_init_value = 8; 
     int reaction_delay_counter =  reaction_delay_counter_init_value;
@@ -66,7 +85,7 @@ void follow_trajecotry(package_delivery::get_trajectory get_trajectory_srv, Dron
                 //v_z + 0.2*(p_z-drone.gps().z));
 
         ros::spinOnce(); // Check whether we should panic
-        /*
+        
         if (should_panic) { //if deteceted a panic
             ROS_ERROR("you should panic\n");
             action_upon_panic(drone);
@@ -83,7 +102,7 @@ void follow_trajecotry(package_delivery::get_trajectory get_trajectory_srv, Dron
             }
             reaction_delay_counter--;
         }
-        */
+        
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>((1)*segment_dedicated_time));
     }
 }

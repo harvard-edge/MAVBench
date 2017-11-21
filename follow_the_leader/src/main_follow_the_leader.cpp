@@ -12,7 +12,7 @@
 #include "follow_the_leader/bounding_box_msg.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
-
+#include "control_drone.h"
 #include "Drone.h"
 #include "objdetect.h"
 #include "track.h"
@@ -25,6 +25,8 @@
 
 string status;
 
+using namespace std;
+std::string ip_addr__global;
 
 bool resume_detection_server_cb(follow_the_leader::cmd_srv::Request &req, 
     follow_the_leader::cmd_srv::Response &res){
@@ -36,11 +38,12 @@ bool resume_detection_server_cb(follow_the_leader::cmd_srv::Request &req,
 int main(int argc, char** argv)
 {
     //std_msgs::Bool panic_msg;
-    ros::init(argc, argv, "main_follow_the_leader_node");
+    ros::init(argc, argv, "main_follow_the_leader_node", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
-    
+    signal(SIGINT, sigIntHandler);
     //ros::Subscriber sub = nS.subscribe<PointCloud>("points", 1, callback);
     //ros::Publisher panic_publisher = nP.advertise<std_msgs::Bool>("panic_topic", 1000);
+    std::string ns = ros::this_node::getName();
     ros::ServiceClient detect_client = 
         nh.serviceClient<follow_the_leader::cmd_srv>("detect");
     
@@ -50,8 +53,19 @@ int main(int argc, char** argv)
     ros::ServiceServer resume_detection_server  = 
         nh.advertiseService("resume_detection", resume_detection_server_cb);
 
-
-
+    std::string localization_method; 
+    if(!ros::param::get("/localization_method",localization_method))  {
+      ROS_FATAL_STREAM("Could not start exploration localization_method not provided");
+      return -1;
+    }
+    if (!ros::param::get("/ip_addr", ip_addr__global)) {
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
+                (ns + "/ip_addr").c_str());
+        return -1;
+    }
+    uint16_t port = 41451;
+    Drone drone(ip_addr__global.c_str(), port, localization_method);
+    control_drone(drone);
     follow_the_leader::cmd_srv track_srv_obj;
     follow_the_leader::cmd_srv detect_srv_obj;
     status = "resume_detection"; 

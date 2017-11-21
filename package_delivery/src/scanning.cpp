@@ -13,6 +13,7 @@
 #include <chrono>
 #include <thread>
 //#include "controllers/DroneControllerBase.hpp"
+#include "control_drone.h"
 #include "common/Common.hpp"
 #include <fstream>
 #include "Drone.h"
@@ -31,16 +32,16 @@ using namespace std;
 bool should_panic = false;
 bool future_col = false;
 string ip_addr__global;
+string localization_method;
 
 
-
-
+/*
 void sigIntHandler(int sig)
 {
     ros::shutdown();
     exit(0);
 }
-
+*/
 double dist(coord t, geometry_msgs::Point m)
 {
     // We must convert between the two coordinate systems
@@ -48,7 +49,7 @@ double dist(coord t, geometry_msgs::Point m)
 }
 
 
-
+/*
 void control_drone(Drone& drone)
 {
 	cout << "Initialize drone:\n";
@@ -87,14 +88,14 @@ void control_drone(Drone& drone)
 			cin >> x;
 			drone.set_yaw(x);
 		} else if (cmd == "p") {
-			auto pos = drone.gps();
+			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd != "c") {
 			cout << "Unknown command" << endl;
 		}
 	}
 }
-
+*/
 
 // *** F:DN call back function for the panic_topic subscriber
 void panic_call_back(const std_msgs::Bool::ConstPtr& msg) {
@@ -112,7 +113,7 @@ void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
 
 void package_delivery_initialize_params() {
     ros::param::get("/scanning/ip_addr",ip_addr__global);
-    ;
+    ros::param::get("/scanning/localization_method",localization_method);
 }
 
 // *** F:DN main function
@@ -136,9 +137,9 @@ int main(int argc, char **argv)
 	package_delivery::get_trajectory get_trajectory_srv;
 	
     uint16_t port = 41451;
-    Drone drone(ip_addr__global.c_str(), port);
+    Drone drone(ip_addr__global.c_str(), port, localization_method);
     
-    bool delivering_mission_complete = false; //if true, we have delivered the 
+    //bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
@@ -146,9 +147,9 @@ int main(int argc, char **argv)
     ros::Subscriber panic_sub =  
 		panic_nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
     ros::NodeHandle future_col_nh;
-    ros::Subscriber future_col_sub = 
-		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
-
+    //ros::Subscriber future_col_sub = 
+    //		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
+    future_col = false; //this is hardcode because scanning does not provide this feature
     
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
@@ -174,7 +175,7 @@ int main(int argc, char **argv)
         control_drone(drone);
 	    
         // *** F:DN set drone start position	
-        auto drone_pos = drone.gps();
+        auto drone_pos = drone.pose().position;
 		start.x = drone_pos.x; start.y = drone_pos.y; start.z = drone_pos.z;
 		std::cout << "Current position is " << drone_pos.x << " " << drone_pos.y << " " << drone_pos.z << std::endl;
 	    

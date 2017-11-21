@@ -130,9 +130,9 @@ bool detection_cb(follow_the_leader::cmd_srv::Request &req,
 int main(int argc, char** argv)
 {
     //std_msgs::Bool panic_msg;
-    ros::init(argc, argv, "detection_node");
+    ros::init(argc, argv, "detection_node", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
-    
+    signal(SIGINT, sigIntHandler);
     uint16_t port = 41451;
     std::string ip_addr__global;
     if (!ros::param::get("/ip_addr", ip_addr__global)) {

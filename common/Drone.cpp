@@ -12,8 +12,8 @@
 Drone::Drone() : client(0)
 {
 	connect();
-    initial_gps = {0, 0, 0};
-    initial_gps = gps();
+    //initial_gps = {0, 0, 0};
+    //initial_gps = gps();
     this->localization_method = "ground_truth";
 }
 
@@ -21,18 +21,16 @@ Drone::Drone(const std::string& ip_addr, uint16_t port) : client(0), collision_c
     localization_method("ground_truth")
 {
 	connect(ip_addr, port);
-    initial_gps = {0, 0, 0};
-    initial_gps = gps();
-    //this->localization_method = "ground_truth";
+    //initial_gps = {0, 0, 0};
+    //initial_gps = gps();
 }
 
-Drone::Drone(const std::string& ip_addr, uint16_t port, std::string localization_method) : client(0), collision_count(0),
-    localization_method("ground_truth")
+Drone::Drone(const std::string& ip_addr, uint16_t port, std::string localization_method) : client(0), collision_count(0)
 {
 	connect(ip_addr, port);
-    initial_gps = {0, 0, 0};
-    initial_gps = gps();
-    //this->localization_method = localization_method;
+    //initial_gps = {0, 0, 0};
+    //initial_gps = gps();
+    this->localization_method = localization_method;
 }
 
 Drone::~Drone()
@@ -158,19 +156,12 @@ bool Drone::land()
 
 	return true;
 }
-
+/*
 coord Drone::gps()
 {
 	getCollisionInfo();
 	auto pos = client->getPosition();
-    /*
-	return {pos.x() - initial_gps.x,
-        pos.y() - initial_gps.y,
-        pos.z() - initial_gps.z};
-    */
-    // printf("\n\n\n initial gps is %f %f %f\n\n\n", initial_gps.x, initial_gps.y, initial_gps.z);
-    // printf("\n\n\n pose is %f %f %f\n\n\n", initial_gps.x, initial_gps.y, initial_gps.z);
-
+ 
     coord curr_pos = {pos.y(), pos.x(), -pos.z()};
     coord result = {curr_pos.x - initial_gps.x,
                     curr_pos.y - initial_gps.y,
@@ -178,56 +169,58 @@ coord Drone::gps()
     
     return result;
 }
-
-
-coord Drone::position()
-{
-    tf::StampedTransform transform;
-
-    try{
-      tfListen.lookupTransform("/world", "/"+(this->localization_method),
-                               ros::Time(0), transform);
-    }
-    catch (tf::TransformException ex){
-      ROS_ERROR("%s",ex.what());
-    }
-
-    coord result;
-    auto tf_translation = transform.getOrigin();
-    result.x = tf_translation.x();
-    result.y = tf_translation.y();
-    result.z = tf_translation.z();
-
-    return result;
-}
+*/
 
 geometry_msgs::Pose Drone::pose()
 {
     geometry_msgs::Pose result;
-
+    /*
+    if (this->localization_method == "gps") {
+        auto p = client->getPosition();
+	    auto q = client->getOrientation();
+        result.position.x = client->getPosition().y() - initial_gps.x;
+        result.position.y = client->getPosition().x() - initial_gps.y;
+        result.position.z = -1*client->getPosition().z() - initial_gps.z;
+        result.orientation.x = q.x();
+        result.orientation.y = q.y();
+        result.orientation.z = q.z();
+        result.orientation.w = q.w();
+    }else{
+     */
+    //std::cout<<"localization method is"<<this->localization_method<<std::endl;
     tf::StampedTransform transform;
-    try{
-      tfListen.lookupTransform("/world", "/"+(this->localization_method),
-                               ros::Time(0), transform);
-    }
-    catch (tf::TransformException ex){
-      ROS_ERROR("%s",ex.what());
-      return result;
-    }
+        try{
+            tfListen.lookupTransform("/world", "/"+(this->localization_method),
+                    ros::Time(0), transform);
+        }
+        catch (tf::TransformException ex){
+            ROS_ERROR("%s",ex.what());
+            return result;
+        }
 
-    tf::Vector3 tf_translation = transform.getOrigin();
-    result.position.x = tf_translation.x();
-    result.position.y = tf_translation.y();
-    result.position.z = tf_translation.z();
+        tf::Vector3 tf_translation = transform.getOrigin();
+        result.position.x = tf_translation.x();
+        result.position.y = tf_translation.y();
+        result.position.z = tf_translation.z();
 
-    tf::Quaternion tf_rotation = transform.getRotation();
-    result.orientation.x = tf_rotation.x();
-    result.orientation.y = tf_rotation.y();
-    result.orientation.z = tf_rotation.z();
-    result.orientation.w = tf_rotation.w();
-    
+        tf::Quaternion tf_rotation = transform.getRotation();
+        result.orientation.x = tf_rotation.x();
+        result.orientation.y = tf_rotation.y();
+        result.orientation.z = tf_rotation.z();
+        result.orientation.w = tf_rotation.w();
+    //}
     return result;
 }
+
+coord Drone::position() {
+    coord result;
+    geometry_msgs::Pose result_pose = pose();
+    result.x = result_pose.position.x;
+    result.y = result_pose.position.y;
+    result.z = result_pose.position.z;
+    return result;
+}
+
 
 geometry_msgs::PoseWithCovariance Drone::pose_with_covariance()
 {

@@ -14,6 +14,7 @@
 #include <chrono>
 #include <thread>
 //#include "controllers/DroneControllerBase.hpp"
+#include "control_drone.h"
 #include "common/Common.hpp"
 #include <fstream>
 #include "Drone.h"
@@ -36,12 +37,13 @@ bool future_col = false;
 string ip_addr__global;
 string localization_method;
 
-
+/*
 void sigIntHandler(int sig)
 {
     ros::shutdown();
     exit(0);
 }
+*/
 
 double dist(coord t, geometry_msgs::Point m)
 {
@@ -50,63 +52,6 @@ double dist(coord t, geometry_msgs::Point m)
 }
 
 
-
-void control_drone(Drone& drone)
-{
-	cout << "Initialize drone:\n";
-	cout << "\ta: arm\n";
-	cout << "\td: disarm\n";
-	cout << "\tt h: takeoff to h m\n";
-	cout << "\tl: land\n";
-	cout << "\tf x y z d: fly at (x,y,z) m/s for d s\n";
-	cout << "\ty x: set yaw to x\n";
-	cout << "\tp: print pitch, roll, yaw, height\n";
-	cout << "\tc: complete drone setup and continue\n";
-	cout << "\tCtrl-c/q: quit\n";
-
-	std::string cmd("");
-
-	while(cmd != "c") {
-		cin >> cmd;
-
-            if (cmd == "q") {
-              LOG_TIME(package_delivery);
-              cout << "bye~" << endl;
-              raise(SIGINT);
-              return;
-            } else if (cmd == "s") {
-              sleep(5);
-            }
-
-	    if (cmd == "a") {
-	        drone.arm();
-		} else if (cmd == "d") {
-			drone.disarm();
-		} else if (cmd == "t") {
-			double height;
-			cin >> height;
-			cin.ignore(numeric_limits<streamsize>::max(), '\n');
-			drone.takeoff(height);
-		} else if (cmd == "l") {
-			drone.land();
-		} else if (cmd == "f") {
-			double x,y,z,d;
-			cin >> x >> y >> z >> d;
-			drone.fly_velocity(x, y, z, d);
-		} else if (cmd == "y") {
-			double x;
-			cin >> x;
-			drone.set_yaw(x);
-		} else if (cmd == "p") {
-			auto pos = drone.gps();
-			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
-        } else if (cmd != "c") {
-			cout << "Unknown command" << endl;
-            ros::shutdown();
-            exit(0);
-		}
-	}
-}
 
 
 // *** F:DN call back function for the panic_topic subscriber
@@ -119,23 +64,7 @@ void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
     future_col = msg->data;
 }
 
-void action_upon_panic(Drone& drone) {
-    float yaw = drone.get_yaw();
 
-    while (should_panic) {
-        drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        ros::spinOnce();
-        ROS_INFO("Panicking..");
-    }
-    ROS_INFO("Panicking one last time...");
-    drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0, 0.75);
-    std::this_thread::sleep_for(std::chrono::milliseconds(850));
-
-    spin_around(drone);
-    should_panic = true;
-    ROS_INFO("Done panicking!");
-}
 
 /*
 void action_upon_future_col(Drone& drone) {
@@ -169,7 +98,7 @@ int main(int argc, char **argv)
 	package_delivery::get_trajectory get_trajectory_srv;
 	
     uint16_t port = 41451;
-    Drone drone(ip_addr__global.c_str(), port);
+    Drone drone(ip_addr__global.c_str(), port, localization_method);
     int reaction_delay_counter_init_value = 1; 
     int reaction_delay_counter =  reaction_delay_counter_init_value;
     bool delivering_mission_complete = false; //if true, we have delivered the 

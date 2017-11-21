@@ -5,6 +5,14 @@
     <!-- Hasans's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.90.49" /--> 
     
+    <!-- orb slam location--> 
+    <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
+
+    <!-- Set the localization method -->
+    <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
+    <!-- arg name="localization_method" value="ground_truth" /-->
+    <arg name="localization_method" value="gps" />
+
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)--> 
     <arg name="DEBUG" value="true" /> 
@@ -22,7 +30,7 @@
         <param name="resolution" value="0.5" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="fcu" />
+		<param name="frame_id" type="string" value="world" />
 		
 		<!-- maximum range to integrate (speedup!) -->
 		<param name="sensor_model/max_range" value="20" />
@@ -31,7 +39,7 @@
 		<remap from="cloud_in" to="/points" />
 
 		<!-- Filter ground for binary occupancy map -->
-		<param name="base_frame_id" value="fcu" />
+		<param name="base_frame_id" value="world" />
 		<!-- <param name="filter_ground" value="true" />
 		<param name="ground_filter_plane_distance" value="1.00" />
 		<param name="ground_filter/distance" value="0.50" /> -->
@@ -66,7 +74,11 @@
 
 		<!-- Topic with odometry information for the vehicle (used to create tf tree) -->
 		<param name="odomTopic" value="/mavros/local_position/odom"/>
-	</node>
+	
+        <!-- Localization of the depth images -->
+        <param name="localization_method" value="$(arg localization_method)" />
+
+    </node>
 
 	<!-- Nodelet manager for this pipeline -->
 	<node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager"/>
@@ -87,8 +99,7 @@
 		<param name="panic_distance" value="1.75"/>
     </node>
  
-    <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
-    </node>
+    <!--node pkg="package_delivery" type="future_collision" name="future_collision" output="screen"/-->
     
     <?ignore 
     <!-- Convert to point cloud -->
@@ -133,9 +144,17 @@
         <param name="ip_addr" value="$(arg host_ip)"/>
         <!-- param name="issue_cmd__time_step" value=".05"/-->
 		<!-- param name="points_to_replan_after" value="1000000000"/-->
+    
+        <!-- Localization-->
+        <param name="localization_method" value="$(arg localization_method)" />
     </node>
 
-	<!-- rviz -->
+	<group if="$(eval localization_method == 'orb_slam2_rgbd')">
+    <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw
+    /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth"/>
+	</group>
+
+    <!-- rviz -->
 	<group if="$(arg DEBUG)">
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
 	</group> 

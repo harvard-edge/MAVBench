@@ -1,0 +1,82 @@
+<launch>
+  <arg name="mav_name" default="airsim_qc" />
+  <arg name="enable_logging" default="true" />
+  <arg name="enable_ground_truth" default="true" />
+  <arg name="log_file" default="$(arg mav_name)" />
+  <arg name="DEBUG" value="true" />
+  <!-- orb slam location--> 
+  <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
+
+
+  <!--node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world world 100" /-->
+    
+    <!-- Set the localization method -->
+    <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
+    <!--arg name="localization_method" value="ground_truth" /-->
+    <arg name="localization_method" value="gps" />
+    
+    <!-- node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 $(arg localization_method) camera 100" /-->
+
+    <!-- Behzad's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.101" /--> 
+    <arg name="host_ip" value="10.157.90.51" /> 
+    <!-- Hasans's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.208" /--> 
+    
+    <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
+    <arg name="app_name" value="SAR" />
+    <arg name="mav_name" value="$(arg mav_name)" />
+    <arg name="host_ip" value="$(arg host_ip)"/>
+    <arg name="localization_method" value="$(arg localization_method)"/>
+    <arg name="waypoint_x" value="0.0" />
+    <arg name="waypoint_y" value="0.0" />
+    <arg name="waypoint_z" value="1.0" />
+    <arg name="param_file" value="$(find mapping_and_sar)/resource/exploration.yaml" />
+    <arg name="enable_logging" value="$(arg enable_logging)" />
+    <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+    <arg name="log_file" value="$(arg log_file)" />
+    <!-- the following is for octomap --> 
+    <arg name="tf_frame" value="world" />
+    <arg name="pcl_topic" value="/points" />
+    <arg name="resolution" value="0.4" />
+    <arg name="visualize_max_z" value="10" />
+    <arg name="sensor_max_range" value="8.0" />
+  </include>
+    
+  <!-- point cloud and pose -->
+  <include file="$(find mapping_and_sar)/launch/point_cloud_and_pose.launch">
+  <arg name="localization_method" value="$(arg localization_method)"/>
+  </include>
+
+  <arg name="param_file" value="$(find mapping_and_sar)/resource/exploration.yaml" />
+  <!-- following the tejactory --> 
+  <!-- group ns="$(arg mav_name)" -->
+  <node pkg="mapping_and_sar" type="follow_trajectory" name="follow_trajectory" output="screen">
+  <rosparam command="load" file="$(arg param_file)" />
+  <param name="mav_name" value="$(arg mav_name)"/>
+  <!-- param name="yaw_t" value=".75"/ -->
+  <param name="ip_addr" value="$(arg host_ip)"/>
+  <param name="segment_dedicated_time" value="1.0"/>
+   <param name="localization_method" type="string" value="$(arg localization_method)"/>
+  </node>
+
+    
+	<group if="$(eval localization_method == 'orb_slam2_rgbd')">
+    <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" />
+    </group>
+
+   <param name="ip_addr" type="string" value="$(arg host_ip)" />
+  <node pkg="mapping_and_sar" type="object_detection_node" name="object_detection_node"  output="screen"/>
+  <param name="mav_name" type="string" value="$(arg mav_name)" />
+  <comment launch-prefix="gdb -ex run --args"/>
+
+
+
+  <!--comment-->
+  <!-- rviz -->
+  <!-- group if="$(arg DEBUG)" -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mapping_and_sar)/extras/rvizConfig.rviz" />
+  
+
+
+</launch>

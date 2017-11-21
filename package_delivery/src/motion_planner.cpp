@@ -81,12 +81,13 @@ visualization_msgs::Marker graph_conn_list;
 ros::Publisher graph_conn_pub;
 
 // ** F:DN closes program as soon as Ctrl-C is pressed
+/*
 void sigIntHandler(int sig)
 {
     ros::shutdown();
     exit(0);
 }
-
+*/
 // *** F:DN calculating the distance between two nodes in the graph.
 double dist(const graph::node& n1, const graph::node& n2);
 
