@@ -28,6 +28,8 @@ string ip_addr__global;
 string localization_method;
 
 enum State { setup, waiting, flying, completed, invalid };
+typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
+typedef std::deque<multiDOFpoint> trajectory_t;
 
 double dist(coord t, geometry_msgs::Point m)
 {
@@ -49,11 +51,9 @@ void package_delivery_initialize_params() {
     ros::param::get("/package_delivery/localization_method",localization_method);
 }
 
-typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
-
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
-std::deque<multiDOFpoint> follow_trajectory(Drone& drone, std::deque<multiDOFpoint>& trajectory, float time = 0.5) {
-    std::deque<multiDOFpoint> completed_commands;
+trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float time = 0.5) {
+    trajectory_t completed_commands;
 
     while (time > 0 && trajectory.size() > 1) {
         multiDOFpoint p = trajectory.front();
@@ -81,7 +81,7 @@ std::deque<multiDOFpoint> follow_trajectory(Drone& drone, std::deque<multiDOFpoi
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(flight_time));
 
         // Push completed command onto stack
-        completed_commands.push_front(p);
+        completed_commands.push_back(p);
 
         // Update trajectory
         trajectory.front().time_from_start += ros::Duration(flight_time);
@@ -117,7 +117,7 @@ geometry_msgs::Point get_goal() {
     return goal;
 }
 
-std::deque<multiDOFpoint> request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, geometry_msgs::Point goal) {
+trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, geometry_msgs::Point goal) {
     // Request the actual trajectory from the motion_planner node
     package_delivery::get_trajectory srv;
     srv.request.start = start;
@@ -127,17 +127,17 @@ std::deque<multiDOFpoint> request_trajectory(ros::ServiceClient& client, geometr
         ROS_INFO("Received trajectory.");
     } else {
         ROS_ERROR("Failed to call service.");
-        return std::deque<multiDOFpoint>();
+        return trajectory_t();
     }
 
-    std::deque<multiDOFpoint> result;
+    trajectory_t result;
     for (multiDOFpoint p : srv.response.multiDOFtrajectory.points)
         result.push_back(p);
 
     return result;
 }
 
-bool trajectory_done(std::deque<multiDOFpoint> trajectory) {
+bool trajectory_done(trajectory_t trajectory) {
     return trajectory.size() <= 1;
 }
 
@@ -155,7 +155,7 @@ int main(int argc, char **argv)
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
     package_delivery_initialize_params();
-    std::deque<multiDOFpoint> trajectory;
+    trajectory_t trajectory, past_trajectory;
     geometry_msgs::Point start, goal;
 	
     uint16_t port = 41451;
@@ -217,7 +217,10 @@ int main(int argc, char **argv)
                 reaction_delay_counter = reaction_delay_counter_init_value;
                 next_state = waiting;
             } else {
-                follow_trajectory(drone, trajectory);
+                trajectory_t completed_traj = follow_trajectory(drone, trajectory);
+                past_trajectory.insert(past_trajectory.end(),
+                        completed_traj.begin(), completed_traj.end());
+
                 next_state = trajectory_done(trajectory) ? completed : flying;
             }
         }

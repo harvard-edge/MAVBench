@@ -2,16 +2,19 @@
 
 #include <iostream>
 #include <string>
-#include <exception>
 #include <cmath>
+#include <deque>
 
 #include <ros/topic.h>
 #include <ros/duration.h>
 #include <std_msgs/Bool.h>
+#include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 
 #include "Drone.h"
 
 static const int angular_vel = 15;
+typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
+typedef std::deque<multiDOFpoint> trajectory_t;
 
 void sigIntHandler(int sig)
 {
@@ -32,13 +35,8 @@ T last_msg (std::string topic) {
     return result;
 }
 
-void action_upon_slam_loss(Drone& drone, int level) {
-    const std::string lost_topic = "/slam_lost";
+void action_upon_slam_loss_spin(Drone& drone, const std::string& topic) {
     float init_yaw = drone.get_yaw();
-
-    // Stop the drone
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
 
     // Spin around until we re-localize
     for (int i = angular_vel; i <= 360; i += angular_vel) {
@@ -53,11 +51,35 @@ void action_upon_slam_loss(Drone& drone, int level) {
 
         // Check whether SLAM is back
         bool timed_out;
-        std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(lost_topic);
+        std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
 
         if (!is_lost.data)
             break;
     }
+}
+
+void action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t& trajectory) {
+
+}
+
+void action_upon_slam_loss (Drone& drone, slam_recovery_method slm...) {
+    va_list args;
+    va_start(args, slm);
+
+    const std::string lost_topic = "/slam_lost";
+
+    // Stop the drone
+    drone.fly_velocity(0, 0, 0);
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    if (slm == spin) {
+        action_upon_slam_loss_spin(drone, lost_topic);
+    } else if (slm == backtrack) {
+        trajectory_t& traj = *(va_arg(args, trajectory_t *));
+        action_upon_slam_loss_backtrack(drone, lost_topic, traj);
+    }
+
+    va_end(args);
 }
 
 float distance(float x, float y, float z) {
