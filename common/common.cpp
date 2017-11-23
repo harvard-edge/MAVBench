@@ -8,14 +8,13 @@
 #include <ros/topic.h>
 #include <ros/duration.h>
 #include <std_msgs/Bool.h>
-#include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 
 #include "Drone.h"
 
 static const int angular_vel = 15;
 
-void action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t& trajectory);
-void action_upon_slam_loss_spin(Drone& drone, const std::string& topic);
+bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t trajectory);
+bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic);
 multiDOFpoint reverse_point(multiDOFpoint mdp);
 
 void sigIntHandler(int sig)
@@ -54,14 +53,21 @@ bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic) {
         // Check whether SLAM is back
         std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
 
-        if (!is_lost.data)
-            return true;
+        if (!is_lost.data) {
+            // Wait just a little to be sure that SLAM is back
+            auto safety_wait = std::chrono::seconds(2);
+            std::this_thread::sleep_for(safety_wait);
+
+            is_lost = last_msg<std_msgs::Bool>(topic);
+            if (!is_lost.data)
+                return true;
+        }
     }
 
     return false;
 }
 
-void action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t reverse_traj) {
+bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t reverse_traj) {
     while (!reverse_traj.empty()) {
         follow_trajectory(drone, reverse_traj);
 
@@ -74,7 +80,7 @@ void action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, tr
     return false;
 }
 
-void action_upon_slam_loss (Drone& drone, slam_recovery_method slm...) {
+bool action_upon_slam_loss (Drone& drone, slam_recovery_method slm...) {
     va_list args;
     va_start(args, slm);
 
@@ -156,7 +162,7 @@ void spin_around(Drone &drone) {
 }
 
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
-trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float time = 0.5) {
+trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float time) {
     trajectory_t reversed_commands;
 
     while (time > 0 && trajectory.size() > 1) {
@@ -185,7 +191,7 @@ trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float tim
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(flight_time));
 
         // Push completed command onto stack
-        reversed_commands.push_back(reverse_point(p));
+        reversed_commands.push_front(reverse_point(p));
 
         // Update trajectory
         trajectory.front().time_from_start += ros::Duration(flight_time);
@@ -202,10 +208,23 @@ multiDOFpoint reverse_point(multiDOFpoint mdp) {
     multiDOFpoint result = mdp;
 
     result.time_from_start = -mdp.time_from_start;
-    
+
     result.velocities[0].linear.x = -mdp.velocities[0].linear.x;
     result.velocities[0].linear.y = -mdp.velocities[0].linear.y;
     result.velocities[0].linear.z = -mdp.velocities[0].linear.z;
     
     return result;
 }
+
+trajectory_t append_trajectory (trajectory_t first, trajectory_t second) {
+    auto time_shift = first.back().time_from_start;
+    time_shift -= second.front().time_from_start;
+
+    for (auto mdp : second) {
+        mdp.time_from_start += time_shift;
+        first.push_back(mdp);
+    }
+
+    return first;
+}
+

@@ -8,7 +8,7 @@ def main():
     # Parameters
     localization_method = rospy.get_param('/slam_loss/localization_method',
             'ground_truth')
-    timeout = float(rospy.get_param('/slam_loss/timeout', '0'))
+    timeout = float(rospy.get_param('/slam_loss/timeout', '1'))
 
     # Publishers
     pub = rospy.Publisher('slam_lost', Bool, queue_size=10, latch=True)

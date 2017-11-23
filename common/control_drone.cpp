@@ -53,18 +53,18 @@ void control_drone(Drone& drone)
 	while(cmd != "c") {
 		cin >> cmd;
 
-            if (cmd == "q") {
-              //LOG_TIME(package_delivery);
-              cout << "bye~" << endl;
-              ros::shutdown();
-              exit(0);
-              return;
-            }
+        if (cmd == "q") {
+          //LOG_TIME(package_delivery);
+          cout << "bye~" << endl;
+          ros::shutdown();
+          exit(0);
+          return;
+        }
 
 	    if (cmd == "a") {
-	        drone.arm();
-           } else if (cmd == "s") {
-               sleep(5);
+            drone.arm();
+        } else if (cmd == "s") {
+            sleep(5);
 		} else if (cmd == "d") {
 			drone.disarm();
 		} else if (cmd == "t") {
@@ -89,8 +89,8 @@ void control_drone(Drone& drone)
             spin_slowly(drone, 20);          
         }else if (cmd != "c") {
 			cout << "Unknown command" << endl;
-            ros::shutdown();
-            exit(0);
+            // ros::shutdown();
+            // exit(0);
 		}
 	}
 }

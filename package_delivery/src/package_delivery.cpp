@@ -7,7 +7,6 @@
 #include <chrono>
 #include <thread>
 #include <deque>
-#include <function>
 #include <signal.h>
 
 #include "control_drone.h"
@@ -104,8 +103,12 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
     }
 
     trajectory_t result;
-    for (multiDOFpoint p : srv.response.multiDOFtrajectory.points)
+    for (multiDOFpoint p : srv.response.multiDOFtrajectory.points) {
+        // p.velocities[0].linear.x = -3;
+        // p.velocities[0].linear.y = 0;
+
         result.push_back(p);
+    }
 
     return result;
 }
@@ -174,6 +177,7 @@ int main(int argc, char **argv)
         }
         else if (state == waiting)
         {
+            ROS_INFO("Waiting to recieve trajectory...");
             start = get_start(drone);
             trajectory = request_trajectory(get_trajectory_client, start, goal);
             reverse_trajectory.clear();
@@ -182,22 +186,26 @@ int main(int argc, char **argv)
         else if (state == flying)
         {
             if (should_panic) {
+                ROS_WARN("Panic! in the disco");
                 action_upon_panic(drone);
                 next_state = waiting;
             } else if (future_col) {
+                ROS_WARN("Future collision detected on trajectory!");
                 action_upon_future_col(drone);
-                reaction_delay_counter = reaction_delay_counter_init_value;
                 next_state = waiting;
             } else if (slam_lost) {
-            	if(!action_upon_slam_loss(drone, spin)) {
+                ROS_WARN("SLAM localization lost!");
+                ROS_INFO("Spinning to regain SLAM");
+            	if(!action_upon_slam_loss(drone, spin)) { }
+                    ROS_INFO("Backtracking to regain SLAM %u", reverse_trajectory.size());
             		action_upon_slam_loss(drone, backtrack, reverse_trajectory);
-            	}
+            	//}
+                ROS_INFO("found slam back");
 
-            	next_state = flying;
+            	next_state = waiting;
             } else {
                 trajectory_t completed_traj = follow_trajectory(drone, trajectory);
-                reverse_trajectory.insert(reverse_trajectory.end(),
-                        completed_traj.begin(), completed_traj.end());
+                reverse_trajectory = append_trajectory(completed_traj, reverse_trajectory);
 
                 next_state = trajectory_done(trajectory) ? completed : flying;
             }
@@ -207,7 +215,8 @@ int main(int argc, char **argv)
             if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
                 next_state = setup;
-            } else { // If we've drifted too far off from the destionation
+            } else { //If we've drifted too far off from the destionation
+                ROS_WARN("We're a little off...");
                 start = get_start(drone);
                 next_state = waiting;
             }
