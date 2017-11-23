@@ -1,21 +1,30 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include <cstdarg>
 #include "Drone.h"
-
-enum slam_recovery_method { spin, backtrack };
 
 void sigIntHandler(int sig);
 
+// Recovery methods
+enum slam_recovery_method { spin, backtrack, invalid };
+
 void action_upon_panic(Drone& drone);
 void action_upon_future_col(Drone& drone);
-void action_upon_slam_loss(Drone& drone, slam_recovery_method slm...);
+bool action_upon_slam_loss(Drone& drone, slam_recovery_method slm...);
 
-float distance(float x, float y, float z);
+// Trajectory following commands
+typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
+typedef std::deque<multiDOFpoint> trajectory_t;
+
+trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float time = 0.5);
+
+// Spinning commands
 void spin_around(Drone &drone);
 void scan_around(Drone &drone, int angle);
 void spin_slowly(Drone &drone, int n_pies=20);
+
+// Utility functions
+float distance(float x, float y, float z);
 
 #endif
 

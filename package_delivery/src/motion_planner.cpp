@@ -80,14 +80,6 @@ PointCloud::Ptr pcl_ptr{new pcl::PointCloud<pcl::PointXYZ>};
 visualization_msgs::Marker graph_conn_list;
 ros::Publisher graph_conn_pub;
 
-// ** F:DN closes program as soon as Ctrl-C is pressed
-/*
-void sigIntHandler(int sig)
-{
-    ros::shutdown();
-    exit(0);
-}
-*/
 // *** F:DN calculating the distance between two nodes in the graph.
 double dist(const graph::node& n1, const graph::node& n2);
 
@@ -115,6 +107,7 @@ void generate_octomap(const octomap_msgs::Octomap& msg);
 // *** F:DN Initializes the PRM.
 graph create_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree *octree, graph::node_id &start_id, graph::node_id &goal_id);
 
+
 piecewise_trajectory lawn_mower(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
 
 // *** F:DN Increases the density of the PRM.
@@ -124,8 +117,10 @@ void extend_PRM(graph &roadmap, octomap::OcTree * octree);
 // ***F:DN Use the PRM sampling method to find a piecewise path
 piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
 
+
 // ***F:DN Use the RRT sampling method to find a piecewise path
 piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
+
 
 // *** F:DN Optimize and smoothen a piecewise path without causing any new collisions.
 smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree);
@@ -770,16 +765,16 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	} while (col);
 
 	// Return the collision-free smooth trajectory
-	mav_trajectory_generation::Trajectory trajectory;
-	opt.getTrajectory(&trajectory);
+	mav_trajectory_generation::Trajectory traj;
+	opt.getTrajectory(&traj);
 
 	ROS_INFO("Smoothened path!");
 
 	// Visualize path for debugging purposes
-	mav_trajectory_generation::drawMavTrajectory(trajectory, distance, frame_id, &smooth_traj_markers);
+	mav_trajectory_generation::drawMavTrajectory(traj, distance, frame_id, &smooth_traj_markers);
 	mav_trajectory_generation::drawVertices(vertices, frame_id, &piecewise_traj_markers);
 
-	return trajectory;
+	return traj;
 }
 
 

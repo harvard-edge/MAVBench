@@ -7,6 +7,7 @@
 #include <chrono>
 #include <thread>
 #include <deque>
+#include <function>
 #include <signal.h>
 
 #include "control_drone.h"
@@ -24,12 +25,11 @@
 using namespace std;
 bool should_panic = false;
 bool future_col = false;
+bool slam_lost = false;
 string ip_addr__global;
 string localization_method;
 
 enum State { setup, waiting, flying, completed, invalid };
-typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
-typedef std::deque<multiDOFpoint> trajectory_t;
 
 double dist(coord t, geometry_msgs::Point m)
 {
@@ -43,55 +43,28 @@ void panic_call_back(const std_msgs::Bool::ConstPtr& msg) {
 }
 
 void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
-    future_col = msg->data;
+    const int reaction_delay_counter_init_value = 3;
+    static int reaction_delay_counter = reaction_delay_counter_init_value;
+
+    if (!msg->data) {
+    	reaction_delay_counter = reaction_delay_counter_init_value;
+    } else {
+    	reaction_delay_counter--;
+    }
+
+    if (msg->data && reaction_delay_counter <= 0)
+    	future_col = true;
+    else
+    	future_col = false;
+}
+
+void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
+    slam_lost = msg->data;
 }
 
 void package_delivery_initialize_params() {
     ros::param::get("/package_delivery/ip_addr",ip_addr__global);
     ros::param::get("/package_delivery/localization_method",localization_method);
-}
-
-// Follows trajectory, popping commands off the front of it and returning those commands in reverse order
-trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float time = 0.5) {
-    trajectory_t completed_commands;
-
-    while (time > 0 && trajectory.size() > 1) {
-        multiDOFpoint p = trajectory.front();
-        multiDOFpoint p_next = trajectory[1];
-
-        // Calculate the positions we should be at
-        double p_z = p.transforms[0].translation.z;
-
-        // Calculate the velocities we should be flying at
-        double v_x = p.velocities[0].linear.x;
-        double v_y = p.velocities[0].linear.y;
-        double v_z = p.velocities[0].linear.z;
-
-        // Calculate the time for which these flight commands should run
-        double segment_length = (p_next.time_from_start - p.time_from_start).toSec();
-        double flight_time = segment_length <= time ? segment_length : time;
-
-        // Fly for flight_time seconds
-        auto segment_start_time = std::chrono::system_clock::now();
-
-        drone.fly_velocity(v_x,
-                v_y,
-                v_z + 0.2*(p_z-drone.position().z));
-
-        std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(flight_time));
-
-        // Push completed command onto stack
-        completed_commands.push_back(p);
-
-        // Update trajectory
-        trajectory.front().time_from_start += ros::Duration(flight_time);
-        if (trajectory.front().time_from_start >= p_next.time_from_start)
-            trajectory.pop_front();
-
-        time -= flight_time;
-    }
-
-    return completed_commands;
 }
 
 geometry_msgs::Point get_start(Drone& drone) {
@@ -146,8 +119,7 @@ int main(int argc, char **argv)
 {
     // ROS node initialization
     ros::init(argc, argv, "package_delivery", ros::init_options::NoSigintHandler);
-    ros::NodeHandle n;
-    ros::NodeHandle panic_nh;
+    ros::NodeHandle nh;
     signal(SIGINT, sigIntHandler);
 	
     
@@ -155,23 +127,22 @@ int main(int argc, char **argv)
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
     package_delivery_initialize_params();
-    trajectory_t trajectory, past_trajectory;
+    trajectory_t trajectory, reverse_trajectory;
     geometry_msgs::Point start, goal;
 	
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
-    int reaction_delay_counter_init_value = 3;
-    int reaction_delay_counter =  reaction_delay_counter_init_value;
     bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
-        n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
+        nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
     ros::Subscriber panic_sub =  
-		panic_nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
-    ros::NodeHandle future_col_nh;
+		nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
     ros::Subscriber future_col_sub = 
-		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
+		nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
+	ros::Subscriber slam_lost_sub = 
+		nh.subscribe<std_msgs::Bool>("/slam_lost", 1000, slam_loss_callback);
 
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
@@ -194,37 +165,45 @@ int main(int argc, char **argv)
         ros::spinOnce();
         State next_state = invalid;
 
-        if (state == setup) {
+        if (state == setup)
+        {
             control_drone(drone);
             goal = get_goal();
             spin_around(drone);
             next_state = waiting;
         }
-        else if (state == waiting) {
+        else if (state == waiting)
+        {
             start = get_start(drone);
             trajectory = request_trajectory(get_trajectory_client, start, goal);
+            reverse_trajectory.clear();
             next_state = flying;
         }
-        else if (state == flying) {
-            if (future_col)
-                reaction_delay_counter--;
-
+        else if (state == flying)
+        {
             if (should_panic) {
                 action_upon_panic(drone);
                 next_state = waiting;
-            } else if (future_col && reaction_delay_counter <= 0) {
+            } else if (future_col) {
                 action_upon_future_col(drone);
                 reaction_delay_counter = reaction_delay_counter_init_value;
                 next_state = waiting;
+            } else if (slam_lost) {
+            	if(!action_upon_slam_loss(drone, spin)) {
+            		action_upon_slam_loss(drone, backtrack, reverse_trajectory);
+            	}
+
+            	next_state = flying;
             } else {
                 trajectory_t completed_traj = follow_trajectory(drone, trajectory);
-                past_trajectory.insert(past_trajectory.end(),
+                reverse_trajectory.insert(reverse_trajectory.end(),
                         completed_traj.begin(), completed_traj.end());
 
                 next_state = trajectory_done(trajectory) ? completed : flying;
             }
         }
-        else if (state == completed) {
+        else if (state == completed)
+        {
             if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
                 next_state = setup;
@@ -233,7 +212,8 @@ int main(int argc, char **argv)
                 next_state = waiting;
             }
         }
-        else {
+        else
+        {
             ROS_ERROR("Invalid FSM state!");
             break;
         }
