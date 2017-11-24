@@ -1,20 +1,28 @@
 #include "common.h"
 
+#include <iostream>
+#include <fstream>
 #include <string>
 #include <deque>
 #include <cmath>
 #include <cstdarg>
 
+#include <ros/ros.h>
 #include <ros/topic.h>
 #include <ros/duration.h>
 #include <std_msgs/Bool.h>
+#include <std_srvs/Trigger.h>
 
 #include "Drone.h"
 
 static const int angular_vel = 15;
 
-bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t trajectory);
+bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic,
+        trajectory_t& traj, trajectory_t& reverse_traj);
 bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic);
+bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic);
+
+trajectory_t append_trajectory(trajectory_t first, trajectory_t second);
 multiDOFpoint reverse_point(multiDOFpoint mdp);
 
 void sigIntHandler(int sig)
@@ -30,10 +38,30 @@ void action_upon_future_col(Drone& drone) {
 template <class T>
 T last_msg (std::string topic) {
     // Return the last message of a latched topic
-    T result;
-    result = *(ros::topic::waitForMessage<T>(topic));
+    return *(ros::topic::waitForMessage<T>(topic));
+}
 
-    return result;
+bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) {
+    ros::NodeHandle nh;
+	ros::ServiceClient reset_client = nh.serviceClient<std_srvs::Trigger>("/slam_reset");
+    std_srvs::Trigger srv;
+
+    if (reset_client.call(srv)) {
+        ROS_INFO("SLAM resetted succesfully");
+    } else {
+        ROS_ERROR("Failed to reset SLAM");
+    }
+
+    // Move around a little to initialize SLAM
+    drone.fly_velocity(-0.5, 0, 0, 2);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    drone.fly_velocity(0.5, 0, 0, 4);
+    std::this_thread::sleep_for(std::chrono::seconds(4));
+    drone.fly_velocity(-0.5, 0, 0, 2);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
+    return !is_lost.data;
 }
 
 bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic) {
@@ -53,29 +81,25 @@ bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic) {
         // Check whether SLAM is back
         std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
 
-        if (!is_lost.data) {
-            // Wait just a little to be sure that SLAM is back
-            auto safety_wait = std::chrono::seconds(2);
-            std::this_thread::sleep_for(safety_wait);
-
-            is_lost = last_msg<std_msgs::Bool>(topic);
-            if (!is_lost.data)
-                return true;
-        }
+        if (!is_lost.data)
+            return true;
     }
 
     return false;
 }
 
-bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t reverse_traj) {
-    while (!reverse_traj.empty()) {
-        follow_trajectory(drone, reverse_traj);
+bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t& traj, trajectory_t& reverse_traj) {
+    while (reverse_traj.size() > 1) {
+        ROS_INFO("Trajectory size: %u", traj.size());
+        ROS_INFO("Reverse trajectory size: %u", reverse_traj.size());
+        follow_trajectory(drone, reverse_traj, traj);
 
         // Check whether SLAM is back
         std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
         if (!is_lost.data)
             return true;
     }
+    ROS_INFO("done");
 
     return false;
 }
@@ -94,8 +118,11 @@ bool action_upon_slam_loss (Drone& drone, slam_recovery_method slm...) {
     if (slm == spin) {
         success = action_upon_slam_loss_spin(drone, lost_topic);
     } else if (slm == backtrack) {
+        trajectory_t& traj = *(va_arg(args, trajectory_t*));
         trajectory_t& reverse_traj = *(va_arg(args, trajectory_t*));
-        success = action_upon_slam_loss_backtrack(drone, lost_topic, reverse_traj);
+        success = action_upon_slam_loss_backtrack(drone, lost_topic, traj, reverse_traj);
+    } else if (slm == reset) {
+        success = action_upon_slam_loss_reset(drone, lost_topic);
     }
 
     va_end(args);
@@ -162,12 +189,17 @@ void spin_around(Drone &drone) {
 }
 
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
-trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float time) {
+void follow_trajectory(Drone& drone, trajectory_t& traj,
+        trajectory_t& reverse_traj, float time) {
     trajectory_t reversed_commands;
 
-    while (time > 0 && trajectory.size() > 1) {
-        multiDOFpoint p = trajectory.front();
-        multiDOFpoint p_next = trajectory[1];
+    std::ofstream myfile;
+    myfile.open ("/home/ubuntu/log.txt", std::ios::out | std::ios::app); 
+    myfile << "\n\n----------\nForward traj:\n";
+
+    while (time > 0 && traj.size() > 1) {
+        multiDOFpoint p = traj.front();
+        multiDOFpoint p_next = traj[1];
 
         // Calculate the positions we should be at
         double p_z = p.transforms[0].translation.z;
@@ -176,6 +208,8 @@ trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float tim
         double v_x = p.velocities[0].linear.x;
         double v_y = p.velocities[0].linear.y;
         double v_z = p.velocities[0].linear.z;
+        // ROS_INFO("%f %f %f", v_x, v_y, v_z);
+        myfile << p.time_from_start.toSec() << " ";
 
         // Calculate the time for which these flight commands should run
         double segment_length = (p_next.time_from_start - p.time_from_start).toSec();
@@ -184,24 +218,36 @@ trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float tim
         // Fly for flight_time seconds
         auto segment_start_time = std::chrono::system_clock::now();
 
+        // ROS_INFO("h");
         drone.fly_velocity(v_x,
                 v_y,
-                v_z + 0.2*(p_z-drone.position().z));
+                v_z);
+                // v_z + 0.2*(p_z-drone.position().z));
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(flight_time));
+        // ROS_INFO("  n");
 
         // Push completed command onto stack
         reversed_commands.push_front(reverse_point(p));
 
         // Update trajectory
-        trajectory.front().time_from_start += ros::Duration(flight_time);
-        if (trajectory.front().time_from_start >= p_next.time_from_start)
-            trajectory.pop_front();
+        traj.front().time_from_start += ros::Duration(flight_time);
+        if (traj.front().time_from_start >= p_next.time_from_start)
+            traj.pop_front();
 
         time -= flight_time;
     }
 
-    return reversed_commands;
+    reverse_traj = append_trajectory(reversed_commands, reverse_traj);
+    // ROS_INFO("    m");
+    
+    myfile << "\n\nReverse traj:\n";
+    for (auto& p : reverse_traj) {
+        // myfile << p.velocities[0].linear.y << " ";
+        myfile << p.time_from_start.toSec() << " ";
+    }
+    myfile << std::endl << std::endl;
+    myfile.close();
 }
 
 multiDOFpoint reverse_point(multiDOFpoint mdp) {
@@ -219,6 +265,7 @@ multiDOFpoint reverse_point(multiDOFpoint mdp) {
 trajectory_t append_trajectory (trajectory_t first, trajectory_t second) {
     auto time_shift = first.back().time_from_start;
     time_shift -= second.front().time_from_start;
+    time_shift += ros::Duration(0.5); // Sampling buf
 
     for (auto mdp : second) {
         mdp.time_from_start += time_shift;

@@ -7,7 +7,7 @@
 void sigIntHandler(int sig);
 
 // Recovery methods
-enum slam_recovery_method { spin, backtrack };
+enum slam_recovery_method { spin, backtrack, reset };
 
 void action_upon_panic(Drone& drone);
 void action_upon_future_col(Drone& drone);
@@ -17,8 +17,8 @@ bool action_upon_slam_loss(Drone& drone, slam_recovery_method slm...);
 typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
 typedef std::deque<multiDOFpoint> trajectory_t;
 
-trajectory_t follow_trajectory(Drone& drone, trajectory_t& trajectory, float time = 0.5);
-trajectory_t append_trajectory(trajectory_t first, trajectory_t second);
+void follow_trajectory(Drone& drone, trajectory_t& traj,
+        trajectory_t& reverse_traj, float time = 0.5);
 
 // Spinning commands
 void spin_around(Drone &drone);

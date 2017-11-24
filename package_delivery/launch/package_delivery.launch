@@ -13,8 +13,8 @@
     <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
     <!-- Set the localization method -->
-    <!-- arg name="localization_method" value="orb_slam2_rgbd" / -->
-    <arg name="localization_method" value="ground_truth" />
+    <arg name="localization_method" value="orb_slam2_rgbd" />
+    <!-- arg name="localization_method" value="ground_truth" / -->
     <!-- arg name="localization_method" value="gps" /-->
     
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
@@ -113,8 +113,8 @@
 		<param name="nodes_to_add_to_roadmap" value="300"/>
 		<param name="max_dist_to_connect_at" value="10"/>
 
-		<param name="v_max" value="2.5"/>
-		<param name="a_max" value="5.0"/>
+		<param name="v_max" value="3"/>
+		<param name="a_max" value="9"/>
         <param name="drone_radius" value="2.0"/>
         <param name="drone_height" value="0.6"/>
 
@@ -149,14 +149,8 @@
         <param name="localization_method" value="$(arg localization_method)" />
     </node>
 
-    <node pkg="slam_loss" type="slam_loss.py" name="slam_loss">
-        <param name="localization_method" value="$(arg localization_method)" />
-        <param name="timeout" value="1.0" />
-    </node>
-
 	<group if="$(eval localization_method == 'orb_slam2_rgbd')">
-    <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw
-    /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth"/>
+        <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" output="screen"/>
 	</group>
     
     <!-- rviz -->

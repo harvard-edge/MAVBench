@@ -106,6 +106,7 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
     for (multiDOFpoint p : srv.response.multiDOFtrajectory.points) {
         // p.velocities[0].linear.x = -3;
         // p.velocities[0].linear.y = 0;
+        // p.velocities[0].linear.z = 0;
 
         result.push_back(p);
     }
@@ -172,7 +173,7 @@ int main(int argc, char **argv)
         {
             control_drone(drone);
             goal = get_goal();
-            spin_around(drone);
+            // spin_around(drone);
             next_state = waiting;
         }
         else if (state == waiting)
@@ -180,7 +181,7 @@ int main(int argc, char **argv)
             ROS_INFO("Waiting to recieve trajectory...");
             start = get_start(drone);
             trajectory = request_trajectory(get_trajectory_client, start, goal);
-            reverse_trajectory.clear();
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             next_state = flying;
         }
         else if (state == flying)
@@ -195,18 +196,31 @@ int main(int argc, char **argv)
                 next_state = waiting;
             } else if (slam_lost) {
                 ROS_WARN("SLAM localization lost!");
-                ROS_INFO("Spinning to regain SLAM");
-            	if(!action_upon_slam_loss(drone, spin)) { }
-                    ROS_INFO("Backtracking to regain SLAM %u", reverse_trajectory.size());
-            		action_upon_slam_loss(drone, backtrack, reverse_trajectory);
-            	//}
-                ROS_INFO("found slam back");
+                bool slam_found = false;
 
-            	next_state = waiting;
+                // ROS_INFO("Spinning to regain SLAM");
+            	// slam_found = action_upon_slam_loss(drone, spin);
+
+                if (!slam_found) {
+                    ROS_INFO("Backtracking to regain SLAM");
+                    slam_found = action_upon_slam_loss(drone, backtrack,
+                            &trajectory, &reverse_trajectory);
+                }
+
+                // if (!slam_found) {
+                //     ROS_INFO("Reseting SLAM");
+                //     slam_found = action_upon_slam_loss(drone, reset);
+                // }
+
+                if (slam_found) {
+                    ROS_INFO("Recovered SLAM!");
+                    next_state = flying;
+                } else {
+                    ROS_INFO("SLAM not recovered! Just do it yourself");
+                    next_state = setup;
+                }
             } else {
-                trajectory_t completed_traj = follow_trajectory(drone, trajectory);
-                reverse_trajectory = append_trajectory(completed_traj, reverse_trajectory);
-
+                follow_trajectory(drone, trajectory, reverse_trajectory);
                 next_state = trajectory_done(trajectory) ? completed : flying;
             }
         }
