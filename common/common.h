@@ -10,6 +10,7 @@
 void sigIntHandler(int sig);
 void action_upon_panic(Drone& drone);
 void action_upon_future_col(Drone& drone);
+void action_upon_slam_loss(Drone& drone, int level);
 float distance(float x, float y, float z);
 void spin_around(Drone &drone);
 void scan_around(Drone &drone, int angle);

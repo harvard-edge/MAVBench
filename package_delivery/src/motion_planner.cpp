@@ -14,7 +14,6 @@
 
 // My headers
 #include "common.h"
-#include "Drone.h"
 #include "graph.h"
 #include "global_planner.h"
 #include "package_delivery/get_trajectory.h"
@@ -361,7 +360,7 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 				if (octree->castRay(start, direction, end, true, distance)) {
 					LOG_ELAPSED(motion_planner);
 					return true;
-                                }
+                }
 			}
 		}
 	}
