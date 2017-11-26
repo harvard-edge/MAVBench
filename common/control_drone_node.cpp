@@ -32,11 +32,7 @@
 #include <string>
 using namespace std;
 std::string ip_addr__global;
-void sigIntHandler(int sig)
-{
-    ros::shutdown();
-    exit(0);
-}
+
 // *** F:DN main function
 int main(int argc, char **argv)
 {
@@ -47,7 +43,7 @@ int main(int argc, char **argv)
     signal(SIGINT, sigIntHandler);
  
     uint16_t port = 41451;
-    ros::param::get("/control_drone_node/ip_addr",ip_addr__global);
+    ros::param::get("/ip_addr",ip_addr__global);
     ROS_ERROR_STREAM("blah"<<ip_addr__global);
     Drone drone(ip_addr__global.c_str(), port);
 	ros::Rate pub_rate(5);

@@ -73,16 +73,18 @@ int main(int argc, char** argv)
     int main_loop_rate = 10;
     ros::Rate loop_rate(main_loop_rate);
     while (ros::ok()) {
-        
-            /*
-            track_srv_obj.request = "clear_buffers";
-            if(track_client.call(track_srv_obj)) {
-                ROS_INFO("clear buffers in tracker");
+       
+         /*
+         detect_srv_obj.request.cmd = "start_detecting";
+            if(detect_client.call(detect_srv_obj)) {
+                ROS_INFO("done running detection");
             }
             else {
-                ROS_ERROR("failed to call serivce for clearing buffers in tracking"); 
+                ROS_ERROR("failed to call serivce for detection"); 
             }
         */
+
+        
         if (status == "resume_detection") { 
             //calling tracking to start buffering
             track_srv_obj.request.cmd = "start_buffering";
@@ -106,7 +108,7 @@ int main(int argc, char** argv)
             status =  detect_srv_obj.response.status;
             if (status == "obj_detected"){
                 //calling tracking to start tracking
-                track_srv_obj.request.cmd = "start_tracking";
+                track_srv_obj.request.cmd = "start_tracking_for_buffered";
                 track_srv_obj.request.img_id = detect_srv_obj.response.img_id;
                 track_srv_obj.request.bb = detect_srv_obj.response.bb;
                 if(track_client.call(track_srv_obj)) {
@@ -115,8 +117,11 @@ int main(int argc, char** argv)
                 else {
                     ROS_ERROR("failed to call serivce for tracking"); 
                 }
+
             }
         }
+        
+        //detect_client.call(detect_srv_obj);
         ros::spinOnce();
         loop_rate.sleep();
     }

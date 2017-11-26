@@ -39,6 +39,7 @@ using namespace std;
 std::string ip_addr__global;
 std::string localization_method;
 std::queue<bounding_box> bb_queue; //uesd to buffer imags while detection is running
+float height_ratio;
 //const int image_w = 256, image_h = 144; //this must be equal to the img being pulled in from airsim
 int image_w__global;// = 400;
 int  image_h__global; //= 400; //this must be equal to the img being pulled in from airsim
@@ -63,6 +64,7 @@ void bb_cb(const follow_the_leader::bounding_box_msg::ConstPtr& msg) {
     bb.h = msg->h;
     bb.conf  = msg->conf;
     bb_queue.push(bb);
+    ROS_INFO_STREAM("height and width"<<bb.w << " " <<bb.h);
 }
 
 // *** F:DN main function
@@ -72,7 +74,6 @@ void fly_towards_target(Drone& drone, const bounding_box& bb,
         double dt)
 {
 	static float hover_height = drone.pose().position.z;
-	const float height_ratio = 0.3;
 
 	auto yaw = drone.get_yaw();
 	if (yaw > 15 || yaw < -15) {
@@ -85,8 +86,8 @@ void fly_towards_target(Drone& drone, const bounding_box& bb,
     
     double img__cntr =  img_width / 2;
     //ROS_INFO_STREAM("bb h is "<<bb.h<< " height ration is"<<height_ratio*img_height);	
-    ROS_INFO_STREAM("result for vy"<<"bb.h"<<bb.h);
     double vy = pid_vy.calculate(bb.h, height_ratio*img_height,  dt); //get closer to the person
+    ROS_INFO_STREAM("bb.h:"<<bb.h<<" -ideal:"<< height_ratio*img_height<<" -vy:"<<vy);
     //ROS_INFO_STREAM("result for vx");
     double vx = pid_vx.calculate(img__cntr, bb__cntr__x, dt); //keep the person in the center of the img 
     //ROS_INFO_STREAM("result for vz");
@@ -123,7 +124,8 @@ int main(int argc, char **argv)
 
             !ros::param::get("/pid_node/image_w__global",image_w__global)||
             !ros::param::get("/pid_node/image_h__global",image_h__global)||
-            !ros::param::get("/localization_method",localization_method)
+            !ros::param::get("/localization_method",localization_method)||
+            !ros::param::get("/pid_node/height_ratio",height_ratio)
             ){
         ROS_FATAL("you did not specify all the parameters");
         return -1; 
@@ -134,8 +136,8 @@ int main(int argc, char **argv)
     Drone drone(ip_addr__global.c_str(), port, localization_method);
 	ros::Rate pub_rate(loop_rate);
     ros::Subscriber bb_sub = nh.subscribe("/bb_topic", 4, bb_cb);
-    PID pid_vx(vx__P__global, vx__I__global, vx__D__global, 2, -2);
-    PID pid_vy(vy__P__global, vy__I__global, vy__D__global, 2, -2);
+    PID pid_vx(vx__P__global, vx__I__global, vx__D__global, 4, -4);
+    PID pid_vy(vy__P__global, vy__I__global, vy__D__global, 4, -4);
 	PID pid_vz(vz__P__global, vz__I__global, vz__D__global, 0.5, -0.5); //at the moment only for keeping drone stable
 
 

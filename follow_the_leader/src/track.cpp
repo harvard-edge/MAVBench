@@ -1,15 +1,27 @@
 #include "track.h"
-
+#include <chrono>
+#include <bits/stdc++.h>
+#include <stdio.h>
+//std::ofstream file_to_output_2;
 KCFtracker::KCFtracker(const bounding_box& bb, cv::Mat frame) : tracker(HOG, FIXEDWINDOW, MULTISCALE, LAB)
 {
-	tracker.init(cv::Rect(bb.x, bb.y, bb.w, bb.h), frame);
+ 	
+    tracker.init(cv::Rect(bb.x, bb.y, bb.w, bb.h), frame);
 	peak = 0;
+    
+    //file_to_output_2.close();
+    //file_to_output_2.open("/home/nvidia/catkin_ws/src/mav-bench/follow_the_leader/src/tracking_output_2.txt");
 }
 
 bounding_box KCFtracker::track(cv::Mat frame) {
 	bounding_box result;
 	double old_peak = peak;
-	cv::Rect rect = tracker.update(frame, &peak);
+	
+    //auto trk_s  = std::chrono::steady_clock::now();
+    cv::Rect rect = tracker.update(frame, &peak);
+    //auto trk_e  = std::chrono::steady_clock::now();
+    //auto trk__t = std::chrono::duration_cast<std::chrono::milliseconds>(trk_e - trk_s).count();
+    //file_to_output_2<<trk__t<<"ms"<<std::endl;
 
 	result.x = rect.x;
 	result.y = rect.y;

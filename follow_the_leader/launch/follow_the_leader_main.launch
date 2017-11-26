@@ -2,9 +2,13 @@
     <!-- args --> 
     <!-- Behzad's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.101" /--> 
-    <arg name="host_ip" value="10.157.90.51" /> 
+    <!--arg name="host_ip" value="10.157.90.51" /--> 
+    <arg name="host_ip" value="169.254.153.158" /> 
     <!-- Hasans's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.208" /--> 
+    <arg name="img_width" value="512"/>
+    <arg name="img_height" value="288"/>
+    
 
     <!-- orb slam location--> 
     <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
@@ -20,7 +24,9 @@
     <arg name="DEBUG" value="true" /> 
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
 
-    <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
+    
+    <!--img publisher node--> 
+    <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
     <!-- IP of the Airsim computer -->
     <param name="Airsim_ip" value="$(arg host_ip)" />
 
@@ -38,15 +44,15 @@
     <param name="width" value="256"/>  <!-- Width when calibrated!-->
     <param name="height" value="144"/> <!-- Height when calibrated!-->
     </comment> 
-    <param name="Fx" value="200"/>
-    <param name="Fy" value="200"/>
-    <param name="cx" value="200"/>
-    <param name="cy" value="400"/>
-    <param name="scale_x" value="400"/>  <!-- Width when calibrated!-->
-    <param name="scale_y" value="800"/> <!-- Height when calibrated!-->
-    <param name="width" value="400"/>  <!-- Width when calibrated!-->
-    <param name="height" value="800"/> <!-- Height when calibrated!-->
-    <!--comment-->
+    <param name="Fx" value="$(eval arg('img_width')/2)"/>
+    <param name="Fy" value="$(eval arg('img_width')/2)"/>
+    <param name="cx" value="$(eval arg('img_width')/2)"/>
+    <param name="cy" value="$(eval arg('img_height')/2)"/>
+    <param name="scale_x" value="$(arg img_width)"/>  <!-- Width when calibrated!-->
+    <param name="scale_y" value="$(arg img_height)"/> <!-- Height when calibrated!-->
+    <param name="width" value="$(arg img_width)"/>  <!-- Width when calibrated!-->
+    <param name="height" value="$(arg img_height)"/> <!-- Height when calibrated!-->
+    <!--/comment-->
 
     <param name="maxDist" value="50.0"/> 
     <!-- Depth baseline -->
@@ -74,20 +80,21 @@
 	</group>
 
     <node pkg="follow_the_leader" type="pid_node" name="pid_node" output="screen">
-        <param name="vx__P__global" value=".0016"/>
-        <param name="vy__P__global" value=".0036"/>
+        <param name="height_ratio" value=".5"/> 
+        <param name="vx__P__global" value=".0316"/>
+        <param name="vy__P__global" value=".0000"/>
         <param name="vz__P__global" value=".001"/>
 
-        <param name="vx__I__global" value=".001"/>
-        <param name="vy__I__global" value=".001"/>
+        <param name="vx__I__global" value=".00"/>
+        <param name="vy__I__global" value=".00"/>
         <param name="vz__I__global" value=".001"/>
 
-        <param name="vx__D__global" value=".001"/>
-        <param name="vy__D__global" value=".001"/>
-        <param name="vz__D__global" value=".001"/>
+        <param name="vx__D__global" value=".00"/>
+        <param name="vy__D__global" value=".00"/>
+        <param name="vz__D__global" value=".00"/>
 
-        <param name="image_w__global" value="400"/>
-        <param name="image_h__global" value="800"/>
+        <param name="image_w__global" value="$(arg img_width)"/>
+        <param name="image_h__global" value="$(arg img_height)"/>
         
         <param name="ip_addr__global" value="$(arg host_ip)"/>
     </node>
