@@ -1,9 +1,10 @@
 <launch>
     <!-- args --> 
     <!-- Behzad's workstation ip --> 
-    <!-- arg name="host_ip" value="10.157.90.51" / --> 
+    <arg name="host_ip" value="10.157.90.51" /> 
+    <!-- arg name="host_ip" value="169.254.153.158" /--> 
     <!-- Hasans's workstation ip --> 
-    <arg name="host_ip" value="10.157.90.49" />
+    <!-- arg name="host_ip" value="10.157.90.49" /-->
     <!-- Hasans's direct connection ip --> 
     <!-- arg name="host_ip" value="169.254.250.191" / -->
     <!-- Wenzhi's workstation ip -->
@@ -12,8 +13,12 @@
     <!-- orb slam location--> 
     <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
-    <!-- Set the localization method -->
-    <!-- arg name="localization_method" value="orb_slam2_rgbd" / -->
+    <!-- stat file-->
+    <param name="stats_file_addr" value="$(find package_delivery)/../data/stats.txt" />
+
+
+    <!-- Set the localization method /-->
+    <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
     <arg name="localization_method" value="ground_truth" />
     <!-- arg name="localization_method" value="gps" /-->
     

@@ -11,7 +11,7 @@
 #include "Drone.h"
 #include "objdetect.h"
 #include "string"
-
+#include "common.h"
 
 #include <visualization_msgs/Marker.h>
 #include <sensor_msgs/Image.h>
@@ -41,7 +41,7 @@
 static const std::string OPENCV_WINDOW = "Image window";
 static std::string mav_name__global;
 YOLODetector detector;
-
+std::string stats_file_addr;
 static mapping_and_sar::OD result;
 
 void obj_detect_call_back(const sensor_msgs::ImageConstPtr& msg)
@@ -72,6 +72,7 @@ void obj_detect_call_back(const sensor_msgs::ImageConstPtr& msg)
 
     if(bb.conf >= detect_thresh) {
         ROS_INFO_STREAM("found the object"<< bb.conf);
+        update_stats_file(stats_file_addr,"mission_status completed");
         cv::Mat img_to_show;
         cv::Mat img_cpy = cv_ptr->image; 
         cv::rectangle(img_cpy, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(0,255,255)); //yellow
@@ -109,7 +110,12 @@ int main(int argc, char** argv){
     return -1; 
   }
 
-  
+  if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+      ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+              (ns + "/stats_file_addr").c_str());
+  }
+
+
   ros::Publisher obj_det_pub = nh.advertise <mapping_and_sar::OD>("/OD_topic", 4);
   ros::Subscriber raw_image_sub  = nh.subscribe("/Airsim/right/image_raw", 1, obj_detect_call_back);
   

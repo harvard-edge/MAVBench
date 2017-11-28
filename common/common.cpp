@@ -8,15 +8,24 @@
 #include <ros/topic.h>
 #include <ros/duration.h>
 #include <std_msgs/Bool.h>
-
+#include <iostream>
+#include <fstream>
 #include "Drone.h"
+
 
 static const int angular_vel = 15;
 
+void update_stats_file(std::string  stats_file__addr, std::string content){
+    std::ofstream myfile;
+    myfile.open(stats_file__addr);
+    myfile<<content<<std::endl;
+    myfile.close();
+    return;
+}
 void sigIntHandler(int sig)
 {
     ros::shutdown();
-    exit(0);
+    //exit(0);
 }
 
 void action_upon_future_col(Drone& drone) {

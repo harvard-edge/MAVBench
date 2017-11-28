@@ -37,11 +37,10 @@
 #include <fstream>
 #include "Drone.h"
 #include "control_drone.h"
+#include "common.h"
 
 visualization_msgs::Marker path_to_follow_marker;
-
-
-
+std::string stats_file_addr;
 
 int main(int argc, char** argv)
 {
@@ -65,6 +64,10 @@ int main(int argc, char** argv)
       return -1;
     }
   
+    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/stats_file_addr").c_str());
+    }
 
 
   //behzad change for visualization purposes

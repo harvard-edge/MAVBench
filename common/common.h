@@ -7,6 +7,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+void update_stats_file(std::string  stats_file__addr, std::string content);
 void sigIntHandler(int sig);
 void action_upon_panic(Drone& drone);
 void action_upon_future_col(Drone& drone);
