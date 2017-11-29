@@ -140,7 +140,7 @@ void tracking(ros::Publisher &bb_publisher){
        //cv::Mat img_cpy = img.image; 
        cv::Mat img_cpy_2 = img_inflated; 
        cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(0,255,255)); //yellow
-       cv::imshow(OPENCV_WINDOW, img_cpy_2);
+       //cv::imshow(OPENCV_WINDOW, img_cpy_2);
        //cv::imshow(OPENCV_WINDOW, img_cpy);
        cv::waitKey(10);
 

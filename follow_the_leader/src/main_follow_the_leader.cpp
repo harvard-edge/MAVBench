@@ -22,8 +22,10 @@
 #include "misc.h"
 #include "log__class.h"
 #include "follow_the_leader/cmd_srv.h"
-
+#include "common.h"
+//std::string stats_file_addr;
 string status;
+string ns;
 
 using namespace std;
 std::string ip_addr__global;
@@ -63,9 +65,18 @@ int main(int argc, char** argv)
                 (ns + "/ip_addr").c_str());
         return -1;
     }
+    /* 
+    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/stats_file_addr").c_str());
+     return -1; 
+    }
+    */
+    
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
     control_drone(drone);
+    //update_stats_file(stats_file_addr,"after control");
     follow_the_leader::cmd_srv track_srv_obj;
     follow_the_leader::cmd_srv detect_srv_obj;
     status = "resume_detection"; 
@@ -73,7 +84,6 @@ int main(int argc, char** argv)
     int main_loop_rate = 10;
     ros::Rate loop_rate(main_loop_rate);
     while (ros::ok()) {
-       
          /*
          detect_srv_obj.request.cmd = "start_detecting";
             if(detect_client.call(detect_srv_obj)) {

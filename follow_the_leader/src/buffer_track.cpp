@@ -41,6 +41,7 @@ typedef KCFtracker tracker_t;
 tracker_t * tracker = nullptr;
 bool tracker_defined;
 std::string status;
+//std::string stats_file_addr;
 int tracking_count; //number of times tracking has run after detection
 int max_n_track_before_det_count; //= 30; //number of times tracking is allowed to run before running detection again
 int img_id;
@@ -57,6 +58,7 @@ int FRAME_TO_PROCESS_UPPER_BOUND = 10;
 int frame_to_process_left;
 bool tracking_cb(follow_the_leader::cmd_srv::Request &req, 
     follow_the_leader::cmd_srv::Response &res){
+    //update_stats_file(stats_file_addr,"mission_s completed");
     if (req.cmd == "start_buffering") {
         img_queue = std::queue<cv_bridge::CvImage>();
         tracking_count = 0; 
@@ -75,6 +77,7 @@ bool tracking_cb(follow_the_leader::cmd_srv::Request &req,
     }
 
     status = req.cmd;
+    //update_stats_file(stats_file_addr,"mission_s2 completed");
     return true;
 }
 
@@ -143,7 +146,7 @@ bounding_box tracking_buffered(ros::ServiceClient &resume_detection_client, ros:
            if(img_queue.empty()){ 
                cv::Mat img_cpy_2 = img_inflated; 
                cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(255,0,255)); //yellow
-               cv::imshow(OPENCV_WINDOW, img_cpy_2);
+               //cv::imshow(OPENCV_WINDOW, img_cpy_2);
                //cv::imshow(OPENCV_WINDOW, img_cpy);
                cv::waitKey(10);
            }
@@ -258,6 +261,7 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
     signal(SIGINT, sigIntHandler);
     
+    
     ros::Publisher bb_publisher = nh.advertise <follow_the_leader::bounding_box_msg>("/buf_img_bb_topic", 4);
     ros::Subscriber raw_image_sub  = nh.subscribe("/Airsim/right/image_raw", 1, sample_images_cb);
     ros::ServiceServer track_server = 
@@ -283,6 +287,13 @@ int main(int argc, char** argv)
       return -1;
     }
 
+    /* 
+    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                "/stats_file_addr");
+     return -1; 
+    }
+    */
     ros::ServiceClient resume_detection_client = 
         nh.serviceClient<follow_the_leader::cmd_srv>("resume_detection");
 
@@ -293,6 +304,7 @@ int main(int argc, char** argv)
     frame_to_process_left = FRAME_TO_PROCESS_UPPER_BOUND;
     while (ros::ok()) {
         if (status == "start_tracking_for_buffered") { 
+            //update_stats_file(stats_file_addr,"later later shit completed");
             tracking_buffered(resume_detection_client, bb_publisher); 
         }
         ros::spinOnce();

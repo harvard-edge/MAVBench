@@ -13,9 +13,9 @@
 #include <iterator>
 #include <chrono>
 #include <thread>
+#include "common.h"
 //#include "controllers/DroneControllerBase.hpp"
 //#include "common/Common.hpp"
-#include "common.h"
 #include <fstream>
 #include "Drone.h"
 #include <cstdlib>
@@ -33,6 +33,7 @@
 #include "objdetect.h"
 
 
+//std::string stats_file_addr;
 typedef YOLODetector detector_t;
 static const std::string OPENCV_WINDOW = "Image window";
 double detect_thresh;// = 0.8;
@@ -50,6 +51,7 @@ bool detection_cb(follow_the_leader::cmd_srv::Request &req,
     follow_the_leader::cmd_srv::Response &res)
 {
  
+    
     //cv::Mat img;
     cv::Mat depth;
     bounding_box bb = {-3, -3, -3, -3, -3};
@@ -78,7 +80,7 @@ bool detection_cb(follow_the_leader::cmd_srv::Request &req,
     //cv::Mat img_cpy_2 = img_inflated; 
     cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(255,255,0)); //yellow
     //cv::imshow(OPENCV_WINDOW, img_inflated);
-    cv::imshow(OPENCV_WINDOW, img_cpy_2);
+    //cv::imshow(OPENCV_WINDOW, img_cpy_2);
     cv::waitKey(10);
 
 
@@ -128,8 +130,13 @@ int main(int argc, char** argv)
         ROS_FATAL_STREAM("Could not start detection. Parameter missing! Looking for /detect_thresh");
         return -1;
     }
-
-
+    /* 
+    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                "/stats_file_addr");
+     return -1; 
+    }
+*/
     ros::Subscriber raw_image_sub  = nh.subscribe("/Airsim/right/image_raw", 1, sample_images_cb);
     ros::ServiceServer detect_server = 
         nh.advertiseService("detect", detection_cb);
@@ -142,6 +149,7 @@ int main(int argc, char** argv)
     int detection_loop_rate = 10;
     ros::Rate loop_rate(detection_loop_rate);
 
+    //update_stats_file(stats_file_addr,"inside before rosspin");
     while(ros::ok) {
         ros::spinOnce();
     }
