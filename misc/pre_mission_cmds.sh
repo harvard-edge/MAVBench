@@ -1,7 +1,7 @@
 #!/bin/bash
-sleep 20
-echo "a"
-sleep 2
+sleep 10
+#echo "a"
+#sleep 2
 echo "f 0 0 1 3"
 sleep 3
 #echo "r"
@@ -16,6 +16,6 @@ sleep 3
 # sleep 1.5
 #kill -INT $(ps aux | grep ros | awk '{print $2}')
 echo "c"
-sleep 15
+#sleep 15
 # echo "40 -10 -3"
 echo "4 4 2"

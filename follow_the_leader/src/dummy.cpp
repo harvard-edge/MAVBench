@@ -39,11 +39,15 @@ cv_bridge::CvImage cv_img;
 int img_id;
 
 void sample_images_cb(const sensor_msgs::ImageConstPtr& msg) {
+    //static int img_ctr = 0;
     cv_img = *cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
       img_id = cv_img.header.seq;
-      cv::imshow(OPENCV_WINDOW, cv_img.image);
-      cv::waitKey(3);
-
+      //cv::imshow(OPENCV_WINDOW, cv_img.image);
+      //std::string str_img_ctr = std::to_string(img_ctr); 
+      //std::string  img_addr = "/home/nvidia/imgs/" + str_img_ctr + ".png";
+      //cv::imwrite(img_addr, cv_img.image);
+      //img_ctr++;
+      //cv::waitKey(3);
 }
 
 /*

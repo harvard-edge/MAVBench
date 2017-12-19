@@ -79,7 +79,8 @@ add_message_files(
 add_service_files(
   FILES
   cmd_srv.srv
-)
+  shut_down.srv
+  )
 
 generate_messages(
   DEPENDENCIES

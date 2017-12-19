@@ -81,7 +81,7 @@ bool tracking_cb(follow_the_leader::cmd_srv::Request &req,
     return true;
 }
 
-bounding_box tracking_buffered(ros::ServiceClient &resume_detection_client, ros::Publisher &bb_publisher){
+void tracking_buffered(ros::ServiceClient &resume_detection_client, ros::Publisher &bb_publisher){
     
     //ROS_INFO_STREAM("start tracking buffered");
     follow_the_leader::cmd_srv resume_detection_obj;
@@ -103,6 +103,8 @@ bounding_box tracking_buffered(ros::ServiceClient &resume_detection_client, ros:
     if (sth_to_track){
         queue_size = img_queue.size(); 
         trk_counter = 0;
+    }else{
+        return;
     }
     
     
@@ -113,29 +115,34 @@ bounding_box tracking_buffered(ros::ServiceClient &resume_detection_client, ros:
            n_img_to_skip = img_queue.size() - 1;
        }
        while(n_img_to_skip > 0) {
-            img_queue.pop();
-            n_img_to_skip--;
+           if (img_queue.size()!=1){ //if the last image is popped, we can't continue 
+                                     // processessing the images
+               img_queue.pop();
+           }
+           n_img_to_skip--;
        }
        frame_to_process_left--; 
-       
+       assert(img_queue.size() !=0);
        auto img = img_queue.front(); 
        img_queue.pop(); 
        if (img.header.seq >= img_id) {
            cv::Mat img_cpy = img.image; 
-           cv::Size size(512, 288);
+           //cv::Size size(256, 256);
+           //cv::Size size(512, 288);
+           //cv::Size size(1024, 576);
            //--- inflating the img 
-           cv::Mat img_inflated; //required since detection has a lower limit on the size 
-           resize(img_cpy, img_inflated, size);
+           //cv::Mat img_inflated; //required since detection has a lower limit on the size 
+           //resize(img_cpy, img_inflated, size);
 
            if (!tracker_defined) {
-               tracker = new tracker_t(bb, img_inflated);
+               tracker = new tracker_t(bb, img_cpy);
                draw_now = true; 
                tracker_defined = true;;
            }
            
            //bb = tracker->track(img.image); 
            trk_s  = steady_clock::now();
-           bb = tracker->track(img_inflated); 
+           bb = tracker->track(img_cpy); 
            trk_e  = steady_clock::now();
            auto trk__t = duration_cast<milliseconds>(trk_e - trk_s).count();
            trk_total += trk__t; 
@@ -144,11 +151,11 @@ bounding_box tracking_buffered(ros::ServiceClient &resume_detection_client, ros:
            //cv::Mat img_to_show;
            //cv::Mat img_cpy = img.image; 
            if(img_queue.empty()){ 
-               cv::Mat img_cpy_2 = img_inflated; 
+               cv::Mat img_cpy_2 = img_cpy; 
                cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(255,0,255)); //yellow
-               //cv::imshow(OPENCV_WINDOW, img_cpy_2);
+               cv::imshow(OPENCV_WINDOW, img_cpy_2);
                //cv::imshow(OPENCV_WINDOW, img_cpy);
-               cv::waitKey(10);
+               cv::waitKey(2);
            }
            if (bb.conf < tracking_threshold) {
                //ROS_INFO_STREAM("conf is lowerthan threshold "<<bb.conf); 
@@ -163,7 +170,7 @@ bounding_box tracking_buffered(ros::ServiceClient &resume_detection_client, ros:
    //}
 
     if (img_queue.empty() || (bb.conf < min_allowed_tracking_treshold) || (strike > max_strike)) {
-        ROS_INFO_STREAM("img_queue is empty");
+        //ROS_INFO_STREAM("img_queue is empty");
         tracking_count = 0; 
         strike = 0; 
         tracker_defined = false; 
@@ -299,8 +306,8 @@ int main(int argc, char** argv)
 
     follow_the_leader::cmd_srv track_srv_obj;
 
-    int tracking_loop_rate = 50;
-    ros::Rate loop_rate(tracking_loop_rate);
+    //int tracking_loop_rate = 50;
+    //ros::Rate loop_rate(tracking_loop_rate);
     frame_to_process_left = FRAME_TO_PROCESS_UPPER_BOUND;
     while (ros::ok()) {
         if (status == "start_tracking_for_buffered") { 
@@ -308,6 +315,6 @@ int main(int argc, char** argv)
             tracking_buffered(resume_detection_client, bb_publisher); 
         }
         ros::spinOnce();
-        loop_rate.sleep();
+        //loop_rate.sleep();
     }
 }

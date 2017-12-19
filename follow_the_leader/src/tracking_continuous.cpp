@@ -117,20 +117,21 @@ void tracking(ros::Publisher &bb_publisher){
        // img_queue.pop(); 
 
        cv::Mat img_cpy = img.image; 
-       cv::Size size(512, 288);
+       //cv::Size size(512, 288);
+       //cv::Size size(1024, 576);
        //--- inflating the img 
-       cv::Mat img_inflated; //required since detection has a lower limit on the size 
-       resize(img_cpy, img_inflated, size);
+       //cv::Mat img_inflated; //required since detection has a lower limit on the size 
+       //resize(img_cpy, img_inflated, size);
 
        if (!tracker_defined) {
-           tracker = new tracker_t(buf_img_bb, img_inflated);
+           tracker = new tracker_t(buf_img_bb, img_cpy);
            draw_now = true; 
            tracker_defined = true;
        }
 
        //bb = tracker->track(img.image); 
        trk_s  = steady_clock::now();
-       bb = tracker->track(img_inflated); 
+       bb = tracker->track(img_cpy); 
        trk_e  = steady_clock::now();
        auto trk__t = duration_cast<milliseconds>(trk_e - trk_s).count();
        trk_total += trk__t; 
@@ -138,11 +139,11 @@ void tracking(ros::Publisher &bb_publisher){
 
        //cv::Mat img_to_show;
        //cv::Mat img_cpy = img.image; 
-       cv::Mat img_cpy_2 = img_inflated; 
-       cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(0,255,255)); //yellow
-       //cv::imshow(OPENCV_WINDOW, img_cpy_2);
+       cv::Mat img_cpy_2 = img_cpy; 
+       cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(255,255,0)); //yellow
+       cv::imshow(OPENCV_WINDOW, img_cpy_2);
        //cv::imshow(OPENCV_WINDOW, img_cpy);
-       cv::waitKey(10);
+       cv::waitKey(4);
 
        follow_the_leader::bounding_box_msg bb_msg;
        bb_msg.x =  bb.x;
@@ -234,15 +235,15 @@ int main(int argc, char** argv)
 
         follow_the_leader::cmd_srv track_srv_obj;
 
-    int tracking_loop_rate = 50;
-    ros::Rate loop_rate(tracking_loop_rate);
+    //int tracking_loop_rate = 50;
+    //ros::Rate loop_rate(tracking_loop_rate);
     while (ros::ok()) {
         if (first_ever_bb_received) 
          {
              tracking(bb_publisher); 
          }
         ros::spinOnce();
-        loop_rate.sleep();
+        //loop_rate.sleep();
     }            
 }
 
