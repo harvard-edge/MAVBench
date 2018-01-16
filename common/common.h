@@ -1,6 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <limits>
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include "Drone.h"
 
@@ -18,7 +19,9 @@ typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
 typedef std::deque<multiDOFpoint> trajectory_t;
 
 void follow_trajectory(Drone& drone, trajectory_t& traj,
-        trajectory_t& reverse_traj, float time = 0.5);
+        trajectory_t& reverse_traj,
+        float max_speed = std::numeric_limits<double>::infinity(),
+        float time = 0.5);
 
 // Spinning commands
 void spin_around(Drone &drone);
