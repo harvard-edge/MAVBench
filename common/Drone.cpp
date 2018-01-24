@@ -70,40 +70,60 @@ void Drone::disarm()
 
 bool Drone::takeoff(double h)
 {
-	const double takeoff_timeout = 60.0;
-    auto ground_pos = client->getPosition();
+    auto pos = position();
+    const double margin = 0.2;
 
-	try {
-		client->takeoff(takeoff_timeout);
-	} catch (...) {
-		std::cout << "Taking off failed" << std::endl;
-	}
+    while (pos.z < h-margin || pos.z > h+margin) {
+        for (; pos.z < h-margin || pos.z > h+margin; pos = position()) {
+            const float p = 0.75, max_speed = 1;
+            float dist = h - pos.z;
 
-	std::cout << "Press enter to set offboard mode";
-	while (std::cin.get() != '\n') {}
+            float speed = dist*p;
+            if (speed > max_speed)
+                speed = max_speed;
 
-	try {
-		// client->setOffboardMode(true);
-	} catch (...) {
-		std::cout << "Setting offboard mode failed" << std::endl;
-	}
+            fly_velocity(0, 0, speed);
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        fly_velocity(0,0,0);
+        std::this_thread::sleep_for(std::chrono::seconds(2));
+    }
 
-	std::cout << "Press enter to move to height " << h;
-	while (std::cin.get() != '\n') {}
-
-	try{
-    	client->moveToPosition(ground_pos.x(), ground_pos.y(), ground_pos.z() - h, 1);
-	} catch (...) {
-		std::cout << "Moving to z position failed" << std::endl;
-	}
-
-	return true;
+    return true;
 }
 
-bool Drone::set_yaw(float y)
+bool Drone::set_yaw(float y, bool slow)
 {
+    float angular_vel = 15;
+
 	try {
-		client->rotateToYaw(y, 60, 5);
+        if (slow) {
+            float init_yaw = get_yaw();
+            int direction;
+            if (y >= init_yaw)
+                direction = 1;
+            else
+                direction = -1;
+
+            angular_vel *= direction;
+
+            for (float yaw = get_yaw(); (direction == 1 && yaw <= y) || (direction == -1 && yaw >= y);) {
+                // ROS_ERROR("yaw: %f, y: %f", yaw, y);
+
+                client->rotateToYaw(yaw, 60, 5);
+
+                yaw += angular_vel;
+
+                if (direction == 1 && yaw > y)
+                    yaw = y+1;
+                else if (direction == -1 && yaw < y)
+                    yaw = y-1;
+
+                std::this_thread::sleep_for(std::chrono::seconds(1));
+            }
+        } else {
+            client->rotateToYaw(y, 60, 5);
+        }
 	}catch(...){
 		std::cerr << "set_yaw failed" << std::endl;
 		return false;
@@ -131,12 +151,51 @@ bool Drone::set_yaw_based_on_quaternion(geometry_msgs::Quaternion q)
 	return true;
 }
 
-bool Drone::fly_velocity(double vx, double vy, double vz, double duration)
+float xy_yaw(double x, double y) {
+    float angle_to_dest;
+
+    if (x == 0 && y == 0)
+        angle_to_dest = 0;
+    else if (x == 0) {
+        angle_to_dest = y > 0 ? 0 : -180;
+    } else if (y == 0) {
+        angle_to_dest = x > 0 ? 90 : -90;
+    } else if (x > 0 && y > 0) {
+        angle_to_dest = std::atan(x/y) * 180.0/3.14;
+    } else if (x > 0 && y < 0) {
+        angle_to_dest = 180.0 - (std::atan(-x/y) * 180.0/3.14);
+    } else if (x < 0 && y > 0) {
+        angle_to_dest = -(std::atan(-x/y) * 180.0/3.14);
+    } else if (x < 0 && y < 0) {
+        angle_to_dest = -180 + (std::atan(x/y) * 180.0/3.14);
+    }
+
+    return angle_to_dest;
+}
+
+bool Drone::fly_velocity(double vx, double vy, double vz, double duration, bool face_forward)
 {
+    const float max_yaw_rate = 10.0;
+
+    float yaw_diff = xy_yaw(vx, vy) - get_yaw();
+    float yaw_rate = yaw_diff / duration;
+
+    if (vx == 0 && vy == 0)
+        yaw_rate = 0;
+    else if (yaw_rate > max_yaw_rate)
+        yaw_rate = max_yaw_rate;
+
 	try {
 		getCollisionInfo();
-		//client->moveByVelocity(vx, vy, vz, duration);
-		client->moveByVelocity(vy,vx, -1*vz, duration);
+
+        if (face_forward) {
+            auto drivetrain = msr::airlib::DrivetrainType::MaxDegreeOfFreedom;
+            auto yawmode = msr::airlib::YawMode(true, yaw_rate);
+
+            client->moveByVelocity(vy, vx, -vz, duration, drivetrain, yawmode);
+        } else {
+            client->moveByVelocity(vy, vx, -vz, duration);
+        }
     } catch(...) {
 		std::cerr << "fly_velocity failed" << std::endl;
 		return false;
@@ -147,14 +206,17 @@ bool Drone::fly_velocity(double vx, double vy, double vz, double duration)
 
 bool Drone::land()
 {
-	try {
-		client->land();
-	} catch(...) {
-		std::cerr << "land failed" << std::endl;
-		return false;
-	}
+    auto pos = position();
 
-	return true;
+    for (; pos.z > 0.05; pos = position()) {
+        const float speed = -0.5;
+        fly_velocity(0, 0, speed);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
+    fly_velocity(0,0,0);
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    return true;
 }
 /*
 coord Drone::gps()
@@ -244,7 +306,7 @@ float Drone::get_yaw()
     float p, r, y;
     msr::airlib::VectorMath::toEulerianAngle(q, p, y, r);
 
-	return y*180 / M_PI;
+	return -y*180 / M_PI;
 }
 
 float Drone::get_roll()

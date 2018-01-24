@@ -33,8 +33,8 @@ public:
     void arm();
     void disarm();
     bool takeoff(double h);
-    bool set_yaw(float y);
-    bool fly_velocity(double vx, double vy, double vz, double duration = 3);
+    bool set_yaw(float y, bool slow=false);
+    bool fly_velocity(double vx, double vy, double vz, double duration = 3, bool face_forward = false);
     bool land();
     bool set_yaw_based_on_quaternion(geometry_msgs::Quaternion q);
 

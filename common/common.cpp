@@ -228,7 +228,9 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
         drone.fly_velocity(v_x,
                 v_y,
                 // v_z);
-                v_z + 0.2*(p_z-drone.position().z));
+                v_z + 0.2*(p_z-drone.position().z),
+                1,
+                true);
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(flight_time / scale));
 
