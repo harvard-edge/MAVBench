@@ -147,20 +147,20 @@ void scan_around(Drone &drone, int angle) {
 	}
     
     drone.set_yaw(init_yaw+angle <= 180 ? init_yaw + angle : init_yaw + angle - 360);
-    drone.set_yaw(init_yaw, true);
+    drone.set_yaw(init_yaw);
     drone.set_yaw(init_yaw-angle >= -180 ? init_yaw - angle : init_yaw - angle + 360);
-    drone.set_yaw(init_yaw, true);
+    drone.set_yaw(init_yaw);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
 
-
+/*
 void spin_slowly(Drone &drone, int n_pies) {
     float init_yaw = drone.get_yaw();
     float angle = 0;
     
     drone.fly_velocity(0, 0, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    ROS_INFO("spinning around now... asdf");
+    ROS_INFO("Spinning around now...");
     
     float  pie_size = 360.0/n_pies;
     for (int i = 0; i <  n_pies; i++) {
@@ -171,21 +171,17 @@ void spin_slowly(Drone &drone, int n_pies) {
         std::this_thread::sleep_for(std::chrono::milliseconds(2000));
     }
 }
+*/
 
 void spin_around(Drone &drone) {
-    float init_yaw = drone.get_yaw();
     drone.fly_velocity(0, 0, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     ROS_INFO("Spinning around...");
 
-    for (int i = 0; i <= 360; i += angular_vel) {
+    float init_yaw = drone.get_yaw();
+    for (int i = 0; i <= 360; i += 90) {
         int angle = init_yaw + i;
-
-        auto start_turn = std::chrono::system_clock::now();
         drone.set_yaw(angle <= 180 ? angle : angle - 360);
-
-        auto end_turn = start_turn + std::chrono::seconds(1);
-        std::this_thread::sleep_until(end_turn);
     }
 }
 

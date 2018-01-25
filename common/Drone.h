@@ -33,7 +33,7 @@ public:
     void arm();
     void disarm();
     bool takeoff(double h);
-    bool set_yaw(float y, bool slow=false);
+    bool set_yaw(int y);
     bool fly_velocity(double vx, double vy, double vz, double duration = 3, bool face_forward = false);
     bool land();
     bool set_yaw_based_on_quaternion(geometry_msgs::Quaternion q);
@@ -56,11 +56,15 @@ public:
     msr::airlib::CollisionInfo getCollisionInfo();
 
 private:
-    std::string localization_method; 
     msr::airlib::MultirotorRpcLibClient * client;
-    //coord initial_gps;
+
+    std::string localization_method; 
     tf::TransformListener tfListen;
+
     uint64_t collision_count;
+
+    float max_yaw_rate = 15.0;
+    float max_yaw_rate_during_flight = 10.0;
 };
 
 #endif

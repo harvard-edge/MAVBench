@@ -26,7 +26,7 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
 // Spinning commands
 void spin_around(Drone &drone);
 void scan_around(Drone &drone, int angle);
-void spin_slowly(Drone &drone, int n_pies=20);
+// void spin_slowly(Drone &drone, int n_pies=20);
 
 // Utility functions
 float distance(float x, float y, float z);

@@ -45,7 +45,7 @@ void control_drone(Drone& drone)
 	cout << "\tp: print pitch, roll, yaw, height\n";
 	cout << "\tc: complete drone setup and continue\n";
 	cout << "\ts: sleep for 5 seconds\n";
-	cout << "\tr: rotate slowlyd\n";
+	cout << "\tr: rotate slowly\n";
     cout << "\tCtrl-c/q: quit\n";
 
 	std::string cmd("");
@@ -86,7 +86,7 @@ void control_drone(Drone& drone)
 			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd == "r") {
-            spin_slowly(drone, 20);          
+            spin_around(drone); 
         }else if (cmd != "c") {
 			cout << "Unknown command" << endl;
             // ros::shutdown();
@@ -146,7 +146,4 @@ void control_drone(Drone& drone)
 	}
 }
 */
-
-
-
 

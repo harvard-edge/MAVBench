@@ -92,6 +92,34 @@ bool Drone::takeoff(double h)
     return true;
 }
 
+bool Drone::set_yaw(int y)
+{
+    int pos_dist = (y - int(get_yaw()) + 360) % 360;
+    int yaw_diff = pos_dist <= 180 ? pos_dist : pos_dist - 360;
+
+    float duration = yaw_diff / max_yaw_rate;
+    if (duration < 0)
+        duration = -duration;
+
+    float yaw_rate = max_yaw_rate;
+    if (yaw_diff < 0)
+        yaw_rate = -yaw_rate;
+
+	try {
+        auto drivetrain = msr::airlib::DrivetrainType::MaxDegreeOfFreedom;
+        auto yawmode = msr::airlib::YawMode(true, yaw_rate);
+
+        client->moveByVelocity(0, 0, 0, duration, drivetrain, yawmode);
+
+        int duration_ms = duration*1000;
+        std::this_thread::sleep_for(std::chrono::milliseconds(duration_ms));
+	}catch(...){
+		std::cerr << "set_yaw failed" << std::endl;
+		return false;
+	}
+}
+
+/*
 bool Drone::set_yaw(float y, bool slow)
 {
     float angular_vel = 15;
@@ -131,6 +159,7 @@ bool Drone::set_yaw(float y, bool slow)
 
 	return true;
 }
+*/
 
 bool Drone::set_yaw_based_on_quaternion(geometry_msgs::Quaternion q)
 {
@@ -151,7 +180,7 @@ bool Drone::set_yaw_based_on_quaternion(geometry_msgs::Quaternion q)
 	return true;
 }
 
-float xy_yaw(double x, double y) {
+static float xy_yaw(double x, double y) {
     float angle_to_dest;
 
     if (x == 0 && y == 0)
@@ -175,15 +204,13 @@ float xy_yaw(double x, double y) {
 
 bool Drone::fly_velocity(double vx, double vy, double vz, double duration, bool face_forward)
 {
-    const float max_yaw_rate = 10.0;
-
     float yaw_diff = xy_yaw(vx, vy) - get_yaw();
     float yaw_rate = yaw_diff / duration;
 
     if (vx == 0 && vy == 0)
         yaw_rate = 0;
-    else if (yaw_rate > max_yaw_rate)
-        yaw_rate = max_yaw_rate;
+    else if (yaw_rate > max_yaw_rate_during_flight)
+        yaw_rate = max_yaw_rate_during_flight;
 
 	try {
 		getCollisionInfo();

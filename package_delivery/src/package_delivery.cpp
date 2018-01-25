@@ -7,6 +7,7 @@
 #include <chrono>
 #include <thread>
 #include <deque>
+#include <limits>
 #include <signal.h>
 
 #include "control_drone.h"
@@ -33,7 +34,7 @@ enum State { setup, waiting, flying, completed, invalid };
 double dist(coord t, geometry_msgs::Point m)
 {
     // We must convert between the two coordinate systems
-    return std::sqrt((t.x-m.x)*(t.x-m.x) + (t.y-m.y)*(t.y-m.y) + (t.z+m.z)*(t.z-m.z));
+    return std::sqrt((t.x-m.x)*(t.x-m.x) + (t.y-m.y)*(t.y-m.y) + (t.z-m.z)*(t.z-m.z));
 }
 
 // *** F:DN call back function for the panic_topic subscriber
@@ -104,14 +105,51 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
 
     trajectory_t result;
     for (multiDOFpoint p : srv.response.multiDOFtrajectory.points) {
-        // p.velocities[0].linear.x = -3;
-        // p.velocities[0].linear.y = 0;
-        // p.velocities[0].linear.z = 0;
-
         result.push_back(p);
     }
 
+    /*
+    trajectory_t tmp;
+    int max_i = 20, speed = 1;
+    for (int i = 0; i < max_i; i++) {
+        multiDOFpoint p = srv.response.multiDOFtrajectory.points.front();
+
+        p.time_from_start = ros::Duration(i);
+        
+        p.velocities[0].linear.x = i < max_i-1 ? -speed : 0;
+        p.velocities[0].linear.y = 0;
+        p.velocities[0].linear.z = 0;
+        tmp.push_back(p);
+    }
+    return tmp;
+    */
+
     return result;
+}
+
+void face_destination(Drone& drone, double x, double y) {
+    float angle_to_dest;
+
+    if (x == 0 && y == 0)
+        return;
+    else if (x == 0) {
+        angle_to_dest = y > 0 ? 0 : -180;
+    } else if (y == 0) {
+        angle_to_dest = x > 0 ? 90 : -90;
+    } else if (x > 0 && y > 0) {
+        angle_to_dest = std::atan(x/y) * 180.0/3.14;
+    } else if (x > 0 && y < 0) {
+        angle_to_dest = 180.0 - (std::atan(-x/y) * 180.0/3.14);
+    } else if (x < 0 && y > 0) {
+        angle_to_dest = -(std::atan(-x/y) * 180.0/3.14);
+    } else if (x < 0 && y < 0) {
+        angle_to_dest = -180 + (std::atan(x/y) * 180.0/3.14);
+    }
+
+    // Correct for over-setting yaw
+    // angle_to_dest *= 0.8;
+
+    drone.set_yaw(angle_to_dest);
 }
 
 bool trajectory_done(trajectory_t trajectory) {
@@ -125,7 +163,6 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "package_delivery", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
     signal(SIGINT, sigIntHandler);
-	
     
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
@@ -152,6 +189,8 @@ int main(int argc, char **argv)
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
     const int package_delivery_loop_rate = 50;
+    float max_speed = std::numeric_limits<double>::infinity();
+    auto max_speed_reset_time = std::chrono::system_clock::now();
     float goal_s_error_margin = 2.0; //ok distance to be away from the goal.
                                                       //this is b/c it's very hard 
                                                       //given the issues associated with
@@ -163,7 +202,7 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
-    ros::Rate loop_rate(package_delivery_loop_rate);
+    // ros::Rate loop_rate(package_delivery_loop_rate);
     LOG_TIME(package_delivery);
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
@@ -172,8 +211,13 @@ int main(int argc, char **argv)
         if (state == setup)
         {
             control_drone(drone);
+
             goal = get_goal();
-            // spin_around(drone);
+            start = get_start(drone);
+
+            spin_around(drone);
+            face_destination(drone, (goal.x-start.x), (goal.y-start.y));
+
             next_state = waiting;
         }
         else if (state == waiting)
@@ -192,7 +236,7 @@ int main(int argc, char **argv)
                 next_state = waiting;
             } else if (future_col) {
                 ROS_WARN("Future collision detected on trajectory!");
-                action_upon_future_col(drone);
+                // action_upon_future_col(drone);
                 next_state = waiting;
             } else if (slam_lost) {
                 ROS_WARN("SLAM localization lost!");
@@ -207,20 +251,22 @@ int main(int argc, char **argv)
                             &trajectory, &reverse_trajectory);
                 }
 
-                // if (!slam_found) {
-                //     ROS_INFO("Reseting SLAM");
-                //     slam_found = action_upon_slam_loss(drone, reset);
-                // }
+                if (!slam_found) {
+                    ROS_INFO("Reseting SLAM");
+                    slam_found = action_upon_slam_loss(drone, reset);
+                }
 
                 if (slam_found) {
                     ROS_INFO("Recovered SLAM!");
+                    max_speed = 1;
+                    max_speed_reset_time = std::chrono::system_clock::now() + std::chrono::seconds(5);
                     next_state = flying;
                 } else {
-                    ROS_INFO("SLAM not recovered! Just do it yourself");
+                    ROS_WARN("SLAM not recovered! Just do it yourself");
                     next_state = setup;
                 }
             } else {
-                follow_trajectory(drone, trajectory, reverse_trajectory);
+                follow_trajectory(drone, trajectory, reverse_trajectory, max_speed);
                 next_state = trajectory_done(trajectory) ? completed : flying;
             }
         }
@@ -229,8 +275,14 @@ int main(int argc, char **argv)
             if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
                 next_state = setup;
-            } else { //If we've drifted too far off from the destionation
+            } else { //If we've drifted too far off from the destination
                 ROS_WARN("We're a little off...");
+
+                auto pos = drone.position();
+                std::cout << "Pos: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
+                std::cout << "Goal: " << goal.x << " " << goal.y << " " << goal.z << std::endl;
+                std::cout << "Dist: " << dist(pos, goal) << std::endl;
+
                 start = get_start(drone);
                 next_state = waiting;
             }
@@ -241,8 +293,14 @@ int main(int argc, char **argv)
             break;
         }
 
+        // Reset max_speed if required
+        auto now = std::chrono::system_clock::now();
+        if (now > max_speed_reset_time) {
+            max_speed = std::numeric_limits<double>::infinity();
+        }
+
         state = next_state;
-        loop_rate.sleep();
+        // loop_rate.sleep();
     }
 
     return 0;
