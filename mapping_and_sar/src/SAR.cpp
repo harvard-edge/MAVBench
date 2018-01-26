@@ -38,8 +38,10 @@
 #include <fstream>
 #include "Drone.h"
 #include "control_drone.h"
+#include "common.h"
 
 visualization_msgs::Marker path_to_follow_marker;
+std::string stats_file_addr;
 
 void OD_callback(const mapping_and_sar::OD::ConstPtr& msg){
     /* 
@@ -70,16 +72,20 @@ int main(int argc, char** argv)
               (ns + "/ip_addr").c_str());
     return -1;
   }
-    
   if(!ros::param::get("/localization_method",localization_method))  {
       ROS_FATAL_STREAM("Could not start SAR cause localization_method not provided");
     return -1; 
   }
-  
+  if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+      ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+              (ns + "/stats_file_addr").c_str());
+  }
+
+
     //behzad change for visualization purposes
   ros::Publisher path_to_follow_marker_pub = nh.advertise<visualization_msgs::Marker>("path_to_follow_topic", 1000);
   geometry_msgs::Point p_marker;
-  path_to_follow_marker.header.frame_id = "fcu";
+  path_to_follow_marker.header.frame_id = "world";
   path_to_follow_marker.type = visualization_msgs::Marker::CUBE_LIST;
   path_to_follow_marker.action = visualization_msgs::Marker::ADD;
   path_to_follow_marker.scale.x = 0.3;
@@ -230,7 +236,7 @@ int main(int argc, char** argv)
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
-    planSrv.request.header.frame_id = "fcu";
+    planSrv.request.header.frame_id = "world";
     //if  
     if (ros::service::call("nbvplanner", planSrv)) {
       n_seq++;
@@ -241,7 +247,7 @@ int main(int argc, char** argv)
       for (int i = 0; i < planSrv.response.path.size(); i++) {
         samples_array.header.seq = n_seq;
         samples_array.header.stamp = ros::Time::now();
-        samples_array.header.frame_id = "fcu";
+        samples_array.header.frame_id = "world";
         samples_array.points.clear();
         tf::Pose pose;
         tf::poseMsgToTF(planSrv.response.path[i], pose);

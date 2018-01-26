@@ -28,7 +28,9 @@ bool future_col = false;
 bool slam_lost = false;
 string ip_addr__global;
 string localization_method;
-
+string stats_file_addr;
+string ns;
+	
 enum State { setup, waiting, flying, completed, invalid };
 
 double dist(coord t, geometry_msgs::Point m)
@@ -63,8 +65,24 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 }
 
 void package_delivery_initialize_params() {
-    ros::param::get("/package_delivery/ip_addr",ip_addr__global);
-    ros::param::get("/package_delivery/localization_method",localization_method);
+    
+    if(!ros::param::get("/package_delivery/ip_addr",ip_addr__global)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/ip_addr").c_str());
+      return -1; 
+    }
+    if(!ros::param::get("/package_delivery/localization_method",localization_method)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/localization_method").c_str());
+       return -1; 
+    }
+    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/stats_file_addr").c_str());
+     return -1; 
+    }
+
+
 }
 
 geometry_msgs::Point get_start(Drone& drone) {
@@ -163,6 +181,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "package_delivery", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
     signal(SIGINT, sigIntHandler);
+    ns = ros::this_node::getName();
     
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
@@ -207,6 +226,8 @@ int main(int argc, char **argv)
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
         State next_state = invalid;
+        //std::cout<<stats_file_addr<<std::endl;
+        //update_stats_file(stats_file_addr,"now now");
 
         if (state == setup)
         {
@@ -274,6 +295,7 @@ int main(int argc, char **argv)
         {
             if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
+                update_stats_file(stats_file_addr,"mission_status completed");
                 next_state = setup;
             } else { //If we've drifted too far off from the destination
                 ROS_WARN("We're a little off...");

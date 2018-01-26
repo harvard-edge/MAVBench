@@ -5,6 +5,7 @@
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include "Drone.h"
 
+void update_stats_file(std::string  stats_file__addr, std::string content);
 void sigIntHandler(int sig);
 
 // Recovery methods

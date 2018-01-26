@@ -33,7 +33,8 @@ bool should_panic = false;
 bool future_col = false;
 string ip_addr__global;
 string localization_method;
-
+string stats_file_addr;
+string ns;
 
 /*
 void sigIntHandler(int sig)
@@ -112,8 +113,20 @@ void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
 
 
 void package_delivery_initialize_params() {
-    ros::param::get("/scanning/ip_addr",ip_addr__global);
-    ros::param::get("/scanning/localization_method",localization_method);
+    if(!ros::param::get("/scanning/ip_addr",ip_addr__global)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/ip_addr").c_str());
+    }
+    if(!ros::param::get("/scanning/localization_method",localization_method)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/localization_method").c_str());
+    }
+
+    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/stats_file_addr").c_str());
+    }
+
 }
 
 // *** F:DN main function
@@ -229,7 +242,7 @@ int main(int argc, char **argv)
         //ROS_INFO("size of the trajactory %d",  get_trajectory_srv.response.multiDOFtrajectory.points.size());
         follow_trajecotry(get_trajectory_srv, drone);
         drone.fly_velocity(0, 0, 0);
-
+        update_stats_file(stats_file_addr,"mission_status completed");
         ROS_INFO("scanned the entire space and returned successfully");
         //loop_rate.sleep();
     }

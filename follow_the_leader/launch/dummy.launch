@@ -2,7 +2,8 @@
     <!-- args --> 
     <!-- Behzad's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.101" /--> 
-    <arg name="host_ip" value="10.157.90.51" /> 
+    <arg name="host_ip" value="10.157.90.51" />
+    <!--arg name="host_ip" value="169.254.153.158" /-->
     <!-- Hasans's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.208" /--> 
 
@@ -50,7 +51,7 @@
     </node>
     </comment>
     
-    <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
+    <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" >
     <param name="localization_method" value="ground_truth" />
     <!-- IP of the Airsim computer -->
     <param name="ip_addr" type="string" value="$(arg host_ip)" />

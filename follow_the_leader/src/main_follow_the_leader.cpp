@@ -22,15 +22,18 @@
 #include "misc.h"
 #include "log__class.h"
 #include "follow_the_leader/cmd_srv.h"
-
+#include "common.h"
+#include "follow_the_leader/shut_down.h"
+//std::string stats_file_addr;
 string status;
+string ns;
 
 using namespace std;
 std::string ip_addr__global;
 
 bool resume_detection_server_cb(follow_the_leader::cmd_srv::Request &req, 
     follow_the_leader::cmd_srv::Response &res){
-    ROS_INFO_STREAM("resume detection was called");
+    //ROS_INFO_STREAM("resume detection was called");
     status = "resume_detection";
     return true;
 }
@@ -50,44 +53,66 @@ int main(int argc, char** argv)
     ros::ServiceClient track_client = 
         nh.serviceClient<follow_the_leader::cmd_srv>("track");
 
+    ros::ServiceClient shutdown_client = 
+        nh.serviceClient<follow_the_leader::shut_down>("shutdown_topic");
+
+
+
     ros::ServiceServer resume_detection_server  = 
         nh.advertiseService("resume_detection", resume_detection_server_cb);
 
     std::string localization_method; 
+    int detec_fail_ctr_threshold; 
     if(!ros::param::get("/localization_method",localization_method))  {
       ROS_FATAL_STREAM("Could not start exploration localization_method not provided");
       return -1;
     }
+    if(!ros::param::get("/detec_fail_ctr_threshold",detec_fail_ctr_threshold))  {
+      ROS_FATAL_STREAM("Could not start follow the leader detec_fail_ctr_threshold not provided");
+      return -1;
+    }
+    
     if (!ros::param::get("/ip_addr", ip_addr__global)) {
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
                 (ns + "/ip_addr").c_str());
         return -1;
     }
+    int detec_fail_ctr = 0; 
+    /* 
+    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/stats_file_addr").c_str());
+     return -1; 
+    }
+    */
+    
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
     control_drone(drone);
+    //update_stats_file(stats_file_addr,"after control");
     follow_the_leader::cmd_srv track_srv_obj;
     follow_the_leader::cmd_srv detect_srv_obj;
     status = "resume_detection"; 
     
-    int main_loop_rate = 10;
-    ros::Rate loop_rate(main_loop_rate);
+    //int main_loop_rate = 10;
+    //ros::Rate loop_rate(main_loop_rate);
     while (ros::ok()) {
-        
-            /*
-            track_srv_obj.request = "clear_buffers";
-            if(track_client.call(track_srv_obj)) {
-                ROS_INFO("clear buffers in tracker");
+         /*
+         detect_srv_obj.request.cmd = "start_detecting";
+            if(detect_client.call(detect_srv_obj)) {
+                ROS_INFO("done running detection");
             }
             else {
-                ROS_ERROR("failed to call serivce for clearing buffers in tracking"); 
+                ROS_ERROR("failed to call serivce for detection"); 
             }
         */
+
+        
         if (status == "resume_detection") { 
             //calling tracking to start buffering
             track_srv_obj.request.cmd = "start_buffering";
             if(track_client.call(track_srv_obj)) {
-                ROS_INFO("started buffering");
+                //ROS_INFO("started buffering");
             }
             else {
                 ROS_ERROR("failed to call serivce for tracking"); 
@@ -97,7 +122,7 @@ int main(int argc, char** argv)
             //calling detection 
             detect_srv_obj.request.cmd = "start_detecting";
             if(detect_client.call(detect_srv_obj)) {
-                ROS_INFO("done running detection");
+                //ROS_INFO("done running detection");
             }
             else {
                 ROS_ERROR("failed to call serivce for detection"); 
@@ -106,19 +131,32 @@ int main(int argc, char** argv)
             status =  detect_srv_obj.response.status;
             if (status == "obj_detected"){
                 //calling tracking to start tracking
-                track_srv_obj.request.cmd = "start_tracking";
+                track_srv_obj.request.cmd = "start_tracking_for_buffered";
                 track_srv_obj.request.img_id = detect_srv_obj.response.img_id;
                 track_srv_obj.request.bb = detect_srv_obj.response.bb;
                 if(track_client.call(track_srv_obj)) {
-                    ROS_INFO("started tracking");
+                    //ROS_INFO("started tracking");
                 }
                 else {
                     ROS_ERROR("failed to call serivce for tracking"); 
                 }
+                detec_fail_ctr = 0; 
+            }else{
+                detec_fail_ctr++;
             }
+
         }
+        
+        
+        if (detec_fail_ctr > detec_fail_ctr_threshold) {
+            ROS_INFO_STREAM("failed detecting the person too many times"); 
+            follow_the_leader::shut_down shutdown_string;
+            shutdown_client.call(shutdown_string);
+            ros::shutdown();
+        }
+        //detect_client.call(detect_srv_obj);
         ros::spinOnce();
-        loop_rate.sleep();
+        //loop_rate.sleep();
     }
 
 }

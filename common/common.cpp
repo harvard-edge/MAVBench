@@ -15,6 +15,7 @@
 
 #include "Drone.h"
 
+
 static const int angular_vel = 15;
 
 static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic,
@@ -25,10 +26,19 @@ static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic);
 static trajectory_t append_trajectory(trajectory_t first, trajectory_t second);
 static multiDOFpoint reverse_point(multiDOFpoint mdp);
 
+void update_stats_file(std::string  stats_file__addr, std::string content){
+    std::ofstream myfile;
+    myfile.open(stats_file__addr);
+    myfile<<content<<std::endl;
+    myfile.close();
+    return;
+}
+
+
 void sigIntHandler(int sig)
 {
     ros::shutdown();
-    exit(0);
+    //exit(0);
 }
 
 void action_upon_future_col(Drone& drone) {

@@ -79,7 +79,8 @@ add_message_files(
 add_service_files(
   FILES
   cmd_srv.srv
-)
+  shut_down.srv
+  )
 
 generate_messages(
   DEPENDENCIES
@@ -146,9 +147,17 @@ target_link_libraries(detection_node ${CUDA_OPENCVLIBS}  ${catkin_LIBRARIES}  ${
 add_dependencies(detection_node ${catkin_EXPORTED_TARGETS})
 
 
-add_executable(tracking_node src/tracking_thread.cpp src/track.cpp src/kcf/kcftracker.cpp src/kcf/fhog.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/objdetect.cpp ${common_utility_src}/timer.cpp)
-target_link_libraries(tracking_node ${CUDA_OPENCVLIBS}  ${catkin_LIBRARIES}  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_curand_LIBRARY} darknet AirLib MavLinkCom rpc pthread)
-add_dependencies(tracking_node ${catkin_EXPORTED_TARGETS})
+add_executable(buffer_track_node src/buffer_track.cpp src/track.cpp src/kcf/kcftracker.cpp src/kcf/fhog.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/objdetect.cpp ${common_utility_src}/timer.cpp)
+target_link_libraries(buffer_track_node ${CUDA_OPENCVLIBS}  ${catkin_LIBRARIES}  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_curand_LIBRARY} darknet AirLib MavLinkCom rpc pthread)
+add_dependencies(buffer_track_node ${catkin_EXPORTED_TARGETS})
+
+
+add_executable(tracking_continuous src/tracking_continuous.cpp src/track.cpp src/kcf/kcftracker.cpp src/kcf/fhog.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/objdetect.cpp ${common_utility_src}/timer.cpp)
+target_link_libraries(tracking_continuous ${CUDA_OPENCVLIBS}  ${catkin_LIBRARIES}  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_curand_LIBRARY} darknet AirLib MavLinkCom rpc pthread)
+add_dependencies(tracking_continuous ${catkin_EXPORTED_TARGETS})
+
+
+
 
 
 add_executable(main_follow_the_leader_node src/main_follow_the_leader.cpp ${common_utility_src}/control_drone.cpp
