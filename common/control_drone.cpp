@@ -86,7 +86,7 @@ void control_drone(Drone& drone)
 			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd == "r") {
-            spin_slowly(drone, 20);          
+            spin(drone, 20);          
         }else if (cmd != "c") {
 			cout << "Unknown command" << endl;
             ros::shutdown();

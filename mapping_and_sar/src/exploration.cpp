@@ -198,7 +198,7 @@ int main(int argc, char** argv)
     ros::Duration(1.0).sleep();
   }
   */
-  spin_slowly(drone, 30);
+  spin(drone, 4);
   
   trajectory_point.position_W.x() -= 0.;
   trajectory_point.position_W.y() -= 0.;
