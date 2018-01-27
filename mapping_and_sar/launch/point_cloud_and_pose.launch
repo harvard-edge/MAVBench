@@ -31,14 +31,14 @@
 		<param name="Airsim_port" value="41451"/>
 
         <!-- RGB camera parameters (parameters when calibrated) -->
-        <param name="Fx" value="128"/>
-        <param name="Fy" value="128"/>
-        <param name="cx" value="128"/>
-        <param name="cy" value="72"/>
-        <param name="scale_x" value="256"/>  <!-- Width when calibrated!-->
-        <param name="scale_y" value="144"/> <!-- Height when calibrated!-->
-        <param name="width" value="256"/>  <!-- Width when calibrated!-->
-        <param name="height" value="144"/> <!-- Height when calibrated!-->
+        <param name="Fx" value="256"/>
+        <param name="Fy" value="256"/>
+        <param name="cx" value="256"/>
+        <param name="cy" value="144"/>
+        <param name="scale_x" value="512"/>  <!-- Width when calibrated!-->
+        <param name="scale_y" value="288"/> <!-- Height when calibrated!-->
+        <param name="width" value="512"/>  <!-- Width when calibrated!-->
+        <param name="height" value="288"/> <!-- Height when calibrated!-->
         <comment> 
         <param name="Fx" value="200"/>
         <param name="Fy" value="200"/>

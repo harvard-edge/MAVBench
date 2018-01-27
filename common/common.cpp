@@ -164,7 +164,7 @@ void scan_around(Drone &drone, int angle) {
 }
 
 /*
-void spin_slowly(Drone &drone, int n_pies) {
+void spin(Drone &drone, int n_pies) {
     float init_yaw = drone.get_yaw();
     float angle = 0;
     
