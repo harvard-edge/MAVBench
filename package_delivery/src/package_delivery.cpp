@@ -69,17 +69,17 @@ void package_delivery_initialize_params() {
     if(!ros::param::get("/package_delivery/ip_addr",ip_addr__global)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/ip_addr").c_str());
-      return -1; 
+      return; 
     }
     if(!ros::param::get("/package_delivery/localization_method",localization_method)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/localization_method").c_str());
-       return -1; 
+       return; 
     }
     if(!ros::param::get("/stats_file_addr",stats_file_addr)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
-     return -1; 
+     return; 
     }
 
 
