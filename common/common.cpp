@@ -41,14 +41,39 @@ void sigIntHandler(int sig)
     //exit(0);
 }
 
-void action_upon_future_col(Drone& drone) {
-    scan_around(drone, 30);
-}
-
 template <class T>
-T last_msg (std::string topic) {
+static T last_msg (std::string topic) {
     // Return the last message of a latched topic
     return *(ros::topic::waitForMessage<T>(topic));
+}
+
+
+void action_upon_panic(Drone& drone) {
+    const std::string panic_topic = "/panic_topic";
+    bool panicking = true;
+
+    float yaw = drone.get_yaw();
+
+    while (panicking) {
+        drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        ROS_INFO("Panicking..");
+
+        panicking = last_msg<std_msgs::Bool>(panic_topic).data;
+    }
+
+    ROS_INFO("Panicking one last time...");
+    drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0, 0.75);
+    std::this_thread::sleep_for(std::chrono::milliseconds(850));
+
+    spin_around(drone);
+    ROS_INFO("Done panicking!");
+}
+
+void action_upon_future_col(Drone& drone) {
+    drone.fly_velocity(0, 0, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    scan_around(drone, 30);
 }
 
 static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) {
@@ -147,20 +172,17 @@ float distance(float x, float y, float z) {
 
 void scan_around(Drone &drone, int angle) {
     float init_yaw = drone.get_yaw();
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     ROS_INFO("Scanning around from %f degrees...", init_yaw);
 
     if (angle > 90) {
 		ROS_INFO("we don't have support for angles greater than 90");
         exit(0);
 	}
-    
+
     drone.set_yaw(init_yaw+angle <= 180 ? init_yaw + angle : init_yaw + angle - 360);
     drone.set_yaw(init_yaw);
     drone.set_yaw(init_yaw-angle >= -180 ? init_yaw - angle : init_yaw - angle + 360);
     drone.set_yaw(init_yaw);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
 
 /*
@@ -197,7 +219,7 @@ void spin_around(Drone &drone) {
 
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
 void follow_trajectory(Drone& drone, trajectory_t& traj,
-        trajectory_t& reverse_traj, float max_speed, float time) {
+        trajectory_t& reverse_traj, float max_speed, bool face_forward, float time) {
 
     trajectory_t reversed_commands;
 
@@ -235,8 +257,7 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
                 v_y,
                 // v_z);
                 v_z + 0.2*(p_z-drone.position().z),
-                1,
-                true);
+                face_forward);
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(flight_time / scale));
 

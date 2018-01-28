@@ -202,7 +202,7 @@ static float xy_yaw(double x, double y) {
     return angle_to_dest;
 }
 
-bool Drone::fly_velocity(double vx, double vy, double vz, double duration, bool face_forward)
+bool Drone::fly_velocity(double vx, double vy, double vz,  bool face_forward, double duration)
 {
     float yaw_diff = xy_yaw(vx, vy) - get_yaw();
     float yaw_rate = yaw_diff / duration;

@@ -257,7 +257,7 @@ int main(int argc, char **argv)
                 next_state = waiting;
             } else if (future_col) {
                 ROS_WARN("Future collision detected on trajectory!");
-                // action_upon_future_col(drone);
+                action_upon_future_col(drone);
                 next_state = waiting;
             } else if (slam_lost) {
                 ROS_WARN("SLAM localization lost!");
@@ -287,12 +287,14 @@ int main(int argc, char **argv)
                     next_state = setup;
                 }
             } else {
-                follow_trajectory(drone, trajectory, reverse_trajectory, max_speed);
+                follow_trajectory(drone, trajectory, reverse_trajectory, max_speed, true);
                 next_state = trajectory_done(trajectory) ? completed : flying;
             }
         }
         else if (state == completed)
         {
+            drone.fly_velocity(0, 0, 0);
+
             if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
                 update_stats_file(stats_file_addr,"mission_status completed");
