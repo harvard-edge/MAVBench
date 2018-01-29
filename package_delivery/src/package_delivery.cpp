@@ -20,7 +20,6 @@
 #include <std_msgs/Bool.h>
 #include "common.h"
 #include "timer.h"
-#include "follow_trajectory.h"
 
 using namespace std;
 bool should_panic = false;
@@ -65,7 +64,6 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 }
 
 void package_delivery_initialize_params() {
-    
     if(!ros::param::get("/package_delivery/ip_addr",ip_addr__global)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/ip_addr").c_str());
@@ -81,8 +79,6 @@ void package_delivery_initialize_params() {
                 (ns + "/stats_file_addr").c_str());
      return; 
     }
-
-
 }
 
 geometry_msgs::Point get_start(Drone& drone) {
@@ -170,7 +166,7 @@ void face_destination(Drone& drone, double x, double y) {
     drone.set_yaw(angle_to_dest);
 }
 
-bool trajectory_done(trajectory_t trajectory) {
+bool trajectory_done(const trajectory_t& trajectory) {
     return trajectory.size() <= 1;
 }
 
@@ -287,7 +283,7 @@ int main(int argc, char **argv)
                     next_state = setup;
                 }
             } else {
-                follow_trajectory(drone, trajectory, reverse_trajectory, max_speed, true);
+                follow_trajectory(drone, trajectory, reverse_trajectory, face_forward, max_speed);
                 next_state = trajectory_done(trajectory) ? completed : flying;
             }
         }

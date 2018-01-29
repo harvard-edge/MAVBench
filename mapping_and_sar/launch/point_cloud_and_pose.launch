@@ -2,9 +2,13 @@
 <!-- args --> 
     <!-- Behzad's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.101" /--> 
-    <arg name="host_ip" value="10.157.90.51" /> 
+    <!-- arg name="host_ip" value="10.157.90.51" /-->
     <!-- Hasans's workstation ip --> 
-    <!-- arg name="host_ip" value="10.157.34.208" /--> 
+    <arg name="host_ip" default="10.157.90.49" />
+    <!-- Hasans's direct connection ip --> 
+    <!-- arg name="host_ip" default="169.254.250.191" / -->
+    <!-- Wenzhi's workstation ip -->
+    <!-- arg name="host_ip" default="10.157.90.62" /-->
     
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)--> 
@@ -25,7 +29,6 @@
 		<!-- IP of the Airsim computer -->
         <param name="localization_method" value="$(arg localization_method)" />
         <param name="Airsim_ip" value="$(arg host_ip)" />
-
 
 		<!-- Port of the Airsim computer (this is default, do not change!) -->
 		<param name="Airsim_port" value="41451"/>

@@ -15,7 +15,6 @@
 
 #include "Drone.h"
 
-
 static const int angular_vel = 15;
 
 static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic,
@@ -25,6 +24,13 @@ static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic);
 
 static trajectory_t append_trajectory(trajectory_t first, trajectory_t second);
 static multiDOFpoint reverse_point(multiDOFpoint mdp);
+static float yawFromQuat(geometry_msgs::Quaternion q);
+
+template <class T>
+static T last_msg (std::string topic) {
+    // Return the last message of a latched topic
+    return *(ros::topic::waitForMessage<T>(topic));
+}
 
 void update_stats_file(std::string  stats_file__addr, std::string content){
     std::ofstream myfile;
@@ -40,13 +46,6 @@ void sigIntHandler(int sig)
     ros::shutdown();
     //exit(0);
 }
-
-template <class T>
-static T last_msg (std::string topic) {
-    // Return the last message of a latched topic
-    return *(ros::topic::waitForMessage<T>(topic));
-}
-
 
 void action_upon_panic(Drone& drone) {
     const std::string panic_topic = "/panic_topic";
@@ -128,7 +127,7 @@ static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& to
     const double safe_speed = 0.5;
 
     while (reverse_traj.size() > 1) {
-        follow_trajectory(drone, reverse_traj, traj, safe_speed);
+        follow_trajectory(drone, reverse_traj, traj, ignore_yaw, safe_speed);
 
         // Check whether SLAM is back
         std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
@@ -185,26 +184,6 @@ void scan_around(Drone &drone, int angle) {
     drone.set_yaw(init_yaw);
 }
 
-/*
-void spin(Drone &drone, int n_pies) {
-    float init_yaw = drone.get_yaw();
-    float angle = 0;
-    
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    ROS_INFO("Spinning around now...");
-    
-    float  pie_size = 360.0/n_pies;
-    for (int i = 0; i <  n_pies; i++) {
-        //if (angle <= 90) {
-        drone.set_yaw(init_yaw+angle <= 180 ? init_yaw + angle : (init_yaw + angle) - 360);
-        angle +=pie_size;
-        //}
-        std::this_thread::sleep_for(std::chrono::milliseconds(2000));
-    }
-}
-*/
-
 void spin_around(Drone &drone) {
     drone.fly_velocity(0, 0, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -219,7 +198,8 @@ void spin_around(Drone &drone) {
 
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
 void follow_trajectory(Drone& drone, trajectory_t& traj,
-        trajectory_t& reverse_traj, float max_speed, bool face_forward, float time) {
+        trajectory_t& reverse_traj, yaw_strategy_t yaw_strategy,
+        float max_speed, float time) {
 
     trajectory_t reversed_commands;
 
@@ -235,11 +215,17 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
         double v_y = p.velocities[0].linear.y;
         double v_z = p.velocities[0].linear.z;
 
+        float yaw = yawFromQuat(p.transforms[0].rotation);
+        if (yaw_strategy == ignore_yaw)
+            yaw = YAW_UNCHANGED;
+        else if (yaw_strategy == face_forward)
+            yaw = FACE_FORWARD;
+
         // Make sure we're not going over the maximum speed
         double speed = std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
         double scale = 1;
         if (speed > max_speed) {
-            scale = max_speed / speed; 
+            scale = max_speed / speed;
 
             v_x *= scale;
             v_y *= scale;
@@ -249,17 +235,18 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
         // Calculate the time for which these flight commands should run
         double segment_length = (p_next.time_from_start - p.time_from_start).toSec();
         double flight_time = segment_length <= time ? segment_length : time;
+        double scaled_flight_time = flight_time / scale;
 
         // Fly for flight_time seconds
         auto segment_start_time = std::chrono::system_clock::now();
 
         drone.fly_velocity(v_x,
                 v_y,
-                // v_z);
                 v_z + 0.2*(p_z-drone.position().z),
-                face_forward);
+                yaw,
+                scaled_flight_time+0.2); // Add a small buffer to prevent halts
 
-        std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(flight_time / scale));
+        std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 
         // Push completed command onto stack
         reversed_commands.push_front(reverse_point(p));
@@ -308,5 +295,18 @@ static trajectory_t append_trajectory (trajectory_t first, trajectory_t second) 
     }
 
     return first;
+}
+
+float yawFromQuat(geometry_msgs::Quaternion q)
+{
+	float roll, pitch, yaw;
+
+	// Formulas for roll, pitch, yaw
+	// roll = atan2(2*(q.w*q.x + q.y*q.z), 1 - 2*(q.x*q.x + q.y*q.y) );
+	// pitch = asin(2*(q.w*q.y - q.z*q.x));
+	yaw = atan2(2*(q.w*q.z + q.x*q.y), 1 - 2*(q.y*q.y + q.z*q.z));
+    yaw = (yaw*180)/3.14159265359;
+
+    return (yaw <= 180 ? yaw : yaw - 360);
 }
 

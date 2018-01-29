@@ -202,20 +202,19 @@ static float xy_yaw(double x, double y) {
     return angle_to_dest;
 }
 
-bool Drone::fly_velocity(double vx, double vy, double vz,  bool face_forward, double duration)
+bool Drone::fly_velocity(double vx, double vy, double vz, float yaw, double duration)
 {
-    float yaw_diff = xy_yaw(vx, vy) - get_yaw();
-    float yaw_rate = yaw_diff / duration;
-
-    if (vx == 0 && vy == 0)
-        yaw_rate = 0;
-    else if (yaw_rate > max_yaw_rate_during_flight)
-        yaw_rate = max_yaw_rate_during_flight;
+    getCollisionInfo();
 
 	try {
-		getCollisionInfo();
+        if (yaw != YAW_UNCHANGED) {
+            float target_yaw = yaw != FACE_FORWARD ? yaw : xy_yaw(vx, vy);
+            float yaw_diff = target_yaw - get_yaw();
+            float yaw_rate = yaw_diff / duration;
 
-        if (face_forward) {
+            if (yaw_rate > max_yaw_rate_during_flight)
+                yaw_rate = max_yaw_rate_during_flight;
+
             auto drivetrain = msr::airlib::DrivetrainType::MaxDegreeOfFreedom;
             auto yawmode = msr::airlib::YawMode(true, yaw_rate);
 

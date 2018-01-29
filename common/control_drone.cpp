@@ -77,7 +77,7 @@ void control_drone(Drone& drone)
 		} else if (cmd == "f") {
 			double x,y,z,d;
 			cin >> x >> y >> z >> d;
-			drone.fly_velocity(x, y, z, d);
+			drone.fly_velocity(x, y, z, YAW_UNCHANGED, d);
 		} else if (cmd == "y") {
 			double x;
 			cin >> x;

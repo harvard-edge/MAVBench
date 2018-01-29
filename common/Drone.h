@@ -5,6 +5,7 @@
 #include <ros/ros.h>
 #include <stdint.h>
 #include <string>
+#include <limits>
 #include <opencv2/opencv.hpp>
 #include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
 #include <geometry_msgs/Pose.h>
@@ -16,6 +17,9 @@
 
 //#include "configs.h"
 // Control functions
+
+const float FACE_FORWARD = std::numeric_limits<float>::infinity();
+const float YAW_UNCHANGED = -std::numeric_limits<float>::infinity();
 
 class Drone {
 public:
@@ -29,12 +33,13 @@ public:
     void connect();
     void connect(const std::string& ip_addr, uint16_t port);
     void set_localization_method(std::string localization_method);
+
 	// *** F:DN Control functions
     void arm();
     void disarm();
     bool takeoff(double h);
     bool set_yaw(int y);
-    bool fly_velocity(double vx, double vy, double vz, bool face_forward = false, double duration = 3);
+    bool fly_velocity(double vx, double vy, double vz, float yaw = YAW_UNCHANGED, double duration = 3);
     bool land();
     bool set_yaw_based_on_quaternion(geometry_msgs::Quaternion q);
 

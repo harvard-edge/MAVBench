@@ -18,9 +18,11 @@ bool action_upon_slam_loss(Drone& drone, slam_recovery_method slm...);
 // Functions to manipulate and follow trajectories
 typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
 typedef std::deque<multiDOFpoint> trajectory_t;
+enum yaw_strategy_t { ignore_yaw, face_forward, follow_yaw };
 
 void follow_trajectory(Drone& drone, trajectory_t& traj,
         trajectory_t& reverse_traj,
+        yaw_strategy_t yaw_strategy = ignore_yaw,
         float max_speed = std::numeric_limits<double>::infinity(),
         float time = 0.5);
 
