@@ -85,6 +85,7 @@ int main(int argc, char** argv)
   //Drone drone(ip_addr__global.c_str(), port);
   Drone drone(ip_addr__global.c_str(), port, localization_method);
   
+  ROS_INFO("after anything in exploration");
   //dummy segment publisher
   ros::Publisher seg_pub = nh.advertise <multiagent_collision_check::Segment>("evasionSegment", 1);
 
