@@ -14,9 +14,9 @@
   <!--node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world world 100" /-->
     
     <!-- Set the localization method -->
-    <arg name="localization_method" value="orb_slam2_rgbd" />
+    <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
     <!--arg name="localization_method" value="ground_truth" /-->
-    <!--arg name="localization_method" value="gps" /-->
+    <arg name="localization_method" value="gps" />
     
     <!-- node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 $(arg localization_method) camera 100" /-->
 
