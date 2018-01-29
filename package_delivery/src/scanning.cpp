@@ -12,6 +12,7 @@
 #include <iterator>
 #include <chrono>
 #include <thread>
+#include <tuple>
 //#include "controllers/DroneControllerBase.hpp"
 #include "control_drone.h"
 #include "common/Common.hpp"
@@ -27,90 +28,20 @@
 #include "std_msgs/Bool.h"
 #include <signal.h>
 #include "common.h"
-#include "follow_trajectory.h"
+
 using namespace std;
-bool should_panic = false;
-bool future_col = false;
 string ip_addr__global;
 string localization_method;
 string stats_file_addr;
 string ns;
 
-/*
-void sigIntHandler(int sig)
-{
-    ros::shutdown();
-    exit(0);
-}
-*/
+enum State { setup, waiting, flying, completed, invalid };
+
 double dist(coord t, geometry_msgs::Point m)
 {
     // We must convert between the two coordinate systems
     return std::sqrt((t.x-m.y)*(t.x-m.y) + (t.y-m.x)*(t.y-m.x) + (t.z+m.z)*(t.z+m.z));
 }
-
-
-/*
-void control_drone(Drone& drone)
-{
-	cout << "Initialize drone:\n";
-	cout << "\ta: arm\n";
-	cout << "\td: disarm\n";
-	cout << "\tt h: takeoff to h m\n";
-	cout << "\tl: land\n";
-	cout << "\tf x y z d: fly at (x,y,z) m/s for d s\n";
-	cout << "\ty x: set yaw to x\n";
-	cout << "\tp: print pitch, roll, yaw, height\n";
-	cout << "\tc: complete drone setup and continue\n";
-	cout << "\tCtrl-c: quit\n";
-
-	std::string cmd("");
-
-	while(cmd != "c") {
-		cin >> cmd;
-
-	    if (cmd == "a") {
-	        drone.arm();
-		} else if (cmd == "d") {
-			drone.disarm();
-		} else if (cmd == "t") {
-			double height;
-			cin >> height;
-			cin.ignore(numeric_limits<streamsize>::max(), '\n');
-			drone.takeoff(height);
-		} else if (cmd == "l") {
-			drone.land();
-		} else if (cmd == "f") {
-			double x,y,z,d;
-			cin >> x >> y >> z >> d;
-			drone.fly_velocity(x, y, z, d);
-		} else if (cmd == "y") {
-			double x;
-			cin >> x;
-			drone.set_yaw(x);
-		} else if (cmd == "p") {
-			auto pos = drone.pose().position;
-			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
-        } else if (cmd != "c") {
-			cout << "Unknown command" << endl;
-		}
-	}
-}
-*/
-
-// *** F:DN call back function for the panic_topic subscriber
-void panic_call_back(const std_msgs::Bool::ConstPtr& msg) {
-    should_panic = msg->data;
-}
-
-void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
-    future_col = msg->data;
-}
-
-
-
-
-
 
 void package_delivery_initialize_params() {
     if(!ros::param::get("/scanning/ip_addr",ip_addr__global)){
@@ -126,7 +57,51 @@ void package_delivery_initialize_params() {
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
     }
+}
 
+geometry_msgs::Point get_start(Drone& drone) {
+    geometry_msgs::Point start;
+
+    // Get current position from drone
+    auto drone_pos = drone.position();
+    start.x = drone_pos.x; start.y = drone_pos.y; start.z = drone_pos.z;
+    std::cout << "Current position is " << drone_pos.x << " " << drone_pos.y << " " << drone_pos.z << std::endl;
+
+    return start;
+}
+
+void get_goal(int& width, int& length, int& lanes) {
+    std::cout << "Enter width ,length and number of lanes"<<std::endl
+        << "associated with the area you like to sweep "<<endl;
+
+    std::cin >> width >> length >> lanes;
+}
+
+trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, int width, int length, int lanes) {
+    // Request the actual trajectory from the motion_planner node
+    package_delivery::get_trajectory srv;
+    srv.request.start = start;
+    srv.request.width = width;
+    srv.request.length = length;
+    srv.request.n_pts_per_dir = lanes;
+
+    if (client.call(srv)) {
+        ROS_INFO("Received trajectory.");
+    } else {
+        ROS_ERROR("Failed to call service.");
+        return trajectory_t();
+    }
+
+    trajectory_t result;
+    for (multiDOFpoint p : srv.response.multiDOFtrajectory.points) {
+        result.push_back(p);
+    }
+
+    return result;
+}
+
+bool trajectory_done(trajectory_t trajectory) {
+    return trajectory.size() <= 1;
 }
 
 // *** F:DN main function
@@ -137,37 +112,33 @@ int main(int argc, char **argv)
     ros::NodeHandle n;
     ros::NodeHandle panic_nh;
     signal(SIGINT, sigIntHandler);
-	printf("ok");
-    
+
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
     string app_name;
     package_delivery_initialize_params();
-    double input_x, input_y, input_z; //goal asked by the user
-    int n_pts_per_dir; 
-    geometry_msgs::Point start, goal, original_start; //msg send out to the 
+
+    int width, length, lanes; // size of area to scan
+    geometry_msgs::Point start, goal, original_start;
+
 	package_delivery::get_trajectory get_trajectory_srv;
+    trajectory_t trajectory, reverse_trajectory;
 	
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
     
     //bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
+
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
         n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
-    ros::Subscriber panic_sub =  
-		panic_nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
-    ros::NodeHandle future_col_nh;
-    //ros::Subscriber future_col_sub = 
-    //		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
-    future_col = false; //this is hardcode because scanning does not provide this feature
     
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
-        //const int step__total_number = 1;
+    //const int step__total_number = 1;
     int package_delivery_loop_rate = 100;
     float goal_s_error_margin = 5.0; //ok distance to be away from the goal.
                                                       //this is b/c it's very hard 
@@ -176,76 +147,54 @@ int main(int argc, char **argv)
                                                       //on the goal
 
     
-    
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
     ros::Rate loop_rate(package_delivery_loop_rate);
-    while(ros::ok())
-	{
-        
-	// *** F:DN arm, disarm, move around before switching to autonomous mode 
-        control_drone(drone);
-	    
-        // *** F:DN set drone start position	
-        auto drone_pos = drone.pose().position;
-		start.x = drone_pos.x; start.y = drone_pos.y; start.z = drone_pos.z;
-		std::cout << "Current position is " << drone_pos.x << " " << drone_pos.y << " " << drone_pos.z << std::endl;
-	    
-        // *** F:DN set drone goal 	
-        //std::cout<<"Enter the name of the app that you'd like to try out"<<endl; 
-        //std:cin>>app_name; 
-        std::cout << "Enter width ,length and number of lanes"<<std::endl
-            << "associated with the area you like to sweep "<<endl;
-//        std::cout << "program control path selction based on app is IP"<<endl;
+    for (State state = setup; ros::ok(); ) {
+        ros::spinOnce();
+        State next_state = invalid;
+        //std::cout<<stats_file_addr<<std::endl;
+        //update_stats_file(stats_file_addr,"now now");
 
-        
-         
-        std::cin >> input_x >> input_y>>n_pts_per_dir;
-        
-        
-        original_start = start;
-        get_trajectory_srv.request.start = start;
-	    get_trajectory_srv.request.width = (int)input_y;	
-	    get_trajectory_srv.request.length = (int)input_x;	
-	    get_trajectory_srv.request.n_pts_per_dir = (int)n_pts_per_dir;	
-        
-        
-        //goal.x = 10;
-        //goal.y = 10;
-        //goal.z = 10;
-
-
-        //bool returned_to_start = false;
-        //spin_around(drone); 
-        //ROS_INFO("Distance to target: %f", dist(drone.gps(), goal));
-        //auto drone_pos = drone.gps();
-        //start.x = drone_pos.y; start.y = drone_pos.x; start.z = -drone_pos.z;
-        //get_trajectory_srv.request.start = start;
-
-        // *** F:DN ask for the trajectory
-        if (get_trajectory_client.call(get_trajectory_srv))
+        if (state == setup)
         {
-            ROS_INFO("Received trajectory.");
+            control_drone(drone);
+
+            get_goal(width, length, lanes);
+            original_start = get_start(drone);
+
+            next_state = waiting;
+        }
+        else if (state == waiting)
+        {
+            ROS_INFO("Waiting to receive trajectory...");
+            start = get_start(drone);
+            trajectory = request_trajectory(get_trajectory_client, start, width, length, lanes);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            next_state = flying;
+        }
+        else if (state == flying)
+        {
+            follow_trajectory(drone, trajectory, reverse_trajectory);
+            next_state = trajectory_done(trajectory) ? completed : flying;
+        }
+        else if (state == completed)
+        {
+            drone.fly_velocity(0, 0, 0);
+            ROS_INFO("scanned the entire space and returned successfully");
+            update_stats_file(stats_file_addr,"mission_status completed");
+            next_state = setup;
         }
         else
         {
-            ROS_ERROR("Failed to call service.");
+            ROS_ERROR("Invalid FSM state!");
             break;
         }
 
-
-        // *** F:DN iterate through cmd propopsed and issue them
-        should_panic = future_col = false;
-        int last_point = -1;
-        
-        //ROS_INFO("size of the trajactory %d",  get_trajectory_srv.response.multiDOFtrajectory.points.size());
-        follow_trajecotry(get_trajectory_srv, drone);
-        drone.fly_velocity(0, 0, 0);
-        update_stats_file(stats_file_addr,"mission_status completed");
-        ROS_INFO("scanned the entire space and returned successfully");
-        //loop_rate.sleep();
+        state = next_state;
     }
+
 
     return 0;
 }

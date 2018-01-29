@@ -198,30 +198,19 @@ int main(int argc, char** argv)
     ros::Duration(1.0).sleep();
   }
   */
-  spin(drone, 4);
+  spin_around(drone);
   
-  trajectory_point.position_W.x() -= 0.;
-  trajectory_point.position_W.y() -= 0.;
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  //ros::shutdown();
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
-  ros::Duration(1.0).sleep();
-
-
-  trajectory_point.position_W.x() -= 1.5;
-  trajectory_point.position_W.y() -= 1.5;
+  // Move back a little bit
+  auto cur_pos = drone.position();
+  trajectory_point.position_W.x() = cur_pos.x - 1.5;
+  trajectory_point.position_W.y() = cur_pos.y - 1.5;
+  trajectory_point.position_W.z() = cur_pos.z;
   samples_array.header.seq = n_seq;
   samples_array.header.stamp = ros::Time::now();
   samples_array.points.clear();
   n_seq++;
   mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
   
-  //ros::shutdown();
   samples_array.points.push_back(trajectory_point_msg);
   trajectory_pub.publish(samples_array);
   ros::Duration(1.0).sleep();
@@ -275,8 +264,8 @@ int main(int argc, char** argv)
         
         samples_array.points.push_back(trajectory_point_msg);
         trajectory_pub.publish(samples_array);
-        //ros::Duration(1).sleep();
-        ros::Duration(t_offset + segment_dedicated_time).sleep(); //changed, make sure segmentation time is smaller
+        // ros::Duration(1).sleep();
+        // ros::Duration(t_offset + segment_dedicated_time).sleep(); //changed, make sure segmentation time is smaller
       }
     } else {
       ROS_WARN_THROTTLE(1, "Planner not reachable");
@@ -290,3 +279,4 @@ int main(int argc, char** argv)
     iteration++;
   }
 }
+

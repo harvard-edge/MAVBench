@@ -45,7 +45,7 @@ void control_drone(Drone& drone)
 	cout << "\tp: print pitch, roll, yaw, height\n";
 	cout << "\tc: complete drone setup and continue\n";
 	cout << "\ts: sleep for 5 seconds\n";
-	cout << "\tr: rotate slowlyd\n";
+	cout << "\tr: rotate slowly\n";
     cout << "\tCtrl-c/q: quit\n";
 
 	std::string cmd("");
@@ -53,18 +53,18 @@ void control_drone(Drone& drone)
 	while(cmd != "c") {
 		cin >> cmd;
 
-            if (cmd == "q") {
-              //LOG_TIME(package_delivery);
-              cout << "bye~" << endl;
-              ros::shutdown();
-              exit(0);
-              return;
-            }
+        if (cmd == "q") {
+          //LOG_TIME(package_delivery);
+          cout << "bye~" << endl;
+          ros::shutdown();
+          exit(0);
+          return;
+        }
 
 	    if (cmd == "a") {
-	        drone.arm();
-           } else if (cmd == "s") {
-               sleep(5);
+            drone.arm();
+        } else if (cmd == "s") {
+            sleep(5);
 		} else if (cmd == "d") {
 			drone.disarm();
 		} else if (cmd == "t") {
@@ -77,7 +77,7 @@ void control_drone(Drone& drone)
 		} else if (cmd == "f") {
 			double x,y,z,d;
 			cin >> x >> y >> z >> d;
-			drone.fly_velocity(x, y, z, d);
+			drone.fly_velocity(x, y, z, YAW_UNCHANGED, d);
 		} else if (cmd == "y") {
 			double x;
 			cin >> x;
@@ -86,11 +86,11 @@ void control_drone(Drone& drone)
 			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd == "r") {
-            spin(drone, 20);          
+            spin_around(drone); 
         }else if (cmd != "c") {
 			cout << "Unknown command" << endl;
-            ros::shutdown();
-            exit(0);
+            // ros::shutdown();
+            // exit(0);
 		}
 	}
 }
@@ -146,7 +146,4 @@ void control_drone(Drone& drone)
 	}
 }
 */
-
-
-
 

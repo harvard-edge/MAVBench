@@ -14,18 +14,22 @@
   <!--node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world world 100" /-->
     
     <!-- Set the localization method -->
-    <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
-    <!--arg name="localization_method" value="ground_truth" /-->
-    <arg name="localization_method" value="gps" />
+    <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
+    <arg name="localization_method" value="ground_truth" />
+    <!--arg name="localization_method" value="gps" /-->
     
     <!-- node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 $(arg localization_method) camera 100" /-->
 
     <!-- Behzad's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.101" /--> 
-    <arg name="host_ip" value="10.157.90.51" /> 
+    <!-- arg name="host_ip" value="10.157.90.51" /--> 
     <!-- arg name="host_ip" value="169.254.153.158" /--> 
     <!-- Hasans's workstation ip --> 
-    <!-- arg name="host_ip" value="10.145.241.167" /--> 
+    <arg name="host_ip" default="10.157.90.49" />
+    <!-- Hasans's direct connection ip --> 
+    <!-- arg name="host_ip" default="169.254.250.191" / -->
+    <!-- Wenzhi's workstation ip -->
+    <!-- arg name="host_ip" default="10.157.90.62" /-->
     
     <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
     <arg name="app_name" value="exploration" />

@@ -28,6 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
   mav_trajectory_generation
   mav_trajectory_generation_ros
   nlopt
+  octomap_world
 )
 
 ## System dependencies are found with CMake's conventions
@@ -189,7 +190,7 @@ add_dependencies(motion_planner package_delivery_generate_messages_cpp)
 target_link_libraries(motion_planner ${catkin_LIBRARIES}  AirLib MavLinkCom rpc pthread  cuda cudart cublas curand )
 
 add_executable(package_delivery ${common_utility_src}/Drone.cpp ${common_utility_src}/control_drone.cpp 
-    ${common_utility_src}/common.cpp src/follow_trajectory.cpp src/package_delivery.cpp ${common_utility_src}/timer.cpp)
+    ${common_utility_src}/common.cpp src/package_delivery.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(package_delivery package_delivery_generate_messages_cpp)
 target_link_libraries(package_delivery ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
@@ -205,7 +206,7 @@ target_link_libraries(future_collision ${catkin_LIBRARIES} AirLib MavLinkCom rpc
 
 
 add_executable(scanning ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 
-    ${common_utility_src}/control_drone.cpp src/follow_trajectory.cpp src/scanning.cpp ${common_utility_src}/timer.cpp)
+    ${common_utility_src}/control_drone.cpp src/scanning.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(scanning package_delivery_generate_messages_cpp)
 target_link_libraries(scanning ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 

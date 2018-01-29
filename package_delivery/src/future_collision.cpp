@@ -176,7 +176,7 @@ int main(int argc, char** argv)
     // *** F:DN BODY
     //----------------------------------------------------------------- 
     future_collision_initialize_params(); 
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(50);
     while (ros::ok()) {
         col_msg.data = check_for_collisions();
         collision_publisher.publish(col_msg);
@@ -184,6 +184,6 @@ int main(int argc, char** argv)
 
         ros::spinOnce();
         loop_rate.sleep();
-  }
+    }
 }
 

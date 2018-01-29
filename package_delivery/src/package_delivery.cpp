@@ -7,6 +7,7 @@
 #include <chrono>
 #include <thread>
 #include <deque>
+#include <limits>
 #include <signal.h>
 
 #include "control_drone.h"
@@ -19,11 +20,11 @@
 #include <std_msgs/Bool.h>
 #include "common.h"
 #include "timer.h"
-#include "follow_trajectory.h"
 
 using namespace std;
 bool should_panic = false;
 bool future_col = false;
+bool slam_lost = false;
 string ip_addr__global;
 string localization_method;
 string stats_file_addr;
@@ -34,7 +35,7 @@ enum State { setup, waiting, flying, completed, invalid };
 double dist(coord t, geometry_msgs::Point m)
 {
     // We must convert between the two coordinate systems
-    return std::sqrt((t.x-m.x)*(t.x-m.x) + (t.y-m.y)*(t.y-m.y) + (t.z+m.z)*(t.z-m.z));
+    return std::sqrt((t.x-m.x)*(t.x-m.x) + (t.y-m.y)*(t.y-m.y) + (t.z-m.z)*(t.z-m.z));
 }
 
 // *** F:DN call back function for the panic_topic subscriber
@@ -43,73 +44,41 @@ void panic_call_back(const std_msgs::Bool::ConstPtr& msg) {
 }
 
 void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
-    future_col = msg->data;
+    const int reaction_delay_counter_init_value = 3;
+    static int reaction_delay_counter = reaction_delay_counter_init_value;
+
+    if (!msg->data) {
+    	reaction_delay_counter = reaction_delay_counter_init_value;
+    } else {
+    	reaction_delay_counter--;
+    }
+
+    if (msg->data && reaction_delay_counter <= 0)
+    	future_col = true;
+    else
+    	future_col = false;
+}
+
+void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
+    slam_lost = msg->data;
 }
 
 void package_delivery_initialize_params() {
-    
     if(!ros::param::get("/package_delivery/ip_addr",ip_addr__global)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/ip_addr").c_str());
-      return -1; 
+      return; 
     }
     if(!ros::param::get("/package_delivery/localization_method",localization_method)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/localization_method").c_str());
-       return -1; 
+       return; 
     }
     if(!ros::param::get("/stats_file_addr",stats_file_addr)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
-     return -1; 
+     return; 
     }
-
-
-}
-
-typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
-
-// Follows trajectory, popping commands off the front of it and returning those commands in reverse order
-std::deque<multiDOFpoint> follow_trajectory(Drone& drone, std::deque<multiDOFpoint>& trajectory, float time = 0.5) {
-    std::deque<multiDOFpoint> completed_commands;
-
-    while (time > 0 && trajectory.size() > 1) {
-        multiDOFpoint p = trajectory.front();
-        multiDOFpoint p_next = trajectory[1];
-
-        // Calculate the positions we should be at
-        double p_z = p.transforms[0].translation.z;
-
-        // Calculate the velocities we should be flying at
-        double v_x = p.velocities[0].linear.x;
-        double v_y = p.velocities[0].linear.y;
-        double v_z = p.velocities[0].linear.z;
-
-        // Calculate the time for which these flight commands should run
-        double segment_length = (p_next.time_from_start - p.time_from_start).toSec();
-        double flight_time = segment_length <= time ? segment_length : time;
-
-        // Fly for flight_time seconds
-        auto segment_start_time = std::chrono::system_clock::now();
-
-        drone.fly_velocity(v_x,
-                v_y,
-                v_z + 0.2*(p_z-drone.position().z));
-
-        std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(flight_time));
-
-        // Push completed command onto stack
-        completed_commands.push_front(p);
-
-        // Update trajectory
-        trajectory.front().time_from_start += ros::Duration(flight_time);
-        if (trajectory.front().time_from_start >= p_next.time_from_start)
-            trajectory.pop_front();
-
-        time -= flight_time;
-    }
-
-    return completed_commands;
 }
 
 geometry_msgs::Point get_start(Drone& drone) {
@@ -135,7 +104,7 @@ geometry_msgs::Point get_goal() {
     return goal;
 }
 
-std::deque<multiDOFpoint> request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, geometry_msgs::Point goal) {
+trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, geometry_msgs::Point goal) {
     // Request the actual trajectory from the motion_planner node
     package_delivery::get_trajectory srv;
     srv.request.start = start;
@@ -145,17 +114,59 @@ std::deque<multiDOFpoint> request_trajectory(ros::ServiceClient& client, geometr
         ROS_INFO("Received trajectory.");
     } else {
         ROS_ERROR("Failed to call service.");
-        return std::deque<multiDOFpoint>();
+        return trajectory_t();
     }
 
-    std::deque<multiDOFpoint> result;
-    for (multiDOFpoint p : srv.response.multiDOFtrajectory.points)
+    trajectory_t result;
+    for (multiDOFpoint p : srv.response.multiDOFtrajectory.points) {
         result.push_back(p);
+    }
+
+    /*
+    trajectory_t tmp;
+    int max_i = 20, speed = 1;
+    for (int i = 0; i < max_i; i++) {
+        multiDOFpoint p = srv.response.multiDOFtrajectory.points.front();
+
+        p.time_from_start = ros::Duration(i);
+        
+        p.velocities[0].linear.x = i < max_i-1 ? -speed : 0;
+        p.velocities[0].linear.y = 0;
+        p.velocities[0].linear.z = 0;
+        tmp.push_back(p);
+    }
+    return tmp;
+    */
 
     return result;
 }
 
-bool trajectory_done(std::deque<multiDOFpoint> trajectory) {
+void face_destination(Drone& drone, double x, double y) {
+    float angle_to_dest;
+
+    if (x == 0 && y == 0)
+        return;
+    else if (x == 0) {
+        angle_to_dest = y > 0 ? 0 : -180;
+    } else if (y == 0) {
+        angle_to_dest = x > 0 ? 90 : -90;
+    } else if (x > 0 && y > 0) {
+        angle_to_dest = std::atan(x/y) * 180.0/3.14;
+    } else if (x > 0 && y < 0) {
+        angle_to_dest = 180.0 - (std::atan(-x/y) * 180.0/3.14);
+    } else if (x < 0 && y > 0) {
+        angle_to_dest = -(std::atan(-x/y) * 180.0/3.14);
+    } else if (x < 0 && y < 0) {
+        angle_to_dest = -180 + (std::atan(x/y) * 180.0/3.14);
+    }
+
+    // Correct for over-setting yaw
+    // angle_to_dest *= 0.8;
+
+    drone.set_yaw(angle_to_dest);
+}
+
+bool trajectory_done(const trajectory_t& trajectory) {
     return trajectory.size() <= 1;
 }
 
@@ -164,37 +175,37 @@ int main(int argc, char **argv)
 {
     // ROS node initialization
     ros::init(argc, argv, "package_delivery", ros::init_options::NoSigintHandler);
-    ros::NodeHandle n;
-    ros::NodeHandle panic_nh;
+    ros::NodeHandle nh;
     signal(SIGINT, sigIntHandler);
-    std::string ns = ros::this_node::getName();
+    ns = ros::this_node::getName();
     
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
     package_delivery_initialize_params();
-    std::deque<multiDOFpoint> trajectory;
+    trajectory_t trajectory, reverse_trajectory;
     geometry_msgs::Point start, goal;
 	
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
-    int reaction_delay_counter_init_value = 3;
-    int reaction_delay_counter =  reaction_delay_counter_init_value;
     bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
-        n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
+        nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
     ros::Subscriber panic_sub =  
-		panic_nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
-    ros::NodeHandle future_col_nh;
+		nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
     ros::Subscriber future_col_sub = 
-		future_col_nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
+		nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
+	ros::Subscriber slam_lost_sub = 
+		nh.subscribe<std_msgs::Bool>("/slam_lost", 1000, slam_loss_callback);
 
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
     const int package_delivery_loop_rate = 50;
+    float max_speed = std::numeric_limits<double>::infinity();
+    auto max_speed_reset_time = std::chrono::system_clock::now();
     float goal_s_error_margin = 2.0; //ok distance to be away from the goal.
                                                       //this is b/c it's very hard 
                                                       //given the issues associated with
@@ -206,7 +217,7 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
-    ros::Rate loop_rate(package_delivery_loop_rate);
+    // ros::Rate loop_rate(package_delivery_loop_rate);
     LOG_TIME(package_delivery);
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
@@ -214,51 +225,102 @@ int main(int argc, char **argv)
         //std::cout<<stats_file_addr<<std::endl;
         //update_stats_file(stats_file_addr,"now now");
 
-        if (state == setup) {
+        if (state == setup)
+        {
             control_drone(drone);
-            //ros::shutdown(); 
+
             goal = get_goal();
+            start = get_start(drone);
+
             spin_around(drone);
+            face_destination(drone, (goal.x-start.x), (goal.y-start.y));
+
             next_state = waiting;
         }
-        else if (state == waiting) {
+        else if (state == waiting)
+        {
+            ROS_INFO("Waiting to recieve trajectory...");
             start = get_start(drone);
             trajectory = request_trajectory(get_trajectory_client, start, goal);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             next_state = flying;
         }
-        else if (state == flying) {
-            if (future_col)
-                reaction_delay_counter--;
-
+        else if (state == flying)
+        {
             if (should_panic) {
+                ROS_WARN("Panic! in the disco");
                 action_upon_panic(drone);
                 next_state = waiting;
-            } else if (future_col && reaction_delay_counter <= 0) {
+            } else if (future_col) {
+                ROS_WARN("Future collision detected on trajectory!");
                 action_upon_future_col(drone);
-                reaction_delay_counter = reaction_delay_counter_init_value;
                 next_state = waiting;
+            } else if (slam_lost) {
+                ROS_WARN("SLAM localization lost!");
+                bool slam_found = false;
+
+                // ROS_INFO("Spinning to regain SLAM");
+            	// slam_found = action_upon_slam_loss(drone, spin);
+
+                if (!slam_found) {
+                    ROS_INFO("Backtracking to regain SLAM");
+                    slam_found = action_upon_slam_loss(drone, backtrack,
+                            &trajectory, &reverse_trajectory);
+                }
+
+                if (!slam_found) {
+                    ROS_INFO("Reseting SLAM");
+                    slam_found = action_upon_slam_loss(drone, reset);
+                }
+
+                if (slam_found) {
+                    ROS_INFO("Recovered SLAM!");
+                    max_speed = 1;
+                    max_speed_reset_time = std::chrono::system_clock::now() + std::chrono::seconds(5);
+                    next_state = flying;
+                } else {
+                    ROS_WARN("SLAM not recovered! Just do it yourself");
+                    next_state = setup;
+                }
             } else {
-                follow_trajectory(drone, trajectory);
+                follow_trajectory(drone, trajectory, reverse_trajectory, face_forward, max_speed);
                 next_state = trajectory_done(trajectory) ? completed : flying;
             }
         }
-        else if (state == completed) {
+        else if (state == completed)
+        {
+            drone.fly_velocity(0, 0, 0);
+
             if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
                 update_stats_file(stats_file_addr,"mission_status completed");
                 next_state = setup;
-            } else { // If we've drifted too far off from the destionation
+            } else { //If we've drifted too far off from the destination
+                ROS_WARN("We're a little off...");
+
+                auto pos = drone.position();
+                std::cout << "Pos: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
+                std::cout << "Goal: " << goal.x << " " << goal.y << " " << goal.z << std::endl;
+                std::cout << "Dist: " << dist(pos, goal) << std::endl;
+
                 start = get_start(drone);
                 next_state = waiting;
             }
         }
-        else {
+        else
+        {
             ROS_ERROR("Invalid FSM state!");
             break;
         }
 
+        // Reset max_speed if required
+        auto now = std::chrono::system_clock::now();
+        if (now > max_speed_reset_time) {
+            max_speed = std::numeric_limits<double>::infinity();
+        }
+
         state = next_state;
-        loop_rate.sleep();
+        // loop_rate.sleep();
     }
 
     return 0;
