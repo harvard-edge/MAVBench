@@ -49,12 +49,14 @@ void sigIntHandler(int sig)
 
 void action_upon_panic(Drone& drone) {
     const std::string panic_topic = "/panic_topic";
-    bool panicking = true;
 
     float yaw = drone.get_yaw();
+    double vx = -std::sin(yaw*M_PI/180);
+    double vy = -std::cos(yaw*M_PI/180);
 
+    bool panicking = true;
     while (panicking) {
-        drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0);
+        drone.fly_velocity(vx, vy, 0);
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
         ROS_INFO("Panicking..");
 
@@ -62,7 +64,7 @@ void action_upon_panic(Drone& drone) {
     }
 
     ROS_INFO("Panicking one last time...");
-    drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0, 0.75);
+    drone.fly_velocity(vx, vy, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(850));
 
     spin_around(drone);
