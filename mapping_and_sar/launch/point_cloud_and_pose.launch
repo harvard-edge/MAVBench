@@ -2,9 +2,9 @@
 <!-- args --> 
     <!-- Behzad's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.101" /--> 
-    <!-- arg name="host_ip" value="10.157.90.51" /-->
+    <!--arg name="host_ip" value="10.157.90.51" /-->
     <!-- Hasans's workstation ip --> 
-    <arg name="host_ip" default="10.157.90.49" />
+    <!--arg name="host_ip" default="10.157.90.49" /-->
     <!-- Hasans's direct connection ip --> 
     <!-- arg name="host_ip" default="169.254.250.191" / -->
     <!-- Wenzhi's workstation ip -->
@@ -13,6 +13,7 @@
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)--> 
     <arg name="DEBUG" value="true" /> 
+    <arg name="host_ip"/>
     <arg name="localization_method"/>
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
 
@@ -97,62 +98,6 @@
 		<remap from="points" to="points2"/>
     </node>
 	
-	<comment>
-    <!-- Convert to octomap -->
-	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
-        <param name="resolution" value="0.5" />
-		
-		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="world" />
-		
-		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="50" />
-		
-		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points" />
-
-		<!-- Filter ground for binary occupancy map -->
-		<param name="base_frame_id" value="world" />
-		<!-- <param name="filter_ground" value="true" />
-		<param name="ground_filter_plane_distance" value="1.00" />
-		<param name="ground_filter/distance" value="0.50" /> -->
-	    <param name="pointcloud_min_z" type="double" value="-2.0" />
-	    <param name="pointcloud_max_z" type="double" value="7.0" />
-	    <param name="occupancy_min_z" type="double" value="-2.00" />
-	    <param name="occupancy_max_z" type="double" value="7.0" />
-		<!-- <param name="ground_filter_plane_distance" value="0.07" />
-		<param name="ground_filter/distance" value="0.04" />
-		<param name="ground_filter/angle" value="0.4" /> -->
-	</node>
-    
-    <!-- Convert to octomap -->
-	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server2">
-        <param name="resolution" value="0.5" />
-        <remap from="occupied_cells_vis_array" to="occupied_cells_vis_array2"/>
-		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="world" />
-		
-		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="50" />
-		
-		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points2" />
-
-		<!-- Filter ground for binary occupancy map -->
-		<param name="base_frame_id" value="world" />
-		<!-- <param name="filter_ground" value="true" />
-		<param name="ground_filter_plane_distance" value="1.00" />
-		<param name="ground_filter/distance" value="0.50" /> -->
-	    <param name="pointcloud_min_z" type="double" value="-2.0" />
-	    <param name="pointcloud_max_z" type="double" value="7.0" />
-	    <param name="occupancy_min_z" type="double" value="-2.00" />
-	    <param name="occupancy_max_z" type="double" value="7.0" />
-		<!-- <param name="ground_filter_plane_distance" value="0.07" />
-		<param name="ground_filter/distance" value="0.04" />
-		<param name="ground_filter/angle" value="0.4" /> -->
-	</node>
-    </comment>
-    
     <!-- /group --> 
 
   

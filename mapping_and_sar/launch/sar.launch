@@ -53,6 +53,7 @@
   <!-- point cloud and pose -->
   <include file="$(find mapping_and_sar)/launch/point_cloud_and_pose.launch">
   <arg name="localization_method" value="$(arg localization_method)"/>
+  <arg name="host_ip" value="$(arg host_ip)"/>
   </include>
 
   <arg name="param_file" value="$(find mapping_and_sar)/resource/exploration.yaml" />
