@@ -22,7 +22,7 @@ static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& to
 static bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic);
 static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic);
 
-static trajectory_t append_trajectory(trajectory_t first, trajectory_t second);
+static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second);
 static multiDOFpoint reverse_point(multiDOFpoint mdp);
 static float yawFromQuat(geometry_msgs::Quaternion q);
 
@@ -274,7 +274,8 @@ static multiDOFpoint reverse_point(multiDOFpoint mdp) {
     return result;
 }
 
-static trajectory_t append_trajectory (trajectory_t first, trajectory_t second) {
+static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second) {
+    /*
     if (first.size() == 0)
         return second;
 
@@ -293,11 +294,13 @@ static trajectory_t append_trajectory (trajectory_t first, trajectory_t second) 
         mdp.time_from_start += time_shift;
         first.push_back(mdp);
     }
+    */
 
+    first.insert(first.end(), second.begin(), second.end());
     return first;
 }
 
-float yawFromQuat(geometry_msgs::Quaternion q)
+static float yawFromQuat(geometry_msgs::Quaternion q)
 {
 	float roll, pitch, yaw;
 
