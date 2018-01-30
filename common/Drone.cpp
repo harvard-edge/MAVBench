@@ -215,6 +215,8 @@ bool Drone::fly_velocity(double vx, double vy, double vz, float yaw, double dura
 
             if (yaw_rate > max_yaw_rate_during_flight)
                 yaw_rate = max_yaw_rate_during_flight;
+            else if (yaw_rate < -max_yaw_rate_during_flight)
+                yaw_rate = -max_yaw_rate_during_flight;
 
             auto drivetrain = msr::airlib::DrivetrainType::MaxDegreeOfFreedom;
             auto yawmode = msr::airlib::YawMode(true, yaw_rate);

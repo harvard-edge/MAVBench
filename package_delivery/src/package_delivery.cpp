@@ -233,7 +233,7 @@ int main(int argc, char **argv)
             start = get_start(drone);
 
             spin_around(drone);
-            face_destination(drone, (goal.x-start.x), (goal.y-start.y));
+            // face_destination(drone, (goal.x-start.x), (goal.y-start.y));
 
             next_state = waiting;
         }
@@ -247,11 +247,14 @@ int main(int argc, char **argv)
         }
         else if (state == flying)
         {
+            // For now, take no action upon panic besides notifying the user
             if (should_panic) {
                 ROS_WARN("Panic! in the disco");
-                action_upon_panic(drone);
-                next_state = waiting;
-            } else if (future_col) {
+                // action_upon_panic(drone);
+                // next_state = waiting;
+            }
+            
+            if (future_col) {
                 ROS_WARN("Future collision detected on trajectory!");
                 action_upon_future_col(drone);
                 next_state = waiting;
