@@ -138,9 +138,9 @@
         <param name="sampling_interval" value="0.5"/>
 
         <!-- options for motion_planning core --> 
-        <param name="motion_planning_core" value="PRM"/>
+        <!-- param name="motion_planning_core" value="PRM"/-->
         <!-- param name="motion_planning_core" value="RRT"/-->
-        <!-- param name="motion_planning_core" value="lawn_mower"/-->
+        <param name="motion_planning_core" value="OMPL-RRT"/>
 	</node>
 
 	<!-- Demo program that controls drone -->

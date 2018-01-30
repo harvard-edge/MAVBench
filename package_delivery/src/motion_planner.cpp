@@ -22,26 +22,33 @@
 // Misc messages
 #include <geometry_msgs/Point.h>
 
-// Octomap specific includes
+// Octomap specific headers
 #include <octomap/octomap.h>
 #include <octomap/OcTree.h>
 #include <octomap_msgs/GetOctomap.h>
 #include <octomap_msgs/conversions.h>
 #include <octomap_world/octomap_world.h>
 
-// TF specific includes
+// TF specific headers
 #include <tf/transform_datatypes.h>
 
 // Pointcloud headers
 #include <pcl_ros/point_cloud.h>
 #include <pcl/point_types.h>
 
-// Trajectory smoothening includes
+// Trajectory smoothening headers
 #include <mav_trajectory_generation/polynomial_optimization_linear.h>
 #include <mav_trajectory_generation/trajectory.h>
 #include <mav_trajectory_generation_ros/trajectory_sampling.h>
 #include <mav_trajectory_generation_ros/ros_visualization.h>
 
+// OMPL specific headers
+#include <ompl/base/SpaceInformation.h>
+#include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <ompl/geometric/planners/rrt/RRT.h>
+#include <ompl/geometric/planners/prm/PRM.h>
+#include <ompl/geometric/SimpleSetup.h>
+#include <ompl/config.h>
 
 // Type-defs
 using piecewise_trajectory = std::vector<graph::node>;
@@ -95,7 +102,7 @@ bool known(octomap::OcTree * octree, double x, double y, double z);
 
 
 // *** F:DN Checks whether there is a collision between two nodes in the occupancy grid.
-bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2);
+bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2, graph::node * end_ptr = nullptr);
 
 
 // *** F:DN find all neighbours within "max_dist" meters of node
@@ -127,6 +134,10 @@ piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, 
 piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
 
 
+// ***F:DN Use the RRT sampling method to find a piecewise path
+piecewise_trajectory OMPL_RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
+
+
 // *** F:DN Optimize and smoothen a piecewise path without causing any new collisions.
 smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree);
 
@@ -151,9 +162,6 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 	//----------------------------------------------------------------- 
 	piecewise_trajectory piecewise_path;
 	smooth_trajectory smooth_path;
-    // auto motion_planning_core = RRT; // TODO: parameter
-    // auto motion_planning_core = PRM;
-
 
     //----------------------------------------------------------------- 
     // *** F:DN Body 
@@ -225,8 +233,10 @@ void motion_planning_initialize_params() {
         motion_planning_core = RRT;
     else if (motion_planning_core_str == "lawn_mower")
         motion_planning_core = lawn_mower;
+    else if (motion_planning_core_str == "OMPL-RRT")
+        motion_planning_core = OMPL_RRT;
     else{
-        std::cout<<"this motion planning type is note defined"<<std::endl;
+        std::cout<<"This motion planning type is not defined"<<std::endl;
         exit(0);
     }
 
@@ -239,9 +249,6 @@ int main(int argc, char ** argv)
     //----------------------------------------------------------------- 
     // *** F:DN variables	
     //----------------------------------------------------------------- 
-    graph roadmap;
-    std::vector<graph::node> piecewise_path;
-	octomap::OcTree * octree;
     ros::init(argc, argv, "motion_planner");
     ros::NodeHandle nh;
     motion_planning_initialize_params();
@@ -317,12 +324,12 @@ bool known(octomap::OcTree * octree, double x, double y, double z)
 }
 
 #ifdef INFLATE
-bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2)
+bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2, graph::node * end_ptr)
 {
     RESET_TIMER();
     // First, check if anything goes underground
-    // if (n1.z <= 0 || n2.z <= 0)
-        // return true;
+    if (n1.z <= 0 || n2.z <= 0)
+        return true;
             
 	double dx = n2.x - n1.x;
 	double dy = n2.y - n1.y;
@@ -334,18 +341,23 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 	octomap::point3d direction(dx, dy, dz);
 	octomap::point3d end;
 
-    bool result = octree->castRay(start, direction, end, true, distance);
+    bool collided = octree->castRay(start, direction, end, true, distance);
+
+    if (end_ptr != nullptr && collided) {
+        end_ptr->x = end.x();
+        end_ptr->y = end.y();
+        end_ptr->z = end.z();
+    }
 
 	LOG_ELAPSED(motion_planner);
-	return result;
+	return collided;
 }
 #else
-bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2)
+bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2, graph::node * end_ptr)
 {
     RESET_TIMER();
     // First, check if anything goes underground
-    if (n1.z <= 0 ||
-            n2.z <= 0)
+    if (n1.z <= 0 || n2.z <= 0)
         return true;
             
     const double pi = 3.14159265359;
@@ -354,8 +366,6 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 	// Angles are in radians and lengths are in meters.
     
     double height = drone_height__global; 
-
-    //static double height = drone_heigh__global;
     double radius = drone_radius__global; 
 
 	const double angle_step = pi/4;
@@ -377,6 +387,13 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
 
 				if (octree->castRay(start, direction, end, true, distance)) {
+
+                    if (end_ptr != nullptr) {
+                        end_ptr->x = end.x();
+                        end_ptr->y = end.y();
+                        end_ptr->z = end.z();
+                    }
+
 					LOG_ELAPSED(motion_planner);
 					return true;
                 }
@@ -1124,5 +1141,156 @@ piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, 
     result = build_reverse_path(rrt, goal_id);
 
     return result;
+}
+
+class OMPLMotionValidator : public ompl::base::MotionValidator
+{
+public:
+    OMPLMotionValidator(const ompl::base::SpaceInformationPtr &si)
+        : ompl::base::MotionValidator(si)
+    {
+    }
+
+    bool checkMotion(const ompl::base::State *s1,
+            const ompl::base::State *s2) const override
+    {
+        namespace ob = ompl::base;
+
+        const auto *pos1 = s1->as<ob::RealVectorStateSpace::StateType>();
+        const auto *pos2 = s2->as<ob::RealVectorStateSpace::StateType>();
+
+        double x1 = pos1->values[0], x2 = pos2->values[0];
+        double y1 = pos1->values[1], y2 = pos2->values[1];
+        double z1 = pos1->values[2], z2 = pos2->values[2];
+
+        return !collision(octree, {x1,y1,z1}, {x2,y2,z2});
+    }
+
+    bool checkMotion(const ompl::base::State *s1,
+            const ompl::base::State *s2,
+            std::pair<ompl::base::State*, double>& lastValid) const override
+    {
+        namespace ob = ompl::base;
+
+        const auto *pos1 = s1->as<ob::RealVectorStateSpace::StateType>();
+        const auto *pos2 = s2->as<ob::RealVectorStateSpace::StateType>();
+
+        double x1 = pos1->values[0], x2 = pos2->values[0];
+        double y1 = pos1->values[1], y2 = pos2->values[1];
+        double z1 = pos1->values[2], z2 = pos2->values[2];
+
+        graph::node end;
+        bool valid = !collision(octree, {x1,y1,z1}, {x2,y2,z2}, &end);
+
+        if (!valid) {
+            auto *end_pos = lastValid.first->as<ob::RealVectorStateSpace::StateType>();
+            end_pos->values[0] = end.x;
+            end_pos->values[1] = end.y;
+            end_pos->values[2] = end.z;
+
+            double dx = x2-x1, dy = y2-y1, dz = z2-z1;
+            double end_dx = end.x-x1, end_dy = end.y-y1, end_dz = end.z-z1;
+
+            if (dx != 0)
+                lastValid.second = end_dx / dx;
+            else if (dy != 0)
+                lastValid.second = end_dy / dy;
+            else if (dz != 0)
+                lastValid.second = end_dz / dz;
+            else
+                lastValid.second = 0;
+        }
+
+        return valid;
+    }
+
+};
+
+bool OMPLStateValidityChecker(const ompl::base::State * state)
+{
+    namespace ob = ompl::base;
+
+    const auto *pos = state->as<ob::RealVectorStateSpace::StateType>();
+
+    double x = pos->values[0];
+    double y = pos->values[1];
+    double z = pos->values[2];
+
+    return !occupied(octree, x, y, z);
+}
+
+
+piecewise_trajectory OMPL_RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
+{
+#ifndef INFLATE
+    namespace ob = ompl::base;
+    namespace og = ompl::geometric;
+
+    piecewise_trajectory result;
+
+    auto space(std::make_shared<ob::RealVectorStateSpace>(3));
+
+    // Set bounds
+    ob::RealVectorBounds bounds(3);
+    bounds.setLow(0, x_dist_to_sample_from__low_bound__global);
+    bounds.setHigh(0, x_dist_to_sample_from__high_bound__global);
+    bounds.setLow(1, y_dist_to_sample_from__low_bound__global);
+    bounds.setHigh(1, y_dist_to_sample_from__high_bound__global);
+    bounds.setLow(2, z_dist_to_sample_from__low_bound__global);
+    bounds.setHigh(2, z_dist_to_sample_from__high_bound__global);
+
+    space->setBounds(bounds);
+
+    og::SimpleSetup ss(space);
+
+    // Setup collision checker
+    ob::SpaceInformationPtr si = ss.getSpaceInformation();
+    si->setStateValidityChecker(OMPLStateValidityChecker);
+    si->setMotionValidator(std::make_shared<OMPLMotionValidator>(si));
+    si->setup();
+
+    // Set planner
+    ob::PlannerPtr planner(new og::RRT(si));
+    ss.setPlanner(planner);
+
+    ob::ScopedState<> start_state(space);
+    start_state[0] = start.x;
+    start_state[1] = start.y;
+    start_state[2] = start.z;
+
+    ob::ScopedState<> goal_state(space);
+    goal_state[0] = goal.x;
+    goal_state[1] = goal.y;
+    goal_state[2] = goal.z;
+
+    ss.setStartAndGoalStates(start_state, goal_state);
+
+    ss.setup();
+
+    // Solve for path
+    ob::PlannerStatus solved = ss.solve(10.0);
+
+    if (solved)
+    {
+        ROS_INFO("Solution found!");
+        ss.simplifySolution();
+
+        for (auto state : ss.getSolutionPath().getStates()) {
+            const auto *pos = state->as<ob::RealVectorStateSpace::StateType>();
+
+            double x = pos->values[0];
+            double y = pos->values[1];
+            double z = pos->values[2];
+
+            result.push_back({x, y, z});
+        }
+    }
+    else
+        ROS_ERROR("Path not found!");
+
+    return result;
+#else
+    ROS_ERROR("OMPL-RRT cannot be compiled together with inflation!");
+#endif
 }
 

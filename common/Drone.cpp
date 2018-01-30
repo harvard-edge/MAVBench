@@ -209,7 +209,8 @@ bool Drone::fly_velocity(double vx, double vy, double vz, float yaw, double dura
 	try {
         if (yaw != YAW_UNCHANGED) {
             float target_yaw = yaw != FACE_FORWARD ? yaw : xy_yaw(vx, vy);
-            float yaw_diff = target_yaw - get_yaw();
+            float yaw_diff = (int(target_yaw - get_yaw()) + 360) % 360;
+            yaw_diff = yaw_diff <= 180 ? yaw_diff : yaw_diff - 360;
             float yaw_rate = yaw_diff / duration;
 
             if (yaw_rate > max_yaw_rate_during_flight)
