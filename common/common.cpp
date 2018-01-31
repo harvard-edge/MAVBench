@@ -50,6 +50,7 @@ void sigIntHandler(int sig)
 void action_upon_panic(Drone& drone) {
     const std::string panic_topic = "/panic_topic";
 
+    // Move backwards at 1 m/s
     float yaw = drone.get_yaw();
     double vx = -std::sin(yaw*M_PI/180);
     double vy = -std::cos(yaw*M_PI/180);
@@ -63,18 +64,17 @@ void action_upon_panic(Drone& drone) {
         panicking = last_msg<std_msgs::Bool>(panic_topic).data;
     }
 
-    ROS_INFO("Panicking one last time...");
-    drone.fly_velocity(vx, vy, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(850));
+    // Stop afterwards
+    drone.fly_velocity(0, 0, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    spin_around(drone);
     ROS_INFO("Done panicking!");
 }
 
 void action_upon_future_col(Drone& drone) {
     drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    scan_around(drone, 30);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    // scan_around(drone, 30);
 }
 
 static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) {
@@ -210,12 +210,15 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
         multiDOFpoint p_next = traj[1];
 
         // Calculate the positions we should be at
+        double p_x = p.transforms[0].translation.x;
+        double p_y = p.transforms[0].translation.y;
         double p_z = p.transforms[0].translation.z;
 
         // Calculate the velocities we should be flying at
-        double v_x = p.velocities[0].linear.x;
-        double v_y = p.velocities[0].linear.y;
-        double v_z = p.velocities[0].linear.z;
+        auto pos = drone.position();
+        double v_x = p.velocities[0].linear.x + 0.05*(p_x-pos.x);
+        double v_y = p.velocities[0].linear.y + 0.05*(p_y-pos.y);
+        double v_z = p.velocities[0].linear.z + 0.2*(p_z-pos.z);
 
         float yaw = yawFromQuat(p.transforms[0].rotation);
         if (yaw_strategy == ignore_yaw)
@@ -244,9 +247,9 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
 
         drone.fly_velocity(v_x,
                 v_y,
-                v_z + 0.2*(p_z-drone.position().z),
+                v_z,
                 yaw,
-                scaled_flight_time+0.2); // Add a small buffer to prevent halts
+                scaled_flight_time+0.1); // Add a small buffer to prevent halts
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 

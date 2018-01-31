@@ -97,11 +97,10 @@
 
     </node>
 	
-    
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
-		<param name="panic_distance" value="1.75"/>
+		<param name="panic_distance" value="0.5"/>
     </node>
- 
+
     <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
     </node>
     

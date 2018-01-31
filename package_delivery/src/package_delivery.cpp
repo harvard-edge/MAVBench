@@ -44,19 +44,7 @@ void panic_call_back(const std_msgs::Bool::ConstPtr& msg) {
 }
 
 void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
-    const int reaction_delay_counter_init_value = 3;
-    static int reaction_delay_counter = reaction_delay_counter_init_value;
-
-    if (!msg->data) {
-    	reaction_delay_counter = reaction_delay_counter_init_value;
-    } else {
-    	reaction_delay_counter--;
-    }
-
-    if (msg->data && reaction_delay_counter <= 0)
-    	future_col = true;
-    else
-    	future_col = false;
+    future_col = msg->data;
 }
 
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
@@ -121,22 +109,6 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
     for (multiDOFpoint p : srv.response.multiDOFtrajectory.points) {
         result.push_back(p);
     }
-
-    /*
-    trajectory_t tmp;
-    int max_i = 20, speed = 1;
-    for (int i = 0; i < max_i; i++) {
-        multiDOFpoint p = srv.response.multiDOFtrajectory.points.front();
-
-        p.time_from_start = ros::Duration(i);
-        
-        p.velocities[0].linear.x = i < max_i-1 ? -speed : 0;
-        p.velocities[0].linear.y = 0;
-        p.velocities[0].linear.z = 0;
-        tmp.push_back(p);
-    }
-    return tmp;
-    */
 
     return result;
 }
@@ -203,6 +175,7 @@ int main(int argc, char **argv)
 
     double max_speed = std::numeric_limits<double>::infinity();
     double max_speed_reset_time = 0;
+    double max_speed_increment_time = 0;
 	
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
@@ -221,9 +194,10 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
-    const double max_safe_speed = 1;
-    const double max_speed_reset_time_length = 4;
-    const float goal_s_error_margin = 2.0; //ok distance to be away from the goal.
+    const double max_safe_speed = 1.0;
+    const double max_speed_increment = 1.0;
+    const double max_speed_reset_time_length = 4.0;
+    const float goal_s_error_margin = 1.0; //ok distance to be away from the goal.
                                            //this is b/c it's very hard 
                                            //given the issues associated with
                                            //flight controler to land exactly
@@ -264,7 +238,9 @@ int main(int argc, char **argv)
 
             trajectory_shift_time(trajectory, start_time);
 
+            // Pause a little bit so that future_col can be updated
             std::this_thread::sleep_for(std::chrono::seconds(1));
+
             next_state = flying;
         }
         else if (state == flying)
@@ -272,11 +248,9 @@ int main(int argc, char **argv)
             // For now, take no action upon panic besides notifying the user
             if (should_panic) {
                 ROS_WARN("Panic! in the disco");
-                // action_upon_panic(drone);
-                // next_state = waiting;
-            }
-            
-            if (future_col) {
+                action_upon_panic(drone);
+                next_state = flying;
+            } else if (future_col) {
                 ROS_WARN("Future collision detected on trajectory!");
                 action_upon_future_col(drone);
                 next_state = waiting;
@@ -300,8 +274,13 @@ int main(int argc, char **argv)
 
                 if (slam_found) {
                     ROS_INFO("Recovered SLAM!");
+
+                    // Slow down until we pass a little beyond the point where
+                    // SLAM was lost
                     max_speed = max_safe_speed;
                     max_speed_reset_time = trajectory_start_time(trajectory) + max_speed_reset_time_length;
+                    max_speed_increment_time = trajectory_start_time(trajectory) + 1;
+
                     next_state = flying;
                 } else {
                     ROS_WARN("SLAM not recovered! Just do it yourself");
@@ -342,6 +321,9 @@ int main(int argc, char **argv)
         double now = trajectory_start_time(trajectory);
         if (now > max_speed_reset_time) {
             max_speed = std::numeric_limits<double>::infinity();
+        } else if (now > max_speed_increment_time) {
+            max_speed += 1;
+            max_speed_increment_time += 1;
         }
 
         state = next_state;
