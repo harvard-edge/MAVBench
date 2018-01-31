@@ -19,12 +19,12 @@
     <!--arg name="localization_method" default="gps" /-->
     
     <!-- stat file-->
-    <param name="stats_file_addr" value="$(find package_delivery)/../data/stats.txt" />
+    <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.txt" />
 
 
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)-->
-    <arg name="DEBUG" default="true" />
+    <arg name="DEBUG" default="false" />
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
 
     <!-- set this to "" if you don't want perf -->
