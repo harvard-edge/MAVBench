@@ -170,6 +170,20 @@ bool trajectory_done(const trajectory_t& trajectory) {
     return trajectory.size() <= 1;
 }
 
+double trajectory_start_time(const trajectory_t& trajectory)
+{
+    if (trajectory.empty())
+        return 0;
+    return trajectory.front().time_from_start.toSec();
+}
+
+void trajectory_shift_time(trajectory_t& trajectory, double shift)
+{
+    ros::Duration dur = ros::Duration(shift);
+    for (auto& mdp : trajectory)
+        mdp.time_from_start += dur;
+}
+
 // *** F:DN main function
 int main(int argc, char **argv)
 {
@@ -183,8 +197,12 @@ int main(int argc, char **argv)
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
     package_delivery_initialize_params();
-    trajectory_t trajectory, reverse_trajectory;
     geometry_msgs::Point start, goal;
+    trajectory_t trajectory, reverse_trajectory;
+    double start_time = 0;
+
+    double max_speed = std::numeric_limits<double>::infinity();
+    double max_speed_reset_time = 0;
 	
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
@@ -203,21 +221,19 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
-    const int package_delivery_loop_rate = 50;
-    float max_speed = std::numeric_limits<double>::infinity();
-    auto max_speed_reset_time = std::chrono::system_clock::now();
-    float goal_s_error_margin = 2.0; //ok distance to be away from the goal.
-                                                      //this is b/c it's very hard 
-                                                      //given the issues associated with
-                                                      //flight controler to land exactly
-                                                      //on the goal
+    const double max_safe_speed = 1;
+    const double max_speed_reset_time_length = 4;
+    const float goal_s_error_margin = 2.0; //ok distance to be away from the goal.
+                                           //this is b/c it's very hard 
+                                           //given the issues associated with
+                                           //flight controler to land exactly
+                                           //on the goal
 
     
     
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
-    // ros::Rate loop_rate(package_delivery_loop_rate);
     LOG_TIME(package_delivery);
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
@@ -233,25 +249,34 @@ int main(int argc, char **argv)
             start = get_start(drone);
 
             spin_around(drone);
-            face_destination(drone, (goal.x-start.x), (goal.y-start.y));
+            // face_destination(drone, (goal.x-start.x), (goal.y-start.y));
 
             next_state = waiting;
         }
         else if (state == waiting)
         {
             ROS_INFO("Waiting to recieve trajectory...");
+
+            start_time = trajectory_start_time(trajectory);
+
             start = get_start(drone);
             trajectory = request_trajectory(get_trajectory_client, start, goal);
+
+            trajectory_shift_time(trajectory, start_time);
+
             std::this_thread::sleep_for(std::chrono::seconds(1));
             next_state = flying;
         }
         else if (state == flying)
         {
+            // For now, take no action upon panic besides notifying the user
             if (should_panic) {
                 ROS_WARN("Panic! in the disco");
-                action_upon_panic(drone);
-                next_state = waiting;
-            } else if (future_col) {
+                // action_upon_panic(drone);
+                // next_state = waiting;
+            }
+            
+            if (future_col) {
                 ROS_WARN("Future collision detected on trajectory!");
                 action_upon_future_col(drone);
                 next_state = waiting;
@@ -275,8 +300,8 @@ int main(int argc, char **argv)
 
                 if (slam_found) {
                     ROS_INFO("Recovered SLAM!");
-                    max_speed = 1;
-                    max_speed_reset_time = std::chrono::system_clock::now() + std::chrono::seconds(5);
+                    max_speed = max_safe_speed;
+                    max_speed_reset_time = trajectory_start_time(trajectory) + max_speed_reset_time_length;
                     next_state = flying;
                 } else {
                     ROS_WARN("SLAM not recovered! Just do it yourself");
@@ -314,13 +339,12 @@ int main(int argc, char **argv)
         }
 
         // Reset max_speed if required
-        auto now = std::chrono::system_clock::now();
+        double now = trajectory_start_time(trajectory);
         if (now > max_speed_reset_time) {
             max_speed = std::numeric_limits<double>::infinity();
         }
 
         state = next_state;
-        // loop_rate.sleep();
     }
 
     return 0;

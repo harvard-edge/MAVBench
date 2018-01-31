@@ -7,6 +7,7 @@ sudo apt-get install ros-kinetic-stereo-msgs
 sudo apt-get install ros-kinetic-tf-conversions
 sudo apt-get install ros-kinetic-rviz-visual-tools
 sudo apt-get install ros-kinetic-vision-opencv
+sudo apt-get install ros-kinetic-ompl
 
 # Prereqs for mav_trajectory_generation, our trajectory-smoothening package
 #git clone https://github.com/catkin/catkin_simple.git

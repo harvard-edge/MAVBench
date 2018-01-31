@@ -123,6 +123,7 @@ generate_messages(
 
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(ompl REQUIRED)
 
 catkin_package(
 #  INCLUDE_DIRS include
@@ -187,7 +188,7 @@ link_directories(
 
 add_executable(motion_planner src/motion_planner.cpp src/graph.cpp src/global_planner.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(motion_planner package_delivery_generate_messages_cpp)
-target_link_libraries(motion_planner ${catkin_LIBRARIES}  AirLib MavLinkCom rpc pthread  cuda cudart cublas curand )
+target_link_libraries(motion_planner ${catkin_LIBRARIES} ${OMPL_LIBRARIES}  AirLib MavLinkCom rpc pthread  cuda cudart cublas curand )
 
 add_executable(package_delivery ${common_utility_src}/Drone.cpp ${common_utility_src}/control_drone.cpp 
     ${common_utility_src}/common.cpp src/package_delivery.cpp ${common_utility_src}/timer.cpp)
