@@ -129,7 +129,7 @@ static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& to
     const double safe_speed = 0.5;
 
     while (reverse_traj.size() > 1) {
-        follow_trajectory(drone, reverse_traj, traj, ignore_yaw, safe_speed);
+        follow_trajectory(drone, reverse_traj, traj, face_backward, safe_speed, false);
 
         // Check whether SLAM is back
         std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
@@ -201,7 +201,7 @@ void spin_around(Drone &drone) {
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
 void follow_trajectory(Drone& drone, trajectory_t& traj,
         trajectory_t& reverse_traj, yaw_strategy_t yaw_strategy,
-        float max_speed, float time) {
+        float max_speed, bool check_position, float time) {
 
     trajectory_t reversed_commands;
 
@@ -215,16 +215,26 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
         double p_z = p.transforms[0].translation.z;
 
         // Calculate the velocities we should be flying at
-        auto pos = drone.position();
-        double v_x = p.velocities[0].linear.x + 0.05*(p_x-pos.x);
-        double v_y = p.velocities[0].linear.y + 0.05*(p_y-pos.y);
-        double v_z = p.velocities[0].linear.z + 0.2*(p_z-pos.z);
+        double v_x = p.velocities[0].linear.x;
+        double v_y = p.velocities[0].linear.y;
+        double v_z = p.velocities[0].linear.z;
 
+        if (check_position) {
+            auto pos = drone.position();
+            v_x += 0.05*(p_x-pos.x);
+            v_y += 0.05*(p_y-pos.y);
+            v_z += 0.2*(p_z-pos.z);
+        }
+
+        // Calculate the yaw we should be flying with
         float yaw = yawFromQuat(p.transforms[0].rotation);
         if (yaw_strategy == ignore_yaw)
             yaw = YAW_UNCHANGED;
         else if (yaw_strategy == face_forward)
             yaw = FACE_FORWARD;
+        else if (yaw_strategy == face_backward) {
+            yaw = FACE_BACKWARD;
+        }
 
         // Make sure we're not going over the maximum speed
         double speed = std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
@@ -244,12 +254,7 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
 
         // Fly for flight_time seconds
         auto segment_start_time = std::chrono::system_clock::now();
-
-        drone.fly_velocity(v_x,
-                v_y,
-                v_z,
-                yaw,
-                scaled_flight_time+0.1); // Add a small buffer to prevent halts
+        drone.fly_velocity(v_x, v_y, v_z, yaw, scaled_flight_time+0.1); 
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 

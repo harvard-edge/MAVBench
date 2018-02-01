@@ -23,6 +23,7 @@
 typedef trajectory_msgs::MultiDOFJointTrajectory traj_msg_t;
 typedef std::chrono::system_clock sys_clock;
 typedef std::chrono::time_point<sys_clock> sys_clock_time_point;
+static const sys_clock_time_point never = sys_clock_time_point::min();
 
 // Global variables
 octomap::OcTree * octree = nullptr;
@@ -81,6 +82,19 @@ double dist_to_collision(Drone& drone, const T& col_pos) {
 }
 
 
+template <class T>
+bool in_safe_zone(const T& start, const T& pos) {
+    const double radius = drone_radius__global;
+    const double height = drone_height__global;
+
+	double dx = start.x - pos.x;
+	double dy = start.y - pos.y;
+	double dz = start.z - pos.z;
+
+    return (std::sqrt(dx*dx + dy*dy) < radius && std::abs(dz) < height);
+}
+
+
 void pull_octomap(const octomap_msgs::Octomap& msg)
 {
     RESET_TIMER();
@@ -104,23 +118,34 @@ void pull_traj(const traj_msg_t::ConstPtr& msg)
     traj = *msg;
 }
 
+int seconds (sys_clock_time_point t) {
+    auto int_s = std::chrono::time_point_cast<std::chrono::seconds>(t);
+    return int_s.time_since_epoch().count() % 50;
+}
+
 
 bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
 {
     RESET_TIMER();
 
     const double min_dist_from_collision = 5.0;
-    const std::chrono::milliseconds grace_period(2000);
+    const std::chrono::milliseconds grace_period(1500);
 
     if (octree == nullptr || traj.points.size() < 1) {
         return false;
     }
+
+    auto& start = traj.points[0].transforms[0].translation;
 
     bool col = false;
 
     for (int i = 0; i < traj.points.size() - 1; ++i) {
         auto& pos1 = traj.points[i].transforms[0].translation;
         auto& pos2 = traj.points[i+1].transforms[0].translation;
+
+        // We ignore possible at the beginning of the journey
+        if (in_safe_zone(start, pos1))
+            continue;
 
         if (collision(octree, pos1, pos2)) {
             col = true;
@@ -132,15 +157,18 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
             // Otherwise, give the drone a grace period to continue along its
             // path. Don't update the time_to_warn if it's already been set to
             // some time in the future
-            else if (now > time_to_warn)
+            else if (time_to_warn == never) {
                 time_to_warn = now + grace_period;
+                // ROS_ERROR("now: %d", seconds(now));
+                //  ROS_ERROR("time_to_warn: %d", seconds(time_to_warn));
+            }
 
             break;
         }
     }
 
     if (!col)
-        time_to_warn = sys_clock_time_point::min();
+        time_to_warn = never;
 
     LOG_ELAPSED(future_collision);
     return col;
@@ -174,15 +202,17 @@ int main(int argc, char** argv)
 	//----------------------------------------------------------------- 
     future_collision_initialize_params(); 
 
-    bool collision_imminent = false;
-    auto time_to_warn = sys_clock_time_point::min();
+    bool collision_coming = false;
+    auto time_to_warn = never;
 
-    std_msgs::Bool col_msg;
+    std_msgs::Bool col_coming_msg;
+    std_msgs::Bool col_imminent_msg;
 
     ros::Subscriber octomap_sub = nh.subscribe("octomap_binary", 1, pull_octomap);
     ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("multidoftraj", 1, pull_traj);
 
-    ros::Publisher collision_publisher = nh.advertise<std_msgs::Bool>("future_col_topic", 1);
+    ros::Publisher col_coming_pub = nh.advertise<std_msgs::Bool>("col_coming", 1);
+    ros::Publisher col_imminent_pub = nh.advertise<std_msgs::Bool>("col_imminent", 1);
 
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
@@ -195,17 +225,23 @@ int main(int argc, char** argv)
     ros::Rate loop_rate(10);
     while (ros::ok()) {
         ros::spinOnce();
-        collision_imminent = check_for_collisions(drone, time_to_warn);
+        collision_coming = check_for_collisions(drone, time_to_warn);
 
-        if (collision_imminent) {
+        // Publish whether or not a future collision has been detected
+        col_coming_msg.data = collision_coming;
+        col_coming_pub.publish(col_coming_msg);
+
+        // Publish whether or not a collision is close enough that we should
+        // respond to it
+        if (collision_coming) {
             auto now = sys_clock::now();
-            if (now > time_to_warn) {
-                col_msg.data = true;
-                collision_publisher.publish(col_msg);
+            if (now >= time_to_warn) {
+                col_imminent_msg.data = true;
+                col_imminent_pub.publish(col_imminent_msg);
             }
         } else {
-            col_msg.data = false;
-            collision_publisher.publish(col_msg);
+            col_imminent_msg.data = false;
+            col_imminent_pub.publish(col_imminent_msg);
         }
 
         loop_rate.sleep();

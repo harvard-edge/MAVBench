@@ -19,7 +19,8 @@
 // Control functions
 
 const float FACE_FORWARD = std::numeric_limits<float>::infinity();
-const float YAW_UNCHANGED = -std::numeric_limits<float>::infinity();
+const float FACE_BACKWARD = -std::numeric_limits<float>::infinity();
+const float YAW_UNCHANGED = std::numeric_limits<float>::quiet_NaN();
 
 class Drone {
 public:

@@ -23,7 +23,8 @@
 
 using namespace std;
 bool should_panic = false;
-bool future_col = false;
+bool col_imminent = false;
+bool col_coming = false;
 bool slam_lost = false;
 string ip_addr__global;
 string localization_method;
@@ -43,8 +44,12 @@ void panic_call_back(const std_msgs::Bool::ConstPtr& msg) {
     should_panic = msg->data;
 }
 
-void future_col_callback(const std_msgs::Bool::ConstPtr& msg) {
-    future_col = msg->data;
+void col_imminent_callback(const std_msgs::Bool::ConstPtr& msg) {
+    col_imminent = msg->data;
+}
+
+void col_coming_callback(const std_msgs::Bool::ConstPtr& msg) {
+    col_coming = msg->data;
 }
 
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
@@ -113,31 +118,6 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
     return result;
 }
 
-void face_destination(Drone& drone, double x, double y) {
-    float angle_to_dest;
-
-    if (x == 0 && y == 0)
-        return;
-    else if (x == 0) {
-        angle_to_dest = y > 0 ? 0 : -180;
-    } else if (y == 0) {
-        angle_to_dest = x > 0 ? 90 : -90;
-    } else if (x > 0 && y > 0) {
-        angle_to_dest = std::atan(x/y) * 180.0/3.14;
-    } else if (x > 0 && y < 0) {
-        angle_to_dest = 180.0 - (std::atan(-x/y) * 180.0/3.14);
-    } else if (x < 0 && y > 0) {
-        angle_to_dest = -(std::atan(-x/y) * 180.0/3.14);
-    } else if (x < 0 && y < 0) {
-        angle_to_dest = -180 + (std::atan(x/y) * 180.0/3.14);
-    }
-
-    // Correct for over-setting yaw
-    // angle_to_dest *= 0.8;
-
-    drone.set_yaw(angle_to_dest);
-}
-
 bool trajectory_done(const trajectory_t& trajectory) {
     return trajectory.size() <= 1;
 }
@@ -186,8 +166,10 @@ int main(int argc, char **argv)
         nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
     ros::Subscriber panic_sub =  
 		nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
-    ros::Subscriber future_col_sub = 
-		nh.subscribe<std_msgs::Bool>("future_col_topic", 1000, future_col_callback);
+    ros::Subscriber col_imminent_sub = 
+		nh.subscribe<std_msgs::Bool>("col_imminent", 1000, col_imminent_callback);
+    ros::Subscriber col_coming_sub = 
+		nh.subscribe<std_msgs::Bool>("col_coming", 1000, col_coming_callback);
 	ros::Subscriber slam_lost_sub = 
 		nh.subscribe<std_msgs::Bool>("/slam_lost", 1000, slam_loss_callback);
 
@@ -223,13 +205,11 @@ int main(int argc, char **argv)
             start = get_start(drone);
 
             spin_around(drone);
-            // face_destination(drone, (goal.x-start.x), (goal.y-start.y));
-
             next_state = waiting;
         }
         else if (state == waiting)
         {
-            ROS_INFO("Waiting to recieve trajectory...");
+            ROS_INFO("Waiting to receive trajectory...");
 
             start_time = trajectory_start_time(trajectory);
 
@@ -239,19 +219,18 @@ int main(int argc, char **argv)
             trajectory_shift_time(trajectory, start_time);
 
             // Pause a little bit so that future_col can be updated
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
             next_state = flying;
         }
         else if (state == flying)
         {
-            // For now, take no action upon panic besides notifying the user
             if (should_panic) {
                 ROS_WARN("Panic! in the disco");
                 action_upon_panic(drone);
-                next_state = flying;
-            } else if (future_col) {
-                ROS_WARN("Future collision detected on trajectory!");
+                next_state = waiting;
+            } else if (col_imminent) {
+                ROS_WARN("Reacting to future collision on trajectory");
                 action_upon_future_col(drone);
                 next_state = waiting;
             } else if (slam_lost) {
@@ -286,6 +265,9 @@ int main(int argc, char **argv)
                     ROS_WARN("SLAM not recovered! Just do it yourself");
                     next_state = setup;
                 }
+            // } else if (col_coming) {
+            //     follow_trajectory(drone, trajectory, reverse_trajectory, face_forward, max_safe_speed);
+            //     next_state = trajectory_done(trajectory) ? completed : flying;
             } else {
                 follow_trajectory(drone, trajectory, reverse_trajectory, face_forward, max_speed);
                 next_state = trajectory_done(trajectory) ? completed : flying;
@@ -317,12 +299,12 @@ int main(int argc, char **argv)
             break;
         }
 
-        // Reset max_speed if required
+        // Update max_speed if required
         double now = trajectory_start_time(trajectory);
         if (now > max_speed_reset_time) {
             max_speed = std::numeric_limits<double>::infinity();
         } else if (now > max_speed_increment_time) {
-            max_speed += 1;
+            max_speed += max_speed_increment;
             max_speed_increment_time += 1;
         }
 
