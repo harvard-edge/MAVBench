@@ -204,7 +204,7 @@ static float xy_yaw(double x, double y) {
 
 bool Drone::fly_velocity(double vx, double vy, double vz, float yaw, double duration)
 {
-    getCollisionInfo();
+    //getCollisionInfo();
 
 	try {
         if (yaw != YAW_UNCHANGED) {
@@ -410,7 +410,7 @@ float Drone::get_pitch()
 
 	return p*180 / M_PI;
 }
-
+/*
 msr::airlib::CollisionInfo Drone::getCollisionInfo()
 {
   auto col_info = client->getCollisionInfo();
@@ -435,3 +435,4 @@ msr::airlib::CollisionInfo Drone::getCollisionInfo()
 
   return col_info;
 }
+*/

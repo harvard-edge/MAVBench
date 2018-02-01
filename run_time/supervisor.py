@@ -3,9 +3,11 @@ import time
 import sys
 
 def action_upon_termination():
+    os.system("echo hello > now_here") 
     #--- kill all the ros processes 
     os.system("kill -INT $(ps aux | grep ros | awk '{print $2}')")
-
+    #os.system("rosnode kill --all");
+    #os.system("rosnode kill rosout");
 def terminate(stat_file):
     try:
         stat_f_hndlr = open(stat_file, "r")
@@ -30,7 +32,7 @@ def main():
     #sys.argv[2] sleep_time_before checking (optinal)
     SLEEP_TIME_BEFORE_CHECKING = 2 
     assert(len(sys.argv) >= 3)
-    stat_file = sys.argv[1]+"data/stats.txt"
+    stat_file = sys.argv[1]+"data/package_delivery/stats.txt"
     # --- populating variables 
     if (len(sys.argv) > 3):
         sleep_time_before_checking = sys.argv[3]

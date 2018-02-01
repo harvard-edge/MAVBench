@@ -43,7 +43,8 @@ int main(int argc, char **argv)
     signal(SIGINT, sigIntHandler);
  
     uint16_t port = 41451;
-    ros::param::get("/ip_addr",ip_addr__global);
+    // ros::param::get("/ip_addr",ip_addr__global);
+    ip_addr__global = "10.157.90.51";
     ROS_ERROR_STREAM("blah"<<ip_addr__global);
     Drone drone(ip_addr__global.c_str(), port);
 	ros::Rate pub_rate(5);
