@@ -117,8 +117,8 @@
 		<param name="nodes_to_add_to_roadmap" value="300"/>
 		<param name="max_dist_to_connect_at" value="10"/>
 
-		<param name="v_max" value="3"/>
-		<param name="a_max" value="9"/>
+		<param name="v_max" value="2"/>
+		<param name="a_max" value="10"/>
         <param name="drone_radius" value="2.0"/>
         <param name="drone_height" value="0.6"/>
 
@@ -139,7 +139,9 @@
         <!-- options for motion_planning core --> 
         <!-- param name="motion_planning_core" value="PRM"/-->
         <!-- param name="motion_planning_core" value="RRT"/-->
-        <param name="motion_planning_core" value="OMPL-RRT"/>
+        <!-- param name="motion_planning_core" value="OMPL-RRT"/-->
+        <param name="motion_planning_core" value="OMPL-RRTConnect"/>
+        <!-- param name="motion_planning_core" value="OMPL-RRT"/-->
 	</node>
 
 	<!-- Demo program that controls drone -->

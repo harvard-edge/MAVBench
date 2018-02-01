@@ -31,7 +31,7 @@ string localization_method;
 string stats_file_addr;
 string ns;
 	
-enum State { setup, waiting, flying, completed, invalid };
+enum State { setup, waiting, flying, completed, failed, invalid };
 
 double dist(coord t, geometry_msgs::Point m)
 {
@@ -221,7 +221,10 @@ int main(int argc, char **argv)
             // Pause a little bit so that future_col can be updated
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-            next_state = flying;
+            if (!trajectory.empty())
+                next_state = flying;
+            else
+                next_state = failed;
         }
         else if (state == flying)
         {
@@ -292,6 +295,10 @@ int main(int argc, char **argv)
                 start = get_start(drone);
                 next_state = waiting;
             }
+        }
+        else if (state == failed) {
+            ROS_ERROR("Failed to reach destination");
+            ros::shutdown();
         }
         else
         {
