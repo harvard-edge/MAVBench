@@ -179,7 +179,7 @@ int main(int argc, char **argv)
     const double max_safe_speed = 1.0;
     const double max_speed_increment = 1.0;
     const double max_speed_reset_time_length = 4.0;
-    const float goal_s_error_margin = 1.0; //ok distance to be away from the goal.
+    const float goal_s_error_margin = 3.0; //ok distance to be away from the goal.
                                            //this is b/c it's very hard 
                                            //given the issues associated with
                                            //flight controler to land exactly
@@ -190,12 +190,13 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
-    LOG_TIME(package_delivery);
+    update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
+    log_time(stats_file_addr);
+    update_stats_file(stats_file_addr,"###\n");
+
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
         State next_state = invalid;
-        //std::cout<<stats_file_addr<<std::endl;
-        //update_stats_file(stats_file_addr,"now now");
 
         if (state == setup)
         {
@@ -298,7 +299,8 @@ int main(int argc, char **argv)
         }
         else if (state == failed) {
             ROS_ERROR("Failed to reach destination");
-            ros::shutdown();
+            update_stats_file(stats_file_addr,"mission_status failed");
+            next_state = setup;
         }
         else
         {

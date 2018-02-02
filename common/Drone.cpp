@@ -410,6 +410,7 @@ float Drone::get_pitch()
 
 	return p*180 / M_PI;
 }
+
 /*
 msr::airlib::CollisionInfo Drone::getCollisionInfo()
 {
@@ -436,3 +437,14 @@ msr::airlib::CollisionInfo Drone::getCollisionInfo()
   return col_info;
 }
 */
+
+msr::airlib::FlightStats Drone::getFlightStats()
+{
+    try {
+        return client->getFlightStats();
+    } catch (...) {
+        std::cerr << "getFlightStats() failed!" << std::endl;
+        return msr::airlib::FlightStats();
+    }
+}
+

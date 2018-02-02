@@ -1,12 +1,16 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <string>
 #include <limits>
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include "Drone.h"
 
-void update_stats_file(std::string  stats_file__addr, std::string content);
 void sigIntHandler(int sig);
+
+// Stats functions
+void update_stats_file(const std::string& stats_file__addr, const std::string& content);
+void output_flight_summary(Drone& drone, const std::string& fname);
 
 // Recovery methods
 enum slam_recovery_method { spin, backtrack, reset };

@@ -15,6 +15,8 @@
 
 #include "Drone.h"
 
+using namespace std;
+
 static const int angular_vel = 15;
 
 static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic,
@@ -32,10 +34,10 @@ static T last_msg (std::string topic) {
     return *(ros::topic::waitForMessage<T>(topic));
 }
 
-void update_stats_file(std::string  stats_file__addr, std::string content){
+void update_stats_file(const std::string& stats_file__addr, const std::string& content){
     std::ofstream myfile;
-    myfile.open(stats_file__addr);
-    myfile<<content<<std::endl;
+    myfile.open(stats_file__addr, std::ofstream::out | std::ofstream::app);
+    myfile << content << std::endl;
     myfile.close();
     return;
 }
@@ -321,5 +323,21 @@ static float yawFromQuat(geometry_msgs::Quaternion q)
     yaw = (yaw*180)/3.14159265359;
 
     return (yaw <= 180 ? yaw : yaw - 360);
+}
+
+void output_flight_summary(Drone& drone, const std::string& fname)
+{
+    auto flight_stats = drone.getFlightStats();
+
+    stringstream stats_ss;
+
+    stats_ss << "{  StateOfCharge: " << flight_stats.state_of_charge << "," << endl;
+    stats_ss << "  Voltage: " << flight_stats.voltage << "," << endl;
+    stats_ss << "  EnergyConsumed: " << flight_stats.energy_consumed << "," << endl;
+    stats_ss << "  DistanceTravelled: " << flight_stats.distance_traveled << "," << endl;
+    stats_ss << "  FlightTime: " << flight_stats.flight_time << endl;
+    stats_ss << "}" << endl;
+
+    update_stats_file(fname, stats_ss.str());
 }
 

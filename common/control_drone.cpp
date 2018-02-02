@@ -12,9 +12,6 @@
 #include <iterator>
 #include <chrono>
 #include <thread>
-//#include "controllers/DroneControllerBase.hpp"
-//#include "common/Common.hpp"
-#include "common.h"
 #include <fstream>
 #include "Drone.h"
 #include <cstdlib>
@@ -25,8 +22,6 @@
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <stdio.h>
 #include <time.h>
-#include "std_msgs/Bool.h"
-#include <signal.h>
 #include "common.h"
 #include <cstring>
 #include <string>
@@ -87,12 +82,21 @@ void control_drone(Drone& drone)
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
         } else if (cmd == "r") {
             spin_around(drone); 
-        }else if (cmd != "c") {
+        } else if (cmd != "c") {
 			cout << "Unknown command" << endl;
             // ros::shutdown();
             // exit(0);
 		}
 	}
+
+    // Print flight summary at start of execution
+    std::string fname;
+    if (ros::param::get("/stats_file_addr", fname)) {
+        update_stats_file(fname, "\nFlightSummaryStart: ");
+        output_flight_summary(drone, fname);
+    } else {
+        ROS_ERROR("No stats_file found");
+    }
 }
 
 
