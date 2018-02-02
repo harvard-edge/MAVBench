@@ -19,7 +19,8 @@
 // Control functions
 
 const float FACE_FORWARD = std::numeric_limits<float>::infinity();
-const float YAW_UNCHANGED = -std::numeric_limits<float>::infinity();
+const float FACE_BACKWARD = -std::numeric_limits<float>::infinity();
+const float YAW_UNCHANGED = std::numeric_limits<float>::quiet_NaN();
 
 class Drone {
 public:
@@ -56,6 +57,7 @@ public:
     float get_roll();
     //geometry_msgs::Pose get_geometry_pose();
     //geometry_msgs::PoseWithCovariance get_geometry_pose_with_coveraiance();
+    msr::airlib::FlightStats getFlightStats();
 
     // *** F:DN Collison functions
     msr::airlib::CollisionInfo getCollisionInfo();

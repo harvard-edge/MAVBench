@@ -1,18 +1,18 @@
 <launch>
     <!-- args --> 
     <!-- Behzad's workstation ip --> 
-    <arg name="host_ip" value="10.157.90.51" /> 
+    <!-- arg name="host_ip" value="10.157.90.51" / --> 
     <!--arg name="host_ip" value="169.254.153.158" /--> 
     <!-- Hasans's workstation ip --> 
-    <!-- arg name="host_ip" value="10.157.90.49" /--> 
+    <arg name="host_ip" value="10.157.90.49" /> 
     
+    <param name="/ip_addr" value="$(arg host_ip)" />
+
     <!-- orb slam location--> 
     <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
     <!-- stat file-->
     <param name="stats_file_addr" value="$(find package_delivery)/../data/stats.txt" />
-
-
 
     <!-- Set the localization method -->
     <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
@@ -21,7 +21,7 @@
 
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)--> 
-    <arg name="DEBUG" value="false" /> 
+    <arg name="DEBUG" value="true" /> 
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
 
     <!-- set this to "" if you don't want perf -->
@@ -31,6 +31,9 @@
 
 
     <!-- starting nodes --> 
+
+    <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen"/>
+
     <!-- Octomap -->
 	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
         <param name="resolution" value="0.5" />
@@ -67,12 +70,12 @@
 		<param name="Airsim_port" value="41451"/>
 
 		<!-- RGB camera parameters (parameters when calibrated) -->
-		<param name="Fx" value="128"/>
-		<param name="Fy" value="128"/>
-		<param name="cx" value="128"/>
-		<param name="cy" value="72"/>
-		<param name="scale_x" value="256"/>  <!-- Width when calibrated!-->
-		<param name="scale_y" value="144"/> <!-- Height when calibrated!-->
+		<param name="Fx" value="256"/>
+		<param name="Fy" value="256"/>
+		<param name="cx" value="256"/>
+		<param name="cy" value="144"/>
+		<param name="scale_x" value="512"/>  <!-- Width when calibrated!-->
+		<param name="scale_y" value="288"/> <!-- Height when calibrated!-->
 
 		<!-- Depth baseline -->
 		<param name="Tx" value="0.14"/> 

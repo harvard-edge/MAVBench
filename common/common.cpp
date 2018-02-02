@@ -15,6 +15,8 @@
 
 #include "Drone.h"
 
+using namespace std;
+
 static const int angular_vel = 15;
 
 static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic,
@@ -32,10 +34,10 @@ static T last_msg (std::string topic) {
     return *(ros::topic::waitForMessage<T>(topic));
 }
 
-void update_stats_file(std::string  stats_file__addr, std::string content){
+void update_stats_file(const std::string& stats_file__addr, const std::string& content){
     std::ofstream myfile;
-    myfile.open(stats_file__addr);
-    myfile<<content<<std::endl;
+    myfile.open(stats_file__addr, std::ofstream::out | std::ofstream::app);
+    myfile << content << std::endl;
     myfile.close();
     return;
 }
@@ -49,30 +51,32 @@ void sigIntHandler(int sig)
 
 void action_upon_panic(Drone& drone) {
     const std::string panic_topic = "/panic_topic";
-    bool panicking = true;
 
+    // Move backwards at 1 m/s
     float yaw = drone.get_yaw();
+    double vx = -std::sin(yaw*M_PI/180);
+    double vy = -std::cos(yaw*M_PI/180);
 
+    bool panicking = true;
     while (panicking) {
-        drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0);
+        drone.fly_velocity(vx, vy, 0);
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
         ROS_INFO("Panicking..");
 
         panicking = last_msg<std_msgs::Bool>(panic_topic).data;
     }
 
-    ROS_INFO("Panicking one last time...");
-    drone.fly_velocity(-std::cos(yaw*M_PI/180), -std::sin(yaw*M_PI/180), 0, 0.75);
-    std::this_thread::sleep_for(std::chrono::milliseconds(850));
+    // Stop afterwards
+    drone.fly_velocity(0, 0, 0);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    spin_around(drone);
     ROS_INFO("Done panicking!");
 }
 
 void action_upon_future_col(Drone& drone) {
     drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    scan_around(drone, 30);
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    // scan_around(drone, 30);
 }
 
 static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) {
@@ -127,7 +131,7 @@ static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& to
     const double safe_speed = 0.5;
 
     while (reverse_traj.size() > 1) {
-        follow_trajectory(drone, reverse_traj, traj, ignore_yaw, safe_speed);
+        follow_trajectory(drone, reverse_traj, traj, face_backward, safe_speed, false);
 
         // Check whether SLAM is back
         std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
@@ -199,7 +203,7 @@ void spin_around(Drone &drone) {
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
 void follow_trajectory(Drone& drone, trajectory_t& traj,
         trajectory_t& reverse_traj, yaw_strategy_t yaw_strategy,
-        float max_speed, float time) {
+        float max_speed, bool check_position, float time) {
 
     trajectory_t reversed_commands;
 
@@ -208,6 +212,8 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
         multiDOFpoint p_next = traj[1];
 
         // Calculate the positions we should be at
+        double p_x = p.transforms[0].translation.x;
+        double p_y = p.transforms[0].translation.y;
         double p_z = p.transforms[0].translation.z;
 
         // Calculate the velocities we should be flying at
@@ -215,11 +221,22 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
         double v_y = p.velocities[0].linear.y;
         double v_z = p.velocities[0].linear.z;
 
+        if (check_position) {
+            auto pos = drone.position();
+            v_x += 0.05*(p_x-pos.x);
+            v_y += 0.05*(p_y-pos.y);
+            v_z += 0.2*(p_z-pos.z);
+        }
+
+        // Calculate the yaw we should be flying with
         float yaw = yawFromQuat(p.transforms[0].rotation);
         if (yaw_strategy == ignore_yaw)
             yaw = YAW_UNCHANGED;
         else if (yaw_strategy == face_forward)
             yaw = FACE_FORWARD;
+        else if (yaw_strategy == face_backward) {
+            yaw = FACE_BACKWARD;
+        }
 
         // Make sure we're not going over the maximum speed
         double speed = std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
@@ -239,12 +256,7 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
 
         // Fly for flight_time seconds
         auto segment_start_time = std::chrono::system_clock::now();
-
-        drone.fly_velocity(v_x,
-                v_y,
-                v_z + 0.2*(p_z-drone.position().z),
-                yaw,
-                scaled_flight_time+0.2); // Add a small buffer to prevent halts
+        drone.fly_velocity(v_x, v_y, v_z, yaw, scaled_flight_time+0.1); 
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 
@@ -311,5 +323,21 @@ static float yawFromQuat(geometry_msgs::Quaternion q)
     yaw = (yaw*180)/3.14159265359;
 
     return (yaw <= 180 ? yaw : yaw - 360);
+}
+
+void output_flight_summary(Drone& drone, const std::string& fname)
+{
+    auto flight_stats = drone.getFlightStats();
+
+    stringstream stats_ss;
+
+    stats_ss << "{  StateOfCharge: " << flight_stats.state_of_charge << "," << endl;
+    stats_ss << "  Voltage: " << flight_stats.voltage << "," << endl;
+    stats_ss << "  EnergyConsumed: " << flight_stats.energy_consumed << "," << endl;
+    stats_ss << "  DistanceTravelled: " << flight_stats.distance_traveled << "," << endl;
+    stats_ss << "  FlightTime: " << flight_stats.flight_time << endl;
+    stats_ss << "}" << endl;
+
+    update_stats_file(fname, stats_ss.str());
 }
 

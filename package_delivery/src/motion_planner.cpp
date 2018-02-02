@@ -46,6 +46,7 @@
 #include <ompl/base/SpaceInformation.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <ompl/geometric/planners/rrt/RRT.h>
+#include <ompl/geometric/planners/rrt/RRTConnect.h>
 #include <ompl/geometric/planners/prm/PRM.h>
 #include <ompl/geometric/SimpleSetup.h>
 #include <ompl/config.h>
@@ -143,8 +144,16 @@ piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal, 
 piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
 
 
-// ***F:DN Use the RRT sampling method to find a piecewise path
+// ***F:DN Use the RRT sampling method from OMPL to find a piecewise path
 piecewise_trajectory OMPL_RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
+
+
+// ***F:DN Use bi-directonal RRT from OMPL to find a piecewise path
+piecewise_trajectory OMPL_RRTConnect(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
+
+
+// ***F:DN Use the PRM sampling method from OMPL to find a piecewise path
+piecewise_trajectory OMPL_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
 
 
 // *** F:DN Optimize and smoothen a piecewise path without causing any new collisions.
@@ -194,13 +203,13 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
         return false;
     }
 
-    ROS_INFO("Path size: %d. Now post-processing...", piecewise_path.size());
+    ROS_INFO("Path size: %u. Now post-processing...", piecewise_path.size());
 
     if (motion_planning_core_str != "lawn_mower") {
         postprocess(piecewise_path);
     }
 
-    ROS_INFO("Path size: %d. Now smoothening...", piecewise_path.size());
+    ROS_INFO("Path size: %u. Now smoothening...", piecewise_path.size());
 
     // Smoothen the path and build the multiDOFtrajectory response
     smooth_path = smoothen_the_shortest_path(piecewise_path, octree);
@@ -247,6 +256,10 @@ void motion_planning_initialize_params() {
         motion_planning_core = lawn_mower;
     else if (motion_planning_core_str == "OMPL-RRT")
         motion_planning_core = OMPL_RRT;
+    else if (motion_planning_core_str == "OMPL-RRTConnect")
+        motion_planning_core = OMPL_RRTConnect;
+    else if (motion_planning_core_str == "OMPL-PRM")
+        motion_planning_core = OMPL_PRM;
     else{
         std::cout<<"This motion planning type is not defined"<<std::endl;
         exit(0);
@@ -878,14 +891,13 @@ void publish_graph(graph& g)
 
 void postprocess(piecewise_trajectory& path)
 {
-    // We use the greedy approach to shorten the path here.
+    // We use a greedy approach to shorten the path here.
     // We connect non-adjacent nodes in the path that do not have collisions.
-
-     
+    
     for (auto it = path.begin(); it != path.end()-1; ) {
         bool shortened = false;
         for (auto it2 = path.end()-1; it2 != it+1 && !shortened; --it2) {
-            if (dist(*it, *it2) <= 20 && !collision(octree, *it, *it2)) {
+            if (!collision(octree, *it, *it2)) {
                 it = path.erase(it+1, it2);
                 shortened = true;
             }
@@ -981,7 +993,7 @@ piecewise_trajectory PRM(geometry_msgs::Point start, geometry_msgs::Point goal,i
 
         extend_PRM(roadmap, octree);
 
-        ROS_INFO("Roadmap size: %d", roadmap.size());
+        ROS_INFO("Roadmap size: %u", roadmap.size());
 
         publish_graph(roadmap);
 
@@ -1023,7 +1035,8 @@ graph::node_id extend_RRT(graph& rrt, geometry_msgs::Point goal, bool& reached_g
     graph::node_id result;
     reached_goal = false;
 
-    static std::mt19937 rd_mt(351); //a pseudo-random number generator
+    static std::random_device random_seed;
+    static std::mt19937 rd_mt(random_seed()); //a pseudo-random number generator
     static std::uniform_real_distribution<> x_dist(x__low_bound__global, x__high_bound__global); 
 	static std::uniform_real_distribution<> y_dist(y__low_bound__global, y__high_bound__global); 
 	static std::uniform_real_distribution<> z_dist(z__low_bound__global, z__high_bound__global); 
@@ -1124,7 +1137,7 @@ piecewise_trajectory RRT(geometry_msgs::Point start, geometry_msgs::Point goal, 
 
     ROS_INFO("Fail rate: %f%%", double(fails*100) / iterations);
 
-    ROS_INFO("RRT (of size %d) reached goal! Building path now", rrt.size());
+    ROS_INFO("RRT (of size %u) reached goal! Building path now", rrt.size());
 
     // Follow the parents on the tree backwards to the root
     result = build_reverse_path(rrt, goal_id);
@@ -1209,7 +1222,8 @@ bool OMPLStateValidityChecker(const ompl::base::State * state)
 }
 
 
-piecewise_trajectory OMPL_RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
+template<class PlannerType>
+piecewise_trajectory OMPL_plan(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
 {
 #ifndef INFLATE
     namespace ob = ompl::base;
@@ -1239,7 +1253,7 @@ piecewise_trajectory OMPL_RRT(geometry_msgs::Point start, geometry_msgs::Point g
     si->setup();
 
     // Set planner
-    ob::PlannerPtr planner(new og::RRT(si));
+    ob::PlannerPtr planner(new PlannerType(si));
     ss.setPlanner(planner);
 
     ob::ScopedState<> start_state(space);
@@ -1279,7 +1293,25 @@ piecewise_trajectory OMPL_RRT(geometry_msgs::Point start, geometry_msgs::Point g
 
     return result;
 #else
-    ROS_ERROR("OMPL-RRT cannot be compiled together with inflation!");
+    ROS_ERROR("OMPL-based planners cannot be compiled together with inflation!");
 #endif
+}
+
+
+piecewise_trajectory OMPL_RRT(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
+{
+    return OMPL_plan<ompl::geometric::RRT>(start, goal, width, length, n_pts_per_dir, octree);
+}
+
+
+piecewise_trajectory OMPL_RRTConnect(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
+{
+    return OMPL_plan<ompl::geometric::RRTConnect>(start, goal, width, length, n_pts_per_dir, octree);
+}
+
+
+piecewise_trajectory OMPL_PRM(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
+{
+    return OMPL_plan<ompl::geometric::PRM>(start, goal, width, length, n_pts_per_dir, octree);
 }
 
