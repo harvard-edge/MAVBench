@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>control_drone_pkg</name>
+  <name>control_drone</name>
 
   <version>0.0.0</version>
   <description>The package that interfaces with airsim</description>

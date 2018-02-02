@@ -1,0 +1,32 @@
+<launch>
+    <!-- args --> 
+    <!-- Behzad's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.101" /--> 
+    <arg name="host_ip" value="10.157.90.51" /> 
+    <!--arg name="host_ip" value="169.254.153.158" /--> 
+    <!-- Hasans's workstation ip --> 
+    <!-- arg name="host_ip" value="10.157.34.208" /--> 
+    <arg name="img_width" value="512"/>
+    <arg name="img_height" value="288"/>
+    <param name="ip_addr" type="string" value="$(arg host_ip)" />
+
+    <!-- orb slam location--> 
+    <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
+1;2P
+
+    <!-- Set the localization method -->
+    <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
+    <!-- arg name="localization_method" value="ground_truth" /-->
+    <arg name="localization_method" value="gps" />
+    <param name="localization_method" value="$(arg localization_method)" />
+
+    <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
+    <!-- also planning to prevent stdio stuff(if they really matter)--> 
+    <arg name="DEBUG" value="true" /> 
+    <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
+
+    
+    <!--img publisher node--> 
+    <node pkg="control_drone" type="control_thread" name="control_thread" output="screen"/>
+
+</launch>

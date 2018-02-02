@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(control_drone_pkg)
+project(control_drone)
 set(darknet_include_dir  $ENV{HOME}/darknet/include $ENV{HOME}/darknet/src $ENV{HOME})
 set(darknet_lib_dir $ENV{HOME}/darknet/obj)
 set(darknet_lib_dir $ENV{HOME}/darknet/obj)
