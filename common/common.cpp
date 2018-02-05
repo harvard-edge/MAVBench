@@ -336,6 +336,7 @@ void output_flight_summary(Drone& drone, const std::string& fname)
     stats_ss << "  EnergyConsumed: " << flight_stats.energy_consumed << "," << endl;
     stats_ss << "  DistanceTravelled: " << flight_stats.distance_traveled << "," << endl;
     stats_ss << "  FlightTime: " << flight_stats.flight_time << endl;
+    stats_ss << "  collision count: " << flight_stats.collision_count << endl;
     stats_ss << "}" << endl;
 
     update_stats_file(fname, stats_ss.str());
