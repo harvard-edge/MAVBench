@@ -22,7 +22,7 @@
     <!-- arg name="my_launch_prefix" value="/home/nvidia/install/perf/perf record -g fp"/ -->
     
 
-     <arg name="param_file" value="$(find mapping_and_sar)/resource/exploration.yaml" />
+     <arg name="param_file" value="$(find mapping_and_sar)/resource/mapping.yaml" />
 
     <!-- starting nodes --> 
 	<!-- Point-cloud publisher -->

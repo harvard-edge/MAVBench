@@ -11,7 +11,7 @@
   <arg name="enable_logging" default="false" />
   <arg name="enable_ground_truth" default="true" />
   <arg name="log_file" default="$(arg mav_name)" />
-  <arg name="param_file" default="$(find nbvplanner)/resource/exploration.yaml" />
+  <arg name="param_file" default="$(find nbvplanner)/resource/mapping.yaml" />
   <arg name="tf_frame" default="navigation" />
   <arg name="pcl_topic" default="/pointcloudOut" />
   <arg name="stl_file_path" default="" />
@@ -76,7 +76,7 @@
       <remap from="cam1/camera_info" to="/Airsim/right/camera_info"/>
       <rosparam command="load" file="$(arg param_file)" />
     </node>
-    <!--node name="exploration" pkg="mapping_and_sar" type="exploration" output="screen"-->
+    <!--node name="mapping" pkg="mapping_and_sar" type="mapping" output="screen"-->
     <node name="$(arg app_name)" pkg="mapping_and_sar" type="$(arg app_name)" output="screen">
           <!--param name="localization_method" type="string" value="$(arg localization_method)"/-->
           <rosparam command="load" file="$(arg param_file)" />

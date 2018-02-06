@@ -111,7 +111,7 @@ int main(int argc, char** argv){
   }
 
   if(!ros::param::get("/stats_file_addr",stats_file_addr)){
-      ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+      ROS_FATAL("Could not start SAR. Parameter missing! Looking for %s", 
               (ns + "/stats_file_addr").c_str());
   }
 
@@ -124,7 +124,7 @@ int main(int argc, char** argv){
   
   //std::string ns = ros::this_node::getName();
   if (!ros::param::get("/ip_addr", ip_addr__global)) {
-    ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for /ip_addr");
+    ROS_FATAL_STREAM("Could not start SAR. Parameter missing! Looking for /ip_addr");
     return -1;
   }
   result.found = false;

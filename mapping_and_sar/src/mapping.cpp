@@ -44,28 +44,28 @@ std::string stats_file_addr;
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "exploration");
+  ros::init(argc, argv, "mapping");
   ros::NodeHandle nh;
   ros::Publisher trajectory_pub = nh.advertise < trajectory_msgs::MultiDOFJointTrajectory
       > (mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
-  //ROS_INFO("Started exploration");
+  //ROS_INFO("Started mapping");
   uint16_t port = 41451;
   std::string ip_addr__global;
   std::string localization_method; 
   std::string ns = ros::this_node::getName();
   if (!ros::param::get("/ip_addr", ip_addr__global)) {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
+    ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
               (ns + "/ip_addr").c_str());
     return -1;
   }
   
     if(!ros::param::get("/localization_method",localization_method))  {
-      ROS_FATAL_STREAM("Could not start exploration localization_method not provided");
+      ROS_FATAL_STREAM("Could not start mapping localization_method not provided");
       return -1;
     }
   
     if(!ros::param::get("/stats_file_addr",stats_file_addr)){
-        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+        ROS_FATAL("Could not start mapping . Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
     }
 
@@ -78,14 +78,14 @@ int main(int argc, char** argv)
   path_to_follow_marker.action = visualization_msgs::Marker::ADD;
   path_to_follow_marker.scale.x = 0.3;
 
-  ROS_INFO("before anything in exploration");
+  ROS_INFO("before anything in mapping");
 
   //ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
   //ROS_ERROR_STREAM("blah"<<ip_addr__global);
   //Drone drone(ip_addr__global.c_str(), port);
   Drone drone(ip_addr__global.c_str(), port, localization_method);
   
-  ROS_INFO("after anything in exploration");
+  ROS_INFO("after anything in mapping");
   //dummy segment publisher
   ros::Publisher seg_pub = nh.advertise <multiagent_collision_check::Segment>("evasionSegment", 1);
 
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
   double yaw_t; 
   //std::string ns = ros::this_node::getName();
   if (!ros::param::get(ns + "/nbvp/dt", dt)) {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
+    ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
               (ns + "/nbvp/dt").c_str());
     return -1;
   }
@@ -122,13 +122,13 @@ int main(int argc, char** argv)
   //behzad change using segment_dedicated_time instead of dt
   //ros::param::get("/follow_trajectory/yaw_t",yaw_t);
   if (!ros::param::get(ns + "/follow_trajectory/yaw_t",yaw_t)){
-      ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for"<<
+      ROS_FATAL_STREAM("Could not start mapping. Parameter missing! Looking for"<<
               "/follow_trajectory/yaw_t");
       return -1;
   }
   double t_offset; 
   if (!ros::param::get(ns + "/nbvp/t_offset",t_offset)){
-      ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for"<<
+      ROS_FATAL_STREAM("Could not start mapping. Parameter missing! Looking for"<<
               "/nbvp/t_offset");
       return -1;
   }
@@ -143,7 +143,7 @@ int main(int argc, char** argv)
  /* 
   ros::param::get("/follow_trajectory/segment_dedicated_time",segment_dedicated_time);
     if (!ros::param::get("/follow_trajectory/segment_dedicated_time",segment_dedicated_time)){
-    ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for"<<
+    ROS_FATAL_STREAM("Could not start mapping . Parameter missing! Looking for"<<
               "/follow_trajectory/segment_dedicated_time");
     return -1;
   }

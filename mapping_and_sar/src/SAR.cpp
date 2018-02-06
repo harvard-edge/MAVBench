@@ -68,7 +68,7 @@ int main(int argc, char** argv)
   std::string localization_method; 
   std::string ns = ros::this_node::getName();
   if (!ros::param::get("/ip_addr", ip_addr__global)) {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
+    ROS_FATAL("Could not start SAR. Parameter missing! Looking for %s",
               (ns + "/ip_addr").c_str());
     return -1;
   }
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
     return -1; 
   }
   if(!ros::param::get("/stats_file_addr",stats_file_addr)){
-      ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+      ROS_FATAL("Could not start SAR. Parameter missing! Looking for %s", 
               (ns + "/stats_file_addr").c_str());
   }
 
@@ -123,7 +123,7 @@ int main(int argc, char** argv)
   double yaw_t; 
   //std::string ns = ros::this_node::getName();
   if (!ros::param::get(ns + "/nbvp/dt", dt)) {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
+    ROS_FATAL("Could not start SAR. Parameter missing! Looking for %s",
               (ns + "/nbvp/dt").c_str());
     return -1;
   }
@@ -131,24 +131,23 @@ int main(int argc, char** argv)
   //behzad change using segment_dedicated_time instead of dt
   //ros::param::get("/follow_trajectory/yaw_t",yaw_t);
   if (!ros::param::get(ns + "/follow_trajectory/yaw_t",yaw_t)){
-      ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for"<<
+      ROS_FATAL_STREAM("Could not start SAR. Parameter missing! Looking for"<<
               "/follow_trajectory/yaw_t");
       return -1;
   }
   double t_offset; 
   if (!ros::param::get(ns + "/nbvp/t_offset",t_offset)){
-      ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for"<<
+      ROS_FATAL_STREAM("Could not start SAR. Parameter missing! Looking for"<<
               "/nbvp/t_offset");
       return -1;
   }
   
-  
   double segment_dedicated_time = yaw_t + dt;
-
+  control_drone(drone);
  /* 
   ros::param::get("/follow_trajectory/segment_dedicated_time",segment_dedicated_time);
     if (!ros::param::get("/follow_trajectory/segment_dedicated_time",segment_dedicated_time)){
-    ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for"<<
+    ROS_FATAL_STREAM("Could not start SAR. Parameter missing! Looking for"<<
               "/follow_trajectory/segment_dedicated_time");
     return -1;
   }
@@ -161,7 +160,7 @@ int main(int argc, char** argv)
   mav_msgs::EigenTrajectoryPoint trajectory_point;
   trajectory_msgs::MultiDOFJointTrajectoryPoint trajectory_point_msg;
 
-  control_drone(drone);
+ // control_drone(drone);
   // Wait for 5 seconds to let the Gazebo GUI show up.
   ros::Duration(5.0).sleep();
 
@@ -171,6 +170,7 @@ int main(int argc, char** argv)
   // This is the initialization motion, necessary that the known free space allows the planning
   // of initial paths.
   ROS_INFO("Starting the planner: Performing initialization motion");
+  /*
   for (double i = 0; i <= 1.0; i = i + 0.25) {
     
       
@@ -196,29 +196,20 @@ int main(int argc, char** argv)
     trajectory_pub.publish(samples_array);
     ros::Duration(1.0).sleep();
   }
-  
-  
-  trajectory_point.position_W.x() -= 0.;
-  trajectory_point.position_W.y() -= 0.;
+  */
+  spin_around(drone);
+  // Move back a little bit
+  auto cur_pos = drone.position();
+  trajectory_point.position_W.x() = cur_pos.x - 1.5;
+  trajectory_point.position_W.y() = cur_pos.y - 1.5;
+  trajectory_point.position_W.z() = cur_pos.z;
   samples_array.header.seq = n_seq;
   samples_array.header.stamp = ros::Time::now();
   samples_array.points.clear();
   n_seq++;
   mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  //ros::shutdown();
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
-  ros::Duration(1.0).sleep();
 
 
-  trajectory_point.position_W.x() -= 1.5;
-  trajectory_point.position_W.y() -= 1.5;
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  
   //ros::shutdown();
   samples_array.points.push_back(trajectory_point_msg);
   trajectory_pub.publish(samples_array);
@@ -287,6 +278,5 @@ int main(int argc, char** argv)
                                     //before sending out another one
     }
     iteration++;
-    ros::spinOnce();
   }
 }
