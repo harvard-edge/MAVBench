@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <deque>
+#include <algorithm>
 #include <cmath>
 #include <cstdarg>
 
@@ -29,6 +30,11 @@ static multiDOFpoint reverse_point(multiDOFpoint mdp);
 static float yawFromQuat(geometry_msgs::Quaternion q);
 
 template <class T>
+static T magnitude(T a, T b, T c) {
+    return std::sqrt(a*a + b*b + c*c);
+}
+
+template <class T>
 static T last_msg (std::string topic) {
     // Return the last message of a latched topic
     return *(ros::topic::waitForMessage<T>(topic));
@@ -49,35 +55,68 @@ void sigIntHandler(int sig)
     //exit(0);
 }
 
-void action_upon_panic(Drone& drone) {
-    const std::string panic_topic = "/panic_topic";
+trajectory_t create_panic_trajectory(Drone& drone, const geometry_msgs::Vector3& panic_dir)
+{
+    multiDOFpoint p;
 
-    // Move backwards at 1 m/s
-    float yaw = drone.get_yaw();
-    double vx = -std::sin(yaw*M_PI/180);
-    double vy = -std::cos(yaw*M_PI/180);
+    p.yaw = drone.get_yaw();
 
-    bool panicking = true;
-    while (panicking) {
-        drone.fly_velocity(vx, vy, 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        ROS_INFO("Panicking..");
+    p.vx = panic_dir.x * std::sin(p.yaw*M_PI/180);
+    p.vy = panic_dir.y * std::cos(p.yaw*M_PI/180);
+    p.vz = panic_dir.z + 0.1; // Counter-act AirSim's slight downward drift
 
-        panicking = last_msg<std_msgs::Bool>(panic_topic).data;
+    // p.vx = -std::sin(p.yaw*M_PI/180);
+    // p.vy = -std::cos(p.yaw*M_PI/180);
+    // p.vz = 0.1; // Counter-act AirSim's slight downward drift
+
+    p.duration = std::numeric_limits<double>::infinity();
+
+    trajectory_t result;
+    result.push_back(p);
+
+    return result;
+}
+
+
+trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, double stopping_distance)
+{
+    if (normal_traj.empty())
+        return trajectory_t();
+
+    trajectory_t result;
+
+    multiDOFpoint first_p = normal_traj.front();
+
+    double initial_velocity = magnitude(first_p.vx, first_p.vy, first_p.vz);
+    initial_velocity = std::max(initial_velocity, 1.0);
+    double distance_left = stopping_distance;
+
+    for (multiDOFpoint p : normal_traj) {
+        double v = magnitude(p.vx, p.vy, p.vz);
+        double max_v = initial_velocity * distance_left/stopping_distance;
+
+        if (v*p.duration > distance_left) {
+            p.duration = distance_left / v;
+        }
+
+        distance_left -= distance_traveled_here;
+        
+        double scale = v > max_v ? max_v/v : 1;
+
+        p.vx *= scale;
+        p.vy *= scale;
+        p.vz *= scale;
+        p.duration /= scale;
+
+        result.push_back(p);
+
+        if (distance_left <= 0)
+            break;
     }
 
-    // Stop afterwards
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    ROS_INFO("Done panicking!");
+    return result;
 }
 
-void action_upon_future_col(Drone& drone) {
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    // scan_around(drone, 30);
-}
 
 static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) {
     ros::NodeHandle nh;
@@ -102,6 +141,7 @@ static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) 
     std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
     return !is_lost.data;
 }
+
 
 static bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic) {
     float init_yaw = drone.get_yaw();
@@ -131,7 +171,7 @@ static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& to
     const double safe_speed = 0.5;
 
     while (reverse_traj.size() > 1) {
-        follow_trajectory(drone, reverse_traj, traj, face_backward, safe_speed, false);
+        follow_trajectory(drone, &reverse_traj, &traj, face_backward, false, safe_speed);
 
         // Check whether SLAM is back
         std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
@@ -201,35 +241,29 @@ void spin_around(Drone &drone) {
 }
 
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
-void follow_trajectory(Drone& drone, trajectory_t& traj,
-        trajectory_t& reverse_traj, yaw_strategy_t yaw_strategy,
-        float max_speed, bool check_position, float time) {
+void follow_trajectory(Drone& drone, trajectory_t * traj,
+        trajectory_t * reverse_traj, yaw_strategy_t yaw_strategy,
+        bool check_position, float max_speed, float time) {
 
     trajectory_t reversed_commands;
 
-    while (time > 0 && traj.size() > 1) {
-        multiDOFpoint p = traj.front();
-        multiDOFpoint p_next = traj[1];
-
-        // Calculate the positions we should be at
-        double p_x = p.transforms[0].translation.x;
-        double p_y = p.transforms[0].translation.y;
-        double p_z = p.transforms[0].translation.z;
+    while (time > 0 && traj->size() > 0) {
+        multiDOFpoint p = traj->front();
 
         // Calculate the velocities we should be flying at
-        double v_x = p.velocities[0].linear.x;
-        double v_y = p.velocities[0].linear.y;
-        double v_z = p.velocities[0].linear.z;
+        double v_x = p.vx;
+        double v_y = p.vy;
+        double v_z = p.vz;
 
         if (check_position) {
             auto pos = drone.position();
-            v_x += 0.05*(p_x-pos.x);
-            v_y += 0.05*(p_y-pos.y);
-            v_z += 0.2*(p_z-pos.z);
+            v_x += 0.05*(p.x-pos.x);
+            v_y += 0.05*(p.y-pos.y);
+            v_z += 0.2*(p.z-pos.z);
         }
 
         // Calculate the yaw we should be flying with
-        float yaw = yawFromQuat(p.transforms[0].rotation);
+        float yaw = p.yaw;
         if (yaw_strategy == ignore_yaw)
             yaw = YAW_UNCHANGED;
         else if (yaw_strategy == face_forward)
@@ -250,8 +284,7 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
         }
 
         // Calculate the time for which these flight commands should run
-        double segment_length = (p_next.time_from_start - p.time_from_start).toSec();
-        double flight_time = segment_length <= time ? segment_length : time;
+        double flight_time = p.duration <= time ? p.duration : time;
         double scaled_flight_time = flight_time / scale;
 
         // Fly for flight_time seconds
@@ -260,54 +293,34 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 
-        // Push completed command onto stack
-        reversed_commands.push_front(reverse_point(p));
+        // Push completed command onto reverse-command stack
+        multiDOFpoint rev_point = reverse_point(p);
+        rev_point.duration = flight_time;
+        reversed_commands.push_front(rev_point);
 
         // Update trajectory
-        traj.front().time_from_start += ros::Duration(flight_time);
-        if (traj.front().time_from_start >= p_next.time_from_start)
-            traj.pop_front();
+        traj->front().duration -= flight_time;
+        if (traj->front().duration <= 0)
+            traj->pop_front();
 
         time -= flight_time;
     }
 
-    reverse_traj = append_trajectory(reversed_commands, reverse_traj);
+    if (reverse_traj != nullptr)
+        *reverse_traj = append_trajectory(reversed_commands, *reverse_traj);
 }
 
 static multiDOFpoint reverse_point(multiDOFpoint mdp) {
     multiDOFpoint result = mdp;
 
-    result.time_from_start = -mdp.time_from_start;
+    result.vx = -mdp.vx;
+    result.vy = -mdp.vy;
+    result.vz = -mdp.vz;
 
-    result.velocities[0].linear.x = -mdp.velocities[0].linear.x;
-    result.velocities[0].linear.y = -mdp.velocities[0].linear.y;
-    result.velocities[0].linear.z = -mdp.velocities[0].linear.z;
-    
     return result;
 }
 
 static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second) {
-    /*
-    if (first.size() == 0)
-        return second;
-
-    ros::Duration time_step(0.5);
-    if (second.size() > 1) {
-        time_step = second[1].time_from_start - second[0].time_from_start;
-    } else if (first.size() > 1) {
-        time_step = first[1].time_from_start - first[0].time_from_start;
-    }
-
-    ros::Duration time_shift = first.back().time_from_start;
-    time_shift -= second.front().time_from_start;
-    time_shift += time_step;
-
-    for (auto mdp : second) {
-        mdp.time_from_start += time_shift;
-        first.push_back(mdp);
-    }
-    */
-
     first.insert(first.end(), second.begin(), second.end());
     return first;
 }
@@ -339,5 +352,83 @@ void output_flight_summary(Drone& drone, const std::string& fname)
     stats_ss << "}" << endl;
 
     update_stats_file(fname, stats_ss.str());
+}
+
+trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory& t)
+{
+    trajectory_t result;
+    for (auto it = t.points.begin(); it+1 != t.points.end(); ++it) {
+        multiDOFpoint mdp;
+
+        mdp.x = it->transforms[0].translation.x;
+        mdp.y = it->transforms[0].translation.y;
+        mdp.z = it->transforms[0].translation.z;
+
+        mdp.vx = it->velocities[0].linear.x;
+        mdp.vy = it->velocities[0].linear.y;
+        mdp.vz = it->velocities[0].linear.z;
+
+        mdp.yaw = yawFromQuat(it->transforms[0].rotation);
+
+        mdp.duration = ((it+1)->time_from_start - it->time_from_start).toSec();
+
+        result.push_back(mdp);
+    }
+
+    return result;
+}
+
+trajectory_msgs::MultiDOFJointTrajectory create_trajectory_msg(const trajectory_t& t)
+{
+    trajectory_msgs::MultiDOFJointTrajectory result;
+
+    double time_from_start = 0;
+    for (const multiDOFpoint& p : t) {
+        trajectory_msgs::MultiDOFJointTrajectoryPoint mdp;
+
+		geometry_msgs::Transform pos;
+		pos.translation.x = p.x;
+		pos.translation.y = p.y;
+		pos.translation.z = p.z;
+
+		geometry_msgs::Twist vel;
+		vel.linear.x = p.vx;
+		vel.linear.y = p.vy;
+		vel.linear.z = p.vz;
+
+		ros::Duration dur(time_from_start);
+
+		mdp.transforms.push_back(pos);
+		mdp.velocities.push_back(vel);
+		mdp.time_from_start = dur;
+
+		result.points.push_back(mdp);
+
+        time_from_start += p.duration;
+    }
+
+    // Add final point
+    multiDOFpoint last_p = t.back();
+    trajectory_msgs::MultiDOFJointTrajectoryPoint mdp;
+
+    geometry_msgs::Transform pos;
+    pos.translation.x = last_p.x + last_p.vx*last_p.duration;
+    pos.translation.y = last_p.y + last_p.vy*last_p.duration;
+    pos.translation.z = last_p.z + last_p.vz*last_p.duration;
+
+    geometry_msgs::Twist vel;
+    vel.linear.x = last_p.vx;
+    vel.linear.y = last_p.vy;
+    vel.linear.z = last_p.vz;
+
+    ros::Duration dur(time_from_start);
+
+    mdp.transforms.push_back(pos);
+    mdp.velocities.push_back(vel);
+    mdp.time_from_start = dur;
+
+    result.points.push_back(mdp);
+
+    return result;
 }
 

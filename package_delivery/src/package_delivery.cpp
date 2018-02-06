@@ -17,6 +17,7 @@
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/Vector3.h>
 #include <std_msgs/Bool.h>
 #include "common.h"
 #include "timer.h"
@@ -26,6 +27,7 @@ bool should_panic = false;
 bool col_imminent = false;
 bool col_coming = false;
 bool slam_lost = false;
+geometry_msgs::Vector3 panic_direction;
 string ip_addr__global;
 string localization_method;
 string stats_file_addr;
@@ -40,8 +42,12 @@ double dist(coord t, geometry_msgs::Point m)
 }
 
 // *** F:DN call back function for the panic_topic subscriber
-void panic_call_back(const std_msgs::Bool::ConstPtr& msg) {
+void panic_callback(const std_msgs::Bool::ConstPtr& msg) {
     should_panic = msg->data;
+}
+
+void panic_dir_callback(const geometry_msgs::Vector3::ConstPtr& msg) {
+    panic_direction = *msg;
 }
 
 void col_imminent_callback(const std_msgs::Bool::ConstPtr& msg) {
@@ -110,30 +116,11 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
         return trajectory_t();
     }
 
-    trajectory_t result;
-    for (multiDOFpoint p : srv.response.multiDOFtrajectory.points) {
-        result.push_back(p);
-    }
-
-    return result;
+    return create_trajectory(srv.response.multiDOFtrajectory);
 }
 
 bool trajectory_done(const trajectory_t& trajectory) {
-    return trajectory.size() <= 1;
-}
-
-double trajectory_start_time(const trajectory_t& trajectory)
-{
-    if (trajectory.empty())
-        return 0;
-    return trajectory.front().time_from_start.toSec();
-}
-
-void trajectory_shift_time(trajectory_t& trajectory, double shift)
-{
-    ros::Duration dur = ros::Duration(shift);
-    for (auto& mdp : trajectory)
-        mdp.time_from_start += dur;
+    return trajectory.size() == 0;
 }
 
 // *** F:DN main function
@@ -150,13 +137,13 @@ int main(int argc, char **argv)
 	//----------------------------------------------------------------- 
     package_delivery_initialize_params();
     geometry_msgs::Point start, goal;
-    trajectory_t trajectory, reverse_trajectory;
-    double start_time = 0;
 
-    double max_speed = std::numeric_limits<double>::infinity();
-    double max_speed_reset_time = 0;
-    double max_speed_increment_time = 0;
-	
+    // Flight queues
+    trajectory_t normal_traj, rev_normal_traj;
+    trajectory_t panic_traj;
+    trajectory_t slam_loss_traj, rev_slam_loss_traj;
+    trajectory_t future_col_traj;
+
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
     bool delivering_mission_complete = false; //if true, we have delivered the 
@@ -164,21 +151,20 @@ int main(int argc, char **argv)
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
         nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
-    ros::Subscriber panic_sub =  
-		nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
+    ros::Subscriber panic_sub = 
+		nh.subscribe<std_msgs::Bool>("panic_topic", 1, panic_callback);
+    ros::Subscriber panic_dir_sub = 
+		nh.subscribe<geometry_msgs::Vector3>("panic_direction", 1, panic_dir_callback);
     ros::Subscriber col_imminent_sub = 
-		nh.subscribe<std_msgs::Bool>("col_imminent", 1000, col_imminent_callback);
+		nh.subscribe<std_msgs::Bool>("col_imminent", 1, col_imminent_callback);
     ros::Subscriber col_coming_sub = 
-		nh.subscribe<std_msgs::Bool>("col_coming", 1000, col_coming_callback);
+		nh.subscribe<std_msgs::Bool>("col_coming", 1, col_coming_callback);
 	ros::Subscriber slam_lost_sub = 
-		nh.subscribe<std_msgs::Bool>("/slam_lost", 1000, slam_loss_callback);
+		nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
 
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
-    const double max_safe_speed = 1.0;
-    const double max_speed_increment = 1.0;
-    const double max_speed_reset_time_length = 4.0;
     const float goal_s_error_margin = 3.0; //ok distance to be away from the goal.
                                            //this is b/c it's very hard 
                                            //given the issues associated with
@@ -212,70 +198,80 @@ int main(int argc, char **argv)
         {
             ROS_INFO("Waiting to receive trajectory...");
 
-            start_time = trajectory_start_time(trajectory);
-
             start = get_start(drone);
-            trajectory = request_trajectory(get_trajectory_client, start, goal);
-
-            trajectory_shift_time(trajectory, start_time);
+            normal_traj = request_trajectory(get_trajectory_client, start, goal);
 
             // Pause a little bit so that future_col can be updated
-            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            col_coming = col_imminent = false;
+            std::this_thread::sleep_for(std::chrono::milliseconds(150));
 
-            if (!trajectory.empty())
+            if (!normal_traj.empty())
                 next_state = flying;
             else
                 next_state = failed;
         }
         else if (state == flying)
         {
+            trajectory_t * forward_traj = nullptr;
+            trajectory_t * rev_traj = nullptr;
+            bool check_position = false;
+
+            // Handle panic queue
             if (should_panic) {
-                ROS_WARN("Panic! in the disco");
-                action_upon_panic(drone);
-                next_state = waiting;
-            } else if (col_imminent) {
-                ROS_WARN("Reacting to future collision on trajectory");
-                action_upon_future_col(drone);
-                next_state = waiting;
-            } else if (slam_lost) {
-                ROS_WARN("SLAM localization lost!");
-                bool slam_found = false;
-
-                // ROS_INFO("Spinning to regain SLAM");
-            	// slam_found = action_upon_slam_loss(drone, spin);
-
-                if (!slam_found) {
-                    ROS_INFO("Backtracking to regain SLAM");
-                    slam_found = action_upon_slam_loss(drone, backtrack,
-                            &trajectory, &reverse_trajectory);
-                }
-
-                if (!slam_found) {
-                    ROS_INFO("Reseting SLAM");
-                    slam_found = action_upon_slam_loss(drone, reset);
-                }
-
-                if (slam_found) {
-                    ROS_INFO("Recovered SLAM!");
-
-                    // Slow down until we pass a little beyond the point where
-                    // SLAM was lost
-                    max_speed = max_safe_speed;
-                    max_speed_reset_time = trajectory_start_time(trajectory) + max_speed_reset_time_length;
-                    max_speed_increment_time = trajectory_start_time(trajectory) + 1;
-
-                    next_state = flying;
-                } else {
-                    ROS_WARN("SLAM not recovered! Just do it yourself");
-                    next_state = setup;
-                }
-            // } else if (col_coming) {
-            //     follow_trajectory(drone, trajectory, reverse_trajectory, face_forward, max_safe_speed);
-            //     next_state = trajectory_done(trajectory) ? completed : flying;
+                ROS_ERROR("Panicking!");
+                panic_traj = create_panic_trajectory(drone, panic_direction);
+                check_position = false;
+                
+                normal_traj.clear(); // Replan a path once we're done
             } else {
-                follow_trajectory(drone, trajectory, reverse_trajectory, face_forward, max_speed);
-                next_state = trajectory_done(trajectory) ? completed : flying;
+                panic_traj.clear();
             }
+
+
+            // Handle SLAM loss queue
+
+
+            // Handle future_collision queue
+            if (col_coming) {
+                ROS_WARN("Future collision appeared on trajectory!");
+
+                if (future_col_traj.empty() && !normal_traj.empty())
+                    future_col_traj = create_future_col_trajectory(normal_traj, 3);
+
+                check_position = false;
+
+                ROS_WARN_STREAM("Future col length " << future_col_traj.size());
+
+                normal_traj.clear(); // Replan a path once we're done
+            } else {
+                future_col_traj.clear();
+            }
+
+            // Choose correct queue to use
+            if (!panic_traj.empty()) {
+                ROS_ERROR("Chose panic trajectory");
+                forward_traj = &panic_traj;
+                rev_traj = nullptr;
+            } else if (!future_col_traj.empty()) {
+                ROS_WARN("Chose future collision trajectory");
+                forward_traj = &future_col_traj;
+                rev_traj = &rev_normal_traj;
+            } else {
+                ROS_INFO("Chose normal path");
+                forward_traj = &normal_traj;
+                rev_traj = &rev_normal_traj;
+            }
+
+            multiDOFpoint p = forward_traj->front();
+            std::cout << forward_traj->size() << " ";
+            std::cout << p.vx << " " << p.vy << " " << p.vz << " " << p.duration << std::endl;
+
+            follow_trajectory(drone, forward_traj, rev_traj, face_forward, check_position);
+
+            if (trajectory_done(*forward_traj))
+                next_state = completed;
+            else
+                next_state = flying;
         }
         else if (state == completed)
         {
@@ -306,15 +302,6 @@ int main(int argc, char **argv)
         {
             ROS_ERROR("Invalid FSM state!");
             break;
-        }
-
-        // Update max_speed if required
-        double now = trajectory_start_time(trajectory);
-        if (now > max_speed_reset_time) {
-            max_speed = std::numeric_limits<double>::infinity();
-        } else if (now > max_speed_increment_time) {
-            max_speed += max_speed_increment;
-            max_speed_increment_time += 1;
         }
 
         state = next_state;
