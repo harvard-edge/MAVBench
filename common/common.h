@@ -46,6 +46,7 @@ trajectory_t create_panic_trajectory(Drone& drone, const geometry_msgs::Vector3&
 // void action_upon_future_col(Drone& drone);
 trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, double stopping_distance);
 bool action_upon_slam_loss(Drone& drone, slam_recovery_method slm...);
+trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj, const trajectory_t& rev_normal_traj);
 
 
 // Spinning commands

@@ -99,7 +99,7 @@ trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, doubl
             p.duration = distance_left / v;
         }
 
-        distance_left -= distance_traveled_here;
+        distance_left -= v*p.duration;
         
         double scale = v > max_v ? max_v/v : 1;
 
@@ -112,6 +112,67 @@ trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, doubl
 
         if (distance_left <= 0)
             break;
+    }
+
+    return result;
+}
+
+
+trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj, const trajectory_t& rev_normal_traj)
+{
+    trajectory_t result;
+
+    // Add pause to trajectory
+    /*
+    multiDOFpoint pause_p;
+    pause_p.vx = pause_p.vy = pause_p.vz = 0;
+    pause_p.duration = 2.0;
+    pause_p.yaw = drone.get_yaw();
+
+    result.push_back(pause_p);
+    */
+
+    // Add backtrack to trajectory
+    double distance_left = 5.0;
+    const double safe_v = 1.0;
+
+    for (multiDOFpoint p : rev_normal_traj) {
+        double v = magnitude(p.vx, p.vy, p.vz);
+
+        if (v*p.duration > distance_left) {
+            p.duration = distance_left / v;
+        }
+
+        distance_left -= v*p.duration;
+        
+        double scale = v > safe_v ? safe_v/v : 1;
+
+        p.vx *= scale;
+        p.vy *= scale;
+        p.vz *= scale;
+        p.duration /= scale;
+
+        result.push_back(p);
+
+        if (distance_left <= 0)
+            break;
+    }
+
+    // Slow down normal_traj
+    const double max_a = 1.0;
+    double max_v = safe_v;
+
+    for (multiDOFpoint& p : normal_traj) {
+        double v = magnitude(p.vx, p.vy, p.vz);
+
+        double scale = v > max_v ? max_v/v : 1;
+
+        p.vx *= scale;
+        p.vy *= scale;
+        p.vz *= scale;
+        p.duration /= scale;
+
+        max_v += max_a*p.duration;
     }
 
     return result;

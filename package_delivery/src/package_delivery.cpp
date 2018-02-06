@@ -141,8 +141,11 @@ int main(int argc, char **argv)
     // Flight queues
     trajectory_t normal_traj, rev_normal_traj;
     trajectory_t panic_traj;
-    trajectory_t slam_loss_traj, rev_slam_loss_traj;
+    trajectory_t slam_loss_traj;
     trajectory_t future_col_traj;
+
+    bool created_future_col_traj = false;
+    bool created_slam_loss_traj = false;
 
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
@@ -215,6 +218,7 @@ int main(int argc, char **argv)
             trajectory_t * forward_traj = nullptr;
             trajectory_t * rev_traj = nullptr;
             bool check_position = false;
+            yaw_strategy_t yaw_strategy = face_forward;
 
             // Handle panic queue
             if (should_panic) {
@@ -227,24 +231,37 @@ int main(int argc, char **argv)
                 panic_traj.clear();
             }
 
-
             // Handle SLAM loss queue
+            if (slam_lost) {
+                ROS_WARN("SLAM lost!");
+                if (!created_slam_loss_traj)
+                    slam_loss_traj = create_slam_loss_trajectory(drone, normal_traj, rev_normal_traj);
 
+                future_col_traj.clear(); // No need to keep this if we're planning to replan anyway. Keeping it could cause collisions in some cases
+
+                created_slam_loss_traj = true;
+            } else {
+                slam_loss_traj.clear();
+                created_slam_loss_traj = false;
+            }
 
             // Handle future_collision queue
             if (col_coming) {
                 ROS_WARN("Future collision appeared on trajectory!");
 
-                if (future_col_traj.empty() && !normal_traj.empty())
+                if (!created_future_col_traj)
                     future_col_traj = create_future_col_trajectory(normal_traj, 3);
+
+                created_future_col_traj = true;
 
                 check_position = false;
 
                 ROS_WARN_STREAM("Future col length " << future_col_traj.size());
 
-                normal_traj.clear(); // Replan a path once we're done
+                normal_traj.clear(); // Replan the normal path once we're done
             } else {
                 future_col_traj.clear();
+                created_future_col_traj = false;
             }
 
             // Choose correct queue to use
@@ -252,6 +269,11 @@ int main(int argc, char **argv)
                 ROS_ERROR("Chose panic trajectory");
                 forward_traj = &panic_traj;
                 rev_traj = nullptr;
+            } else if (!slam_loss_traj.empty()) {
+                ROS_WARN("Chose SLAM loss trajectory");
+                forward_traj = &slam_loss_traj;
+                rev_traj = &normal_traj;
+                yaw_strategy = ignore_yaw;
             } else if (!future_col_traj.empty()) {
                 ROS_WARN("Chose future collision trajectory");
                 forward_traj = &future_col_traj;
@@ -266,9 +288,13 @@ int main(int argc, char **argv)
             std::cout << forward_traj->size() << " ";
             std::cout << p.vx << " " << p.vy << " " << p.vz << " " << p.duration << std::endl;
 
-            follow_trajectory(drone, forward_traj, rev_traj, face_forward, check_position);
+            follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position);
 
-            if (trajectory_done(*forward_traj))
+            // Choose next state (failure, completion, or more flying)
+            
+            if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj))
+                next_state = failed;
+            else if (trajectory_done(*forward_traj))
                 next_state = completed;
             else
                 next_state = flying;
