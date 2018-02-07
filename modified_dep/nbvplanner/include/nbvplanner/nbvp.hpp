@@ -29,8 +29,8 @@
 
 visualization_msgs::Marker origin_destList;
 visualization_msgs::MarkerArray origin_destList_text;
-
 using namespace Eigen;
+
 
 template<typename stateVec>
 nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
@@ -129,7 +129,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
                                   &nbvInspection::RrtTree::setPeerStateFromPoseMsg3, tree_);
   // Subscribe to topic used for the collaborative collision avoidance (don't hit your peer).
   //evadeClient_ = nh_.subscribe("/evasionSegment", 10, &nbvInspection::TreeBase<stateVec>::evade,
-  //                            tree_);
+  //                            tree_); //possibly uncomment
   
   // Not yet ready. Needs a position message first.
   ready_ = false;
@@ -168,9 +168,6 @@ template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::Request& req,
                                                           nbvplanner::nbvp_srv::Response& res)
 {
-  
-  //ROS_INFO_STREAM("planner call back"); 
-  //origin_destList.points.clear();
   ros::Time computationTime = ros::Time::now();
   // Check that planner is ready to compute path.
   if (!ros::ok()) {
@@ -192,26 +189,30 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   }
   res.path.clear();
 
+  bool DEBUG = false;
+  std::string ns = ros::this_node::getName();
+  ros::param::get(ns + "/DEBUG", DEBUG);
   // Clear old tree and reinitialize.
-  origin_destList = visualization_msgs::Marker();
-  visualization_msgs::Marker origin_destList_text_marker;
-  
-  origin_destList_text_marker.header.seq++;
-  origin_destList_text_marker.id = 0;
-  origin_destList_text_marker.header.frame_id = "world";
-  origin_destList_text_marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
-  origin_destList_text_marker.action = visualization_msgs::Marker::DELETEALL;
-  origin_destList_text_marker.scale.x = .5;
-  origin_destList_text_marker.scale.y = .5;
-  origin_destList_text_marker.scale.z = .5;
-  origin_destList_text_marker.pose.orientation.w = 1;
-  //origin_destList_text_marker.pose.position.x = p2.x;
-  //origin_destList_text_marker.pose.position.y = p2.y;
-  //origin_destList_text_marker.pose.position.z = p2.z;
-  origin_destList_text.markers.push_back(origin_destList_text_marker); 
-  params_.origin_dest_text_.publish(origin_destList_text);
-  origin_destList_text = visualization_msgs::MarkerArray();
-  //origin_destList_text.markers.clear();
+  if(DEBUG){ 
+      origin_destList = visualization_msgs::Marker();
+      visualization_msgs::Marker origin_destList_text_marker;
+
+      origin_destList_text_marker.header.seq++;
+      origin_destList_text_marker.id = 0;
+      origin_destList_text_marker.header.frame_id = "world";
+      origin_destList_text_marker.type = visualization_msgs::Marker::TEXT_VIEW_FACING;
+      origin_destList_text_marker.action = visualization_msgs::Marker::DELETEALL;
+      origin_destList_text_marker.scale.x = .5;
+      origin_destList_text_marker.scale.y = .5;
+      origin_destList_text_marker.scale.z = .5;
+      origin_destList_text_marker.pose.orientation.w = 1;
+      //origin_destList_text_marker.pose.position.x = p2.x;
+      //origin_destList_text_marker.pose.position.y = p2.y;
+      //origin_destList_text_marker.pose.position.z = p2.z;
+      origin_destList_text.markers.push_back(origin_destList_text_marker); 
+      params_.origin_dest_text_.publish(origin_destList_text);
+      origin_destList_text = visualization_msgs::MarkerArray();
+   }
   tree_->clear();
   tree_->initialize();
   vector_t path;
@@ -228,7 +229,6 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
       res.path = tree_->getPathBackToPrevious(req.header.frame_id);
       return true;
     }
-    //ROS_INFO_STREAM("before iterate"); 
     tree_->iterate(1);
      
     if (loopCount % params_.status_monitor_rate_ == 0) {
@@ -284,6 +284,9 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
     ROS_WARN("No camera vertical opening specified. Looking for %s. Default is 60deg.",
              (ns + "/system/camera/vertical").c_str());
   }
+  
+  bool DEBUG; 
+  ros::param::get(ns + "DEBUG", DEBUG);
   if(params_.camPitch_.size() != params_.camHorizontal_.size() ||params_.camPitch_.size() != params_.camVertical_.size() ){
     ROS_WARN("Specified camera fields of view unclear: Not all parameter vectors have same length! Setting to default.");
     params_.camPitch_.clear();
@@ -316,12 +319,10 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
   }
   
   params_.status_monitor_rate_ = 1000;
- if (!ros::param::get(ns + "/nbvp/status_monitor_rate", params_.status_monitor_rate_)) {
-    ROS_WARN("No gain coefficient for status_monitorrate. Looking for %s. Default is 1000.0.",
-             (ns + "/nbvp/status_monitor_rate").c_str());
+  if (!ros::param::get(ns + "/nbvp/status_monitor_rate", params_.status_monitor_rate_)) {
+      ROS_WARN("No gain coefficient for status_monitorrate. Looking for %s. Default is 1000.0.",
+              (ns + "/nbvp/status_monitor_rate").c_str());
   }
-  
-  
 
   params_.igArea_ = 1.0;
   if (!ros::param::get(ns + "/nbvp/gain/area", params_.igArea_)) {

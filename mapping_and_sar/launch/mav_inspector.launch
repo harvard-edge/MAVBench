@@ -2,7 +2,7 @@
   <arg name="host_ip"/>
   <arg name="localization_method"/>
   <arg name="app_name"/>
-  
+  <arg name="DEBUG"/>
   <arg name="mav_name" default="airsim_qc" />
   <arg name="waypoint_x" default="0" />
   <arg name="waypoint_y" default="0" />
@@ -52,6 +52,7 @@
       <!--arg name="tf_prefix" default="$(arg mav_name)$(arg subscript)"/-->
       <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">  
       <!--param name="tf_frame" type="string" value="$(arg tf_frame)" /-->
+      <param name="DEBUG" value="$(arg DEBUG)"/> 
       <param name="tf_frame" type="string" value="world" />
       <param name="resolution" type="double" value="$(arg resolution)" />
       <param name="visualize_max_z" type="double" value="$(arg visualize_max_z)" />

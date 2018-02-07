@@ -36,6 +36,7 @@
     <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen"/>
 
     <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
+    <arg name="DEBUG" value="$(arg DEBUG)"/> 
     <arg name="app_name" value="mapping" />
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="host_ip" value="$(arg host_ip)"/>
