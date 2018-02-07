@@ -95,7 +95,7 @@
 		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
 		<!-- Input: Rectified depth image -->
 		<remap from="image_rect" to="/Airsim/depth"/>
-		<remap from="points" to="points2"/>
+		<remap from="points" to="points"/>
     </node>
 	
     <!-- /group --> 

@@ -72,7 +72,7 @@
       <param name="tf_frame" type="string" value="world" />
       <param name="robot_frame" type="string" value="$(arg localization_method)"/>
       <remap from="disparity" to="/Airsim/disparity"/>
-      <remap from="pointcloud" to="/points2"/>
+      <remap from="pointcloud" to="/points"/>
       <remap from="cam0/camera_info" to="/Airsim/left/camera_info"/>
       <remap from="cam1/camera_info" to="/Airsim/right/camera_info"/>
       <rosparam command="load" file="$(arg param_file)" />

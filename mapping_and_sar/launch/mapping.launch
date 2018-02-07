@@ -3,7 +3,7 @@
   <arg name="enable_logging" default="true" />
   <arg name="enable_ground_truth" default="true" />
   <arg name="log_file" default="$(arg mav_name)" />
-  <arg name="DEBUG" value="true" />
+  <arg name="DEBUG" value="false" />
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 

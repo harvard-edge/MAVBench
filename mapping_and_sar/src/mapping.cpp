@@ -221,15 +221,22 @@ int main(int argc, char** argv)
   int iteration = 0;
   multiagent_collision_check::Segment dummy_seg;
   
+  ros::ServiceClient nbvplanner_client= 
+        nh.serviceClient<nbvplanner::nbvp_srv>("nbvplanner", true);
+
+
   while (ros::ok()) {
-      
 
     ROS_INFO_THROTTLE(0.5, "Planning iteration %i", iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = iteration;
     planSrv.request.header.frame_id = "world";
-    if (ros::service::call("nbvplanner", planSrv)) {
+    ROS_INFO_STREAM("calling nbvplanner"<<std::endl); 
+    //if (ros::service::call("nbvplanner", planSrv)) {
+   
+   if (nbvplanner_client.call(planSrv)){  
+    ROS_INFO_STREAM("planner came back"<<std::endl);
       n_seq++;
       if (planSrv.response.path.size() == 0) {
           ROS_ERROR("path size is zero");
@@ -268,6 +275,7 @@ int main(int argc, char** argv)
         // ros::Duration(1).sleep();
         // ros::Duration(t_offset + segment_dedicated_time).sleep(); //changed, make sure segmentation time is smaller
       }
+       ROS_INFO_STREAM("done publishing"<<std::endl); 
     } else {
       ROS_WARN_THROTTLE(1, "Planner not reachable");
       
@@ -278,6 +286,7 @@ int main(int argc, char** argv)
                                     //before sending out another one
     }
     iteration++;
+    
   }
 }
 

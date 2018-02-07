@@ -57,6 +57,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   pointcloud_sub_ = nh_.subscribe("pointcloud_throttled", 1,
                                   &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTf,
                                   this);
+   
   pointcloud_sub_cam_up_ = nh_.subscribe(
       "pointcloud_throttled_up", 1,
       &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTfCamUp, this);
@@ -67,6 +68,7 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   if (!setParams()) {
     ROS_ERROR("Could not start the planner. Parameters missing!");
   }
+  
 
   // Precompute the camera field of view boundaries. The normals of the separating hyperplanes are stored
   for (int i = 0; i < params_.camPitch_.size(); i++) {
@@ -121,12 +123,14 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   // Initialize the tree instance.
   tree_ = new RrtTree(mesh_, manager_);
   tree_->setParams(params_);
+  /* 
   peerPosClient1_ = nh_.subscribe("peer_pose_1", 10,
                                   &nbvInspection::RrtTree::setPeerStateFromPoseMsg1, tree_);
   peerPosClient2_ = nh_.subscribe("peer_pose_2", 10,
                                   &nbvInspection::RrtTree::setPeerStateFromPoseMsg2, tree_);
   peerPosClient3_ = nh_.subscribe("peer_pose_3", 10,
                                   &nbvInspection::RrtTree::setPeerStateFromPoseMsg3, tree_);
+  */ 
   // Subscribe to topic used for the collaborative collision avoidance (don't hit your peer).
   //evadeClient_ = nh_.subscribe("/evasionSegment", 10, &nbvInspection::TreeBase<stateVec>::evade,
   //                            tree_); //possibly uncomment
@@ -150,7 +154,7 @@ template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback(
     const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
-  tree_->setStateFromPoseMsg(pose);
+    tree_->setStateFromPoseMsg(pose);
   // Planner is now ready to plan.
   ready_ = true;
 }
@@ -250,14 +254,14 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     segment.poses.push_back(res.path.back());
   }
   evadePub_.publish(segment);
-  ROS_INFO("Path computation lasted %2.3fs", (ros::Time::now() - computationTime).toSec());
+  ROS_INFO_STREAM("Path computation lasted"<<(ros::Time::now() - computationTime).toSec()<<"s");
   return true;
 }
 
 template<typename stateVec>
 bool nbvInspection::nbvPlanner<stateVec>::setParams()
 {
-  std::string ns = ros::this_node::getName();
+    std::string ns = ros::this_node::getName();
   bool ret = true;
   params_.v_max_ = 0.25;
   if (!ros::param::get(ns + "/system/v_max", params_.v_max_)) {
@@ -450,6 +454,8 @@ bool nbvInspection::nbvPlanner<stateVec>::setParams()
   return ret;
 }
 
+
+//now label
 template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTf(
     const sensor_msgs::PointCloud2::ConstPtr& pointcloud)
