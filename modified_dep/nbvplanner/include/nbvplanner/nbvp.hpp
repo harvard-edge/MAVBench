@@ -234,10 +234,11 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
       return true;
     }
     tree_->iterate(1);
-     
+    /* 
     if (loopCount % params_.status_monitor_rate_ == 0) {
         std::cout<<"coverage amount is"<<tree_->coverage()<<std::endl;
     }
+    */
     
     loopCount++;
   }
