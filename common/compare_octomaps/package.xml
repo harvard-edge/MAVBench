@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<package>
+  <name>compare_octomaps</name>
+  <version>0.0.0</version>
+  <description>comparing octomap package</description>
+
+  <maintainer email="behzadboro@gmail.com">Behzad Boroujerdian</maintainer>
+
+
+  <license>BSD</license>
+  <author>Behzad Boroujerdian</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>roscpp</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>octomap_world</build_depend>
+  <build_depend>kdtree</build_depend>
+  <build_depend>rviz_visual_tools</build_depend>
+  
+  <run_depend>roscpp</run_depend>
+  <run_depend>tf</run_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>visualization_msgs</run_depend>
+  <run_depend>octomap_world</run_depend>
+  <run_depend>kdtree</run_depend>
+  <run_depend>rviz_visual_tools</run_depend>
+</package>
