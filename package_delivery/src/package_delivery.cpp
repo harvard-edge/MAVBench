@@ -185,14 +185,14 @@ int main(int argc, char **argv)
                                            //flight controler to land exactly
                                            //on the goal
 
-    
-    
+    msr::airlib::FlightStats init_stats, end_stats;
+    std::string mission_status;
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
-    update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
-    log_time(stats_file_addr);
-    update_stats_file(stats_file_addr,"###\n");
+    //update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
+    //log_time(stats_file_addr);
+    //update_stats_file(stats_file_addr,"###\n");
 
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 
             goal = get_goal();
             start = get_start(drone);
-
+            init_stats = drone.getFlightStats();
             spin_around(drone);
             next_state = waiting;
         }
@@ -283,7 +283,8 @@ int main(int argc, char **argv)
 
             if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
-                update_stats_file(stats_file_addr,"mission_status completed");
+                mission_status = "completed"; 
+                //update_stats_file(stats_file_addr,"mission_status completed");
                 next_state = setup;
             } else { //If we've drifted too far off from the destination
                 ROS_WARN("We're a little off...");
@@ -299,7 +300,8 @@ int main(int argc, char **argv)
         }
         else if (state == failed) {
             ROS_ERROR("Failed to reach destination");
-            update_stats_file(stats_file_addr,"mission_status failed");
+            mission_status = "failed"; 
+            //update_stats_file(stats_file_addr,"mission_status failed");
             next_state = setup;
         }
         else
@@ -319,7 +321,8 @@ int main(int argc, char **argv)
 
         state = next_state;
     }
-
+    end_stats = drone.getFlightStats();
+    output_flight_summary(init_stats, end_stats, mission_status, stats_file_addr);
     return 0;
 }
 

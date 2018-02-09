@@ -35,6 +35,7 @@ static T last_msg (std::string topic) {
 }
 
 void update_stats_file(const std::string& stats_file__addr, const std::string& content){
+    printf("insed update stats file"); 
     std::ofstream myfile;
     myfile.open(stats_file__addr, std::ofstream::out | std::ofstream::app);
     myfile << content << std::endl;
@@ -325,19 +326,26 @@ static float yawFromQuat(geometry_msgs::Quaternion q)
     return (yaw <= 180 ? yaw : yaw - 360);
 }
 
-void output_flight_summary(Drone& drone, const std::string& fname)
-{
-    auto flight_stats = drone.getFlightStats();
 
+void update_stats(Drone& drone, const std::string& fname, std::string state){
+
+    auto static flight_stats = drone.getFlightStats();
+
+}
+
+void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, std::string mission_status, const std::string& fname){
+    //auto flight_stats = drone.getFlightStats();
     stringstream stats_ss;
-
-    stats_ss << "{  StateOfCharge: " << flight_stats.state_of_charge << "," << endl;
-    stats_ss << "  Voltage: " << flight_stats.voltage << "," << endl;
-    stats_ss << "  EnergyConsumed: " << flight_stats.energy_consumed << "," << endl;
-    stats_ss << "  DistanceTravelled: " << flight_stats.distance_traveled << "," << endl;
-    stats_ss << "  FlightTime: " << flight_stats.flight_time << endl;
-    stats_ss << "  collision count: " << flight_stats.collision_count << endl;
-    stats_ss << "}" << endl;
+    stats_ss << endl<<"{"<<endl;
+    stats_ss<<  "  \"mission_status\": " << mission_status<<"," << endl;
+    stats_ss << "  \"StateOfCharge\": " << init.state_of_charge  - end.state_of_charge << "," << endl;
+    stats_ss << "  \"initial_voltage\": " << init.voltage << "," << endl;
+    stats_ss << "  \"end_voltage\": " << end.voltage << "," << endl;
+    stats_ss << "  \"energy_consumed\": " << end.energy_consumed - init.energy_consumed << "," << endl;
+    stats_ss << "  \"distance_travelled\": " << end.distance_traveled - init.distance_traveled<< "," << endl;
+    stats_ss << "  \"flight_time\": " << end.flight_time -init.flight_time<< "," << endl;
+    stats_ss << "  \"collision_count\": " << end.collision_count  - init.collision_count << ",";
+    //stats_ss << "}" << endl;
 
     update_stats_file(fname, stats_ss.str());
 }

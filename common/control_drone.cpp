@@ -92,8 +92,8 @@ void control_drone(Drone& drone)
     // Print flight summary at start of execution
     std::string fname;
     if (ros::param::get("/stats_file_addr", fname)) {
-        update_stats_file(fname, "\nFlightSummaryStart: ");
-        output_flight_summary(drone, fname);
+        //update_stats_file(fname, "\nFlightSummaryStart: ");
+        //output_flight_summary(drone, fname);
     } else {
         ROS_ERROR("No stats_file found");
     }
