@@ -346,8 +346,8 @@ void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightSta
     stats_ss << "  \"energy_consumed\": " << end.energy_consumed - init.energy_consumed << "," << endl;
     stats_ss << "  \"distance_travelled\": " << end.distance_traveled - init.distance_traveled<< "," << endl;
     stats_ss << "  \"flight_time\": " << end.flight_time -init.flight_time<< "," << endl;
-    stats_ss << "  \"collision_count\": " << end.collision_count  - init.collision_count << ",";
-    stats_ss << "  \"cpu_compute_enenrgy\": " << cpu_compute_enenrgy << ",";
+    stats_ss << "  \"collision_count\": " << end.collision_count  - init.collision_count << "," << endl;
+    stats_ss << "  \"cpu_compute_enenrgy\": " << cpu_compute_enenrgy << "," << endl;
     stats_ss << "  \"gpu_compute_enenrgy\": " << gpu_compute_enenrgy << ",";
     //stats_ss << "}" << endl;
 

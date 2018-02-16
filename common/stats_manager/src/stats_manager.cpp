@@ -231,13 +231,16 @@ static double run_rapl_sysfs(rapl_sysfs_stats *s) {
 }
 
 struct xpu_sample_stat {
-    xpu_sample_stat(): sum(0) {}
+    xpu_sample_stat(): running(false), sum(0) {}
 
+    bool running;
     double sum;
     std::chrono::time_point<std::chrono::system_clock> start;
 };
 
 double read_gpu_power_sample(xpu_sample_stat *s = nullptr) {
+    if (!s->running) return 0;
+
     unsigned int gpu_power_mwatts = 0;
     std::ifstream f1("/sys/devices/3160000.i2c/i2c-0/0-0040/iio_device/in_power0_input");
     if (f1.good()) {
@@ -247,11 +250,6 @@ double read_gpu_power_sample(xpu_sample_stat *s = nullptr) {
     f1.close();
 
 #ifdef USE_NVML
-    if (nvmlInit() != NVML_SUCCESS) {
-        std::cout << "nvmlInit() failed.\n";
-        return 0;
-    }
-
     unsigned int num_devices = 0;
     if (nvmlDeviceGetCount(&num_devices) != NVML_SUCCESS) {
         std::cout << nvmlDeviceGetCount(&num_devices) << "nvmlDeviceGetCount() failed.\n";
@@ -270,9 +268,8 @@ double read_gpu_power_sample(xpu_sample_stat *s = nullptr) {
     }
 
     // std::cout << "GPU Power (nvml): " << gpu_power_mwatts << " mWatt\n";
-
-    nvmlShutdown();
 #endif  // USE_NVML
+
     if (gpu_power_mwatts <= 0) return 0;
     if (s == nullptr) return gpu_power_mwatts;
 
@@ -285,6 +282,8 @@ double read_gpu_power_sample(xpu_sample_stat *s = nullptr) {
 }
 
 double read_cpu_power_sample(xpu_sample_stat *s = nullptr) {
+    if (!s->running) return 0;
+
     unsigned int cpu_power_mwatts = 0;
     std::ifstream f1("/sys/devices/3160000.i2c/i2c-0/0-0041/iio_device/in_power1_input");
     if (f1.good()) {
@@ -358,6 +357,7 @@ bool probe_flight_stats_cb(stats_manager::flight_stats_srv::Request &req, stats_
     if(req.key == "clct_init_data"){ 
         g_init_stats = g_drone->getFlightStats();
         xs_gpu.start = xs_cpu.start = std::chrono::system_clock::now();
+        xs_gpu.running = xs_cpu.running = true;
         #ifdef USE_INTEL
         setup_rapl_sysfs(&rs);
         #endif // USE_INTEL
@@ -404,6 +404,14 @@ int main(int argc, char **argv)
     ros::ServiceServer probe_flight_stats_service = nh.advertiseService("probe_flight_stats", probe_flight_stats_cb);
     initialize_params();
     g_drone = new Drone(g_ip_addr.c_str(), g_port);
+
+#ifdef USE_NVML
+    if (nvmlInit() != NVML_SUCCESS) {
+        std::cout << "nvmlInit() failed.\n";
+        return 0;
+    }
+#endif
+
     ros::Rate loop_rate(1);
     while (ros::ok()) {
         read_gpu_power_sample(&xs_gpu);
@@ -413,6 +421,10 @@ int main(int argc, char **argv)
         loop_rate.sleep();
         ros::spinOnce();
     }
+
+#ifdef USE_NVML
+    nvmlShutdown();
+#endif  // USE_NVML
 
     double cpu_compute_enenrgy = 0, gpu_compute_enenrgy = 0;
     gpu_compute_enenrgy = xs_gpu.sum;
