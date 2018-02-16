@@ -38,7 +38,10 @@
 
     <!-- starting nodes -->
 
-    <!--node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen"/-->
+    <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen">
+    <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
+    <param name="ip_addr" value="$(arg host_ip)"/>
+    </node>
     
          
     <!--comment-->

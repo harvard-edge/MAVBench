@@ -31,9 +31,10 @@ find_package(catkin REQUIRED COMPONENTS
 #    )
 
 
-#add_service_files(
-#  FILES
-#)
+add_service_files(
+  FILES
+  flight_stats_srv.srv
+)
 
 generate_messages(
   DEPENDENCIES

@@ -391,6 +391,11 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 #else
 bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2, graph::node * end_ptr)
 {
+    if (motion_planning_core_str == "lawn_mower") {
+        return false;
+    }
+    
+    
     RESET_TIMER();
     // First, check if anything goes underground
     if (n1.z <= 0 || n2.z <= 0)
@@ -815,9 +820,11 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 				// Check for a collision between two near points on the segment
 				
                 
-            if (motion_planning_core_str != "lawn_mower") {
+            //if (motion_planning_core_str != "lawn_mower") {
                 if (out_of_bounds(n1) || out_of_bounds(n2) || collision(octree, n1, n2)) {
-					// Add a new vertex in the middle of the segment we are currently on
+					
+                    
+                    // Add a new vertex in the middle of the segment we are currently on
 					mav_trajectory_generation::Vertex middle(dimension);
 
 					double middle_x = (segment_start.x + segment_end.x) / 2;
@@ -836,7 +843,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 
 					break;
 				}
-            }
+            //}
 			}
 		}
 	} while (col);

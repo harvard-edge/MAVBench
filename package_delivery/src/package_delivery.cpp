@@ -10,6 +10,7 @@
 #include <limits>
 #include <signal.h>
 
+#include <stats_manager/flight_stats_srv.h>
 #include "control_drone.h"
 #include "common/Common.hpp"
 #include "Drone.h"
@@ -164,6 +165,8 @@ int main(int argc, char **argv)
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
         nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
+	ros::ServiceClient probe_flight_stats_client = 
+        nh.serviceClient<stats_manager::flight_stats_srv>("probe_flight_stats");
     ros::Subscriber panic_sub =  
 		nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
     ros::Subscriber col_imminent_sub = 
@@ -193,7 +196,8 @@ int main(int argc, char **argv)
     //update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
     //log_time(stats_file_addr);
     //update_stats_file(stats_file_addr,"###\n");
-
+    stats_manager::flight_stats_srv flight_stats_srv_inst;
+    
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
         State next_state = invalid;
@@ -204,7 +208,11 @@ int main(int argc, char **argv)
 
             goal = get_goal();
             start = get_start(drone);
-            init_stats = drone.getFlightStats();
+            flight_stats_srv_inst.request.key = "clct_init_data";
+            if(!probe_flight_stats_client.call(flight_stats_srv_inst)){
+                ROS_ERROR_STREAM("could not probe data using stats manager");
+                ros::shutdown();
+            }
             spin_around(drone);
             next_state = waiting;
         }
@@ -284,6 +292,12 @@ int main(int argc, char **argv)
             if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
                 mission_status = "completed"; 
+                flight_stats_srv_inst.request.value = 1.0;
+                flight_stats_srv_inst.request.key = "mission_status";
+                if(!probe_flight_stats_client.call(flight_stats_srv_inst)){
+                    ROS_ERROR_STREAM("could not probe data using stats manager");
+                    ros::shutdown();
+                }
                 //update_stats_file(stats_file_addr,"mission_status completed");
                 next_state = setup;
             } else { //If we've drifted too far off from the destination
@@ -301,6 +315,12 @@ int main(int argc, char **argv)
         else if (state == failed) {
             ROS_ERROR("Failed to reach destination");
             mission_status = "failed"; 
+            flight_stats_srv_inst.request.key = "mission_status";
+            flight_stats_srv_inst.request.value = 0.0;
+            if(!probe_flight_stats_client.call(flight_stats_srv_inst)){
+                ROS_ERROR_STREAM("could not probe data using stats manager");
+                ros::shutdown();
+            }
             //update_stats_file(stats_file_addr,"mission_status failed");
             next_state = setup;
         }
@@ -321,8 +341,10 @@ int main(int argc, char **argv)
 
         state = next_state;
     }
-    end_stats = drone.getFlightStats();
-    output_flight_summary(init_stats, end_stats, mission_status, stats_file_addr);
+    
+    //collect data before shutting down
+        //end_stats = drone.getFlightStats();
+    //output_flight_summary(init_stats, end_stats, mission_status, stats_file_addr);
     return 0;
 }
 
