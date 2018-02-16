@@ -68,8 +68,16 @@ catkin_package(
 )
 
 
-
+if(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+include_directories(/usr/local/cuda/include)
+link_directories(/usr/lib/nvidia-384)
+add_definitions(-DUSE_INTEL -DUSE_NVML)
+add_executable(stats_manager src/stats_manager.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/timer.cpp)
+target_link_libraries(stats_manager  ${catkin_LIBRARIES}  AirLib MavLinkCom rpc pthread nvidia-ml)
+else(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
 add_executable(stats_manager src/stats_manager.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(stats_manager  ${catkin_LIBRARIES}  AirLib MavLinkCom rpc pthread)
+endif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
+
 add_dependencies(stats_manager ${catkin_EXPORTED_TARGETS})
 

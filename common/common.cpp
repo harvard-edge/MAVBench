@@ -333,7 +333,9 @@ void update_stats(Drone& drone, const std::string& fname, std::string state){
 
 }
 
-void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, std::string mission_status, const std::string& fname){
+void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, std::string mission_status,
+                           double cpu_compute_enenrgy, double gpu_compute_enenrgy,
+                           const std::string& fname){
     //auto flight_stats = drone.getFlightStats();
     stringstream stats_ss;
     stats_ss << endl<<"{"<<endl;
@@ -345,6 +347,8 @@ void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightSta
     stats_ss << "  \"distance_travelled\": " << end.distance_traveled - init.distance_traveled<< "," << endl;
     stats_ss << "  \"flight_time\": " << end.flight_time -init.flight_time<< "," << endl;
     stats_ss << "  \"collision_count\": " << end.collision_count  - init.collision_count << ",";
+    stats_ss << "  \"cpu_compute_enenrgy\": " << cpu_compute_enenrgy << ",";
+    stats_ss << "  \"gpu_compute_enenrgy\": " << gpu_compute_enenrgy << ",";
     //stats_ss << "}" << endl;
 
     update_stats_file(fname, stats_ss.str());
