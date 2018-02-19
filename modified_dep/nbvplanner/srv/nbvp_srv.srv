@@ -1,3 +1,5 @@
 Header header
 -------
 geometry_msgs/Pose[] path
+float64 coverage
+bool mission_accomplished

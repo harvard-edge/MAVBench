@@ -24,9 +24,13 @@ using namespace std;
 static int total_cores=0,total_packages=0;
 static int package_map[MAX_PACKAGES];
 
+
+
 /* TODO: on Skylake, also may support  PSys "platform" domain,    */
 /* the whole SoC not just the package.                */
 /* see dcee75b3b7f025cc6765e6c92ba0a4e59a4d25f4            */
+
+
 
 static int detect_cpu(void) {
 
@@ -308,6 +312,7 @@ string g_ip_addr;
 string g_stats_fname;
 Drone *g_drone;//ip_addr.c_str(), port);
 string g_mission_status = "failed";//ip_addr.c_str(), port);
+float g_coverage = 0;
 bool g_end_requested = false;
 msr::airlib::FlightStats g_init_stats, g_end_stats;
 string g_ns;
@@ -341,12 +346,36 @@ void initialize_params() {
     */
 }
 
-
-
+void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, std::string mission_status, float coverage,
+                           double cpu_compute_enenrgy, double gpu_compute_enenrgy,
+                           const std::string& fname){
+    float total_energy_consumed =  end.energy_consumed - init.energy_consumed +
+        gpu_compute_enenrgy + cpu_compute_enenrgy;
+    stringstream stats_ss;
+    
+    //general metrics 
+    stats_ss << endl<<"{"<<endl;
+    stats_ss<<  "  \"mission_status\": " << '"'<<mission_status<<'"'<<"," << endl;
+    stats_ss << "  \"distance_travelled\": " << end.distance_traveled - init.distance_traveled<< "," << endl;
+    stats_ss << "  \"flight_time\": " << end.flight_time -init.flight_time<< "," << endl;
+    stats_ss << "  \"collision_count\": " << end.collision_count  - init.collision_count << "," << endl;
+    stats_ss<<  "  \"coverage\": " << coverage<<"," << endl;
+    
+    //power/energy related values
+    stats_ss << "  \"initial_voltage\": " << init.voltage << "," << endl;
+    stats_ss << "  \"end_voltage\": " << end.voltage << "," << endl;
+    stats_ss << "  \"StateOfCharge\": " << (init.state_of_charge  - end.state_of_charge) + end.state_of_charge << "," << endl;
+    stats_ss << "  \"total_energy_consumed\": " << total_energy_consumed << "," << endl;
+    stats_ss << "  \"rotor energy consumed \": " << end.energy_consumed - init.energy_consumed << ","<<endl; 
+    stats_ss << "  \"cpu_compute_enenrgy\": " << cpu_compute_enenrgy << "," << endl;
+    stats_ss << "  \"gpu_compute_enenrgy\": " << gpu_compute_enenrgy << ",";
+    
+    //stats_ss << "}" << endl;
+    update_stats_file(fname, stats_ss.str());
+}
 
 bool probe_flight_stats_cb(stats_manager::flight_stats_srv::Request &req, stats_manager::flight_stats_srv::Response &res)
 {
-    
     ROS_ERROR_STREAM("insdie the call back"); 
     if (g_drone == NULL) {
         ROS_ERROR_STREAM("drone object is not initialized");
@@ -354,7 +383,7 @@ bool probe_flight_stats_cb(stats_manager::flight_stats_srv::Request &req, stats_
         //res.acquired = false;
     }
 
-    if(req.key == "clct_init_data"){ 
+    if(req.key == "snapShot_flightStats"){ 
         g_init_stats = g_drone->getFlightStats();
         xs_gpu.start = xs_cpu.start = std::chrono::system_clock::now();
         xs_gpu.running = xs_cpu.running = true;
@@ -369,32 +398,17 @@ bool probe_flight_stats_cb(stats_manager::flight_stats_srv::Request &req, stats_
             g_mission_status = "completed";
         }
     }
+    else if (req.key == "coverage"){
+        g_coverage = req.value; 
+    }
     else {
         ROS_ERROR_STREAM("this key is not defined for flight_stats collections"); 
         return false; 
         //res.acquired = false;
     }
-    /* 
-    else if(req.phase == "clct_end_data"){ 
-        g_end_requested = true; 
-        g_end_stats = g_drone->getFlightStats();
-        g_mission_status = req.mission_status;
-    }
-    else {
-        ROS_ERROR_STREAM("this phase is not defined for flight_stats collections"); 
-        return false; 
-        //res.acquired = false;
-    }
-     
-    else if(req.phase == "register_mission_status"){ 
-        g_mission_status = req.mission_status;
-    }
-   */  
     return true; 
     //res.acquired = true;
 }
-
-
 
 // *** F:DN main function
 int main(int argc, char **argv)
@@ -435,7 +449,8 @@ int main(int argc, char **argv)
     #endif // USE_INTEL
     
     g_end_stats = g_drone->getFlightStats();
-    output_flight_summary(g_init_stats, g_end_stats, g_mission_status,
+    ROS_ERROR_STREAM("shouldn't be here yet"); 
+    output_flight_summary(g_init_stats, g_end_stats, g_mission_status, g_coverage,
                           cpu_compute_enenrgy, gpu_compute_enenrgy, g_stats_fname);
     //output_flight_summary(drone, stats_fname);
     return 0;

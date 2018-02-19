@@ -8,7 +8,7 @@
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
   <!-- stat file-->
-  <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/stats.txt" />
+  <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="status_monitor_rate" value="100" />
 
   <!--node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world world 100" /-->
@@ -33,10 +33,14 @@
 
     <param name="/ip_addr" value="$(arg host_ip)" />
    
-    <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen"/>
-
+    <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen">
+        <param name="/ip_addr" value="$(arg host_ip)" />
+    </node>
+    
     <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
     <arg name="DEBUG" value="$(arg DEBUG)"/> 
+    <arg name="update_coverage_freq" value="3"/> 
+    <arg name="coverage_threshold" value="8"/> 
     <arg name="app_name" value="mapping" />
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="host_ip" value="$(arg host_ip)"/>

@@ -46,8 +46,8 @@ void update_stats_file(const std::string& stats_file__addr, const std::string& c
 
 void sigIntHandler(int sig)
 {
-    ros::shutdown();
-    //exit(0);
+    //ros::shutdown();
+    exit(0);
 }
 
 void action_upon_panic(Drone& drone) {
@@ -333,24 +333,5 @@ void update_stats(Drone& drone, const std::string& fname, std::string state){
 
 }
 
-void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, std::string mission_status,
-                           double cpu_compute_enenrgy, double gpu_compute_enenrgy,
-                           const std::string& fname){
-    //auto flight_stats = drone.getFlightStats();
-    stringstream stats_ss;
-    stats_ss << endl<<"{"<<endl;
-    stats_ss<<  "  \"mission_status\": " << mission_status<<"," << endl;
-    stats_ss << "  \"StateOfCharge\": " << init.state_of_charge  - end.state_of_charge << "," << endl;
-    stats_ss << "  \"initial_voltage\": " << init.voltage << "," << endl;
-    stats_ss << "  \"end_voltage\": " << end.voltage << "," << endl;
-    stats_ss << "  \"energy_consumed\": " << end.energy_consumed - init.energy_consumed << "," << endl;
-    stats_ss << "  \"distance_travelled\": " << end.distance_traveled - init.distance_traveled<< "," << endl;
-    stats_ss << "  \"flight_time\": " << end.flight_time -init.flight_time<< "," << endl;
-    stats_ss << "  \"collision_count\": " << end.collision_count  - init.collision_count << "," << endl;
-    stats_ss << "  \"cpu_compute_enenrgy\": " << cpu_compute_enenrgy << "," << endl;
-    stats_ss << "  \"gpu_compute_enenrgy\": " << gpu_compute_enenrgy << ",";
-    //stats_ss << "}" << endl;
 
-    update_stats_file(fname, stats_ss.str());
-}
 

@@ -53,7 +53,8 @@ class nbvPlanner
   ros::Subscriber pointcloud_sub_;
   ros::Subscriber pointcloud_sub_cam_up_;
   ros::Subscriber pointcloud_sub_cam_down_;
-
+  int coverage_ctr_ = 0;
+  float coverage_ = 0;
   Params params_;
   mesh::StlMesh * mesh_;
   volumetric_mapping::OctomapManager * manager_;
@@ -67,6 +68,7 @@ class nbvPlanner
   nbvPlanner(const ros::NodeHandle& nh, const ros::NodeHandle& nh_private);
   ~nbvPlanner();
   bool setParams();
+  float update_coverage(int);
   void posCallback(const geometry_msgs::PoseWithCovarianceStamped& pose);
   void odomCallback(const nav_msgs::Odometry& pose);
   bool plannerCallback(nbvplanner::nbvp_srv::Request& req, nbvplanner::nbvp_srv::Response& res);
