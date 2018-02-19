@@ -273,6 +273,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   evadePub_.publish(segment);
   ROS_INFO_STREAM("Path computation lasted"<<(ros::Time::now() - computationTime).toSec()<<"s");
   res.coverage = update_coverage(update_coverage_freq); 
+  res.path_computation_time =  (ros::Time::now() - computationTime).toSec();
   return true;
 }
 

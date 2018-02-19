@@ -64,6 +64,8 @@ def terminate(stat_file):
 
 
 def main():
+    #action_upon_termination();
+    #sys.exit(0)
     #sys.argv[1] time based or not
     #sys.argv[2] sleep_time_before checking (optinal)
     SLEEP_TIME_BEFORE_CHECKING = 2 

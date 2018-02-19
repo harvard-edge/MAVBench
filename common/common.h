@@ -6,6 +6,16 @@
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include "Drone.h"
 
+
+typedef struct KeyValuePair{
+    std::string key;
+    double value;
+    KeyValuePair(std::string key, double value): key(key), value(value){
+    }
+
+} KeyValuePairStruct;
+
+
 void sigIntHandler(int sig);
 
 // Stats functions

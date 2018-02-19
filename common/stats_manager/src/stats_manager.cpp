@@ -317,6 +317,8 @@ bool g_end_requested = false;
 msr::airlib::FlightStats g_init_stats, g_end_stats;
 string g_ns;
 uint16_t g_port; 
+vector<KeyValuePairStruct> results;
+
 
 xpu_sample_stat xs_cpu, xs_gpu;
 rapl_sysfs_stats rs;
@@ -346,68 +348,67 @@ void initialize_params() {
     */
 }
 
-void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, std::string mission_status, float coverage,
-                           double cpu_compute_enenrgy, double gpu_compute_enenrgy,
-                           const std::string& fname){
-    float total_energy_consumed =  end.energy_consumed - init.energy_consumed +
-        gpu_compute_enenrgy + cpu_compute_enenrgy;
-    stringstream stats_ss;
+void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, 
+        vector<KeyValuePairStruct>results,const std::string& fname){
     
-    //general metrics 
+    stringstream stats_ss;
+    float total_energy_consumed = 0;
+    
+    //Flight Stats dependent metrics
     stats_ss << endl<<"{"<<endl;
-    stats_ss<<  "  \"mission_status\": " << '"'<<mission_status<<'"'<<"," << endl;
     stats_ss << "  \"distance_travelled\": " << end.distance_traveled - init.distance_traveled<< "," << endl;
     stats_ss << "  \"flight_time\": " << end.flight_time -init.flight_time<< "," << endl;
     stats_ss << "  \"collision_count\": " << end.collision_count  - init.collision_count << "," << endl;
-    stats_ss<<  "  \"coverage\": " << coverage<<"," << endl;
     
-    //power/energy related values
     stats_ss << "  \"initial_voltage\": " << init.voltage << "," << endl;
     stats_ss << "  \"end_voltage\": " << end.voltage << "," << endl;
     stats_ss << "  \"StateOfCharge\": " << (init.state_of_charge  - end.state_of_charge) + end.state_of_charge << "," << endl;
-    stats_ss << "  \"total_energy_consumed\": " << total_energy_consumed << "," << endl;
     stats_ss << "  \"rotor energy consumed \": " << end.energy_consumed - init.energy_consumed << ","<<endl; 
-    stats_ss << "  \"cpu_compute_enenrgy\": " << cpu_compute_enenrgy << "," << endl;
-    stats_ss << "  \"gpu_compute_enenrgy\": " << gpu_compute_enenrgy << ",";
+
+    // the rest of metrics 
+    for (auto result_el: results) {
+        stats_ss<<  '"'<< result_el.key<<'"' <<": " << result_el.value<<"," << endl;
+        if(result_el.key == "gpu_compute_energy" || result_el.key == "cpu_compute_energy"){
+            total_energy_consumed += result_el.value; 
+        }
+    }
+    
+    total_energy_consumed +=  (end.energy_consumed - init.energy_consumed);
+    stats_ss << '"' <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
+    
+
+    /* 
+    stats_ss<<  "  \"mission_status\": " << '"'<<mission_status<<'"'<<"," << endl;
+    stats_ss<<  "  \"coverage\": " << coverage<<"," << endl;
+    
+    //power/energy related values
+        stats_ss << "  \"cpu_compute_energy\": " << cpu_compute_energy << "," << endl;
+    stats_ss << "  \"gpu_compute_energy\": " << gpu_compute_energy << ",";
     
     //stats_ss << "}" << endl;
+    */ 
     update_stats_file(fname, stats_ss.str());
 }
 
 bool probe_flight_stats_cb(stats_manager::flight_stats_srv::Request &req, stats_manager::flight_stats_srv::Response &res)
 {
-    ROS_ERROR_STREAM("insdie the call back"); 
+    //ROS_ERROR_STREAM("insdie the call back"); 
     if (g_drone == NULL) {
         ROS_ERROR_STREAM("drone object is not initialized");
         return false; 
-        //res.acquired = false;
     }
 
-    if(req.key == "snapShot_flightStats"){ 
+    if(req.key == "snapShot_flightStats"){  
         g_init_stats = g_drone->getFlightStats();
         xs_gpu.start = xs_cpu.start = std::chrono::system_clock::now();
         xs_gpu.running = xs_cpu.running = true;
         #ifdef USE_INTEL
         setup_rapl_sysfs(&rs);
         #endif // USE_INTEL
+    }else{ 
+        results.push_back(KeyValuePairStruct(req.key, req.value));
     } 
-    else if (req.key == "mission_status"){
-        if (req.value == 0.0) {
-            g_mission_status = "failed";
-        }else{
-            g_mission_status = "completed";
-        }
-    }
-    else if (req.key == "coverage"){
-        g_coverage = req.value; 
-    }
-    else {
-        ROS_ERROR_STREAM("this key is not defined for flight_stats collections"); 
-        return false; 
-        //res.acquired = false;
-    }
     return true; 
-    //res.acquired = true;
 }
 
 // *** F:DN main function
@@ -440,19 +441,19 @@ int main(int argc, char **argv)
     nvmlShutdown();
 #endif  // USE_NVML
 
-    double cpu_compute_enenrgy = 0, gpu_compute_enenrgy = 0;
-    gpu_compute_enenrgy = xs_gpu.sum;
+    double cpu_compute_energy = 0, gpu_compute_energy = 0;
+    gpu_compute_energy = xs_gpu.sum;
     #ifdef USE_INTEL
-    cpu_compute_enenrgy = run_rapl_sysfs(&rs);
+    cpu_compute_energy = run_rapl_sysfs(&rs);
     #else
-    cpu_compute_enenrgy = xs_cpu.sum;
+    cpu_compute_energy = xs_cpu.sum;
     #endif // USE_INTEL
     
     g_end_stats = g_drone->getFlightStats();
     ROS_ERROR_STREAM("shouldn't be here yet"); 
-    output_flight_summary(g_init_stats, g_end_stats, g_mission_status, g_coverage,
-                          cpu_compute_enenrgy, gpu_compute_enenrgy, g_stats_fname);
-    //output_flight_summary(drone, stats_fname);
+    results.push_back(KeyValuePairStruct("gpu_compute_energy", gpu_compute_energy));
+    results.push_back(KeyValuePairStruct("cpu_compute_energy", cpu_compute_energy));
+    output_flight_summary(g_init_stats, g_end_stats, results, g_stats_fname);
     return 0;
 }
 

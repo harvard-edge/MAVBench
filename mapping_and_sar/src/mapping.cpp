@@ -44,6 +44,10 @@ std::string stats_file_addr;
 //data to be logged in stats manager
 std::string g_mission_status = "failed";
 float g_coverage = 0 ;
+float g_path_computation_time = 0;
+float g_path_computation_time_avg = 0;
+float g_path_computation_time_acc = 0;
+int g_iteration = 0;
 
 void log_data_before_shutting_down(){
     stats_manager::flight_stats_srv flight_stats_srv_inst;
@@ -59,6 +63,24 @@ void log_data_before_shutting_down(){
 
     flight_stats_srv_inst.request.key = "coverage";
     flight_stats_srv_inst.request.value = g_coverage;
+    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    flight_stats_srv_inst.request.key = "g_path_computation_time_avg";
+    flight_stats_srv_inst.request.value = g_path_computation_time_acc/g_iteration;
+    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    flight_stats_srv_inst.request.key = "g_path_computation_time_acc";
+    flight_stats_srv_inst.request.value = g_path_computation_time_acc;
     if (ros::service::waitForService("/probe_flight_stats", 10)){ 
         if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -262,7 +284,7 @@ int main(int argc, char** argv)
 
 
   // Start planning: The planner is called and the computed path sent to the controller.
-  int iteration = 0;
+  g_iteration = 0;
   multiagent_collision_check::Segment dummy_seg;
   
   ros::ServiceClient nbvplanner_client= 
@@ -273,10 +295,10 @@ int main(int argc, char** argv)
   
   while (ros::ok()) {
 
-    ROS_INFO_THROTTLE(0.5, "Planning iteration %i", iteration);
+    ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
-    planSrv.request.header.seq = iteration;
+    planSrv.request.header.seq = g_iteration;
     planSrv.request.header.frame_id = "world";
     
     if(nbvplanner_client.call(planSrv)){ 
@@ -327,9 +349,11 @@ int main(int argc, char** argv)
                                     //than 1.5*dt, this way we can finish up the command 
                                     //before sending out another one
     }
-    iteration++;
+    g_iteration++;
     
     g_coverage =  planSrv.response.coverage;
+    g_path_computation_time = planSrv.response.path_computation_time; 
+    g_path_computation_time_acc += g_path_computation_time;    
     if(g_coverage > coverage_threshold){
         g_mission_status = "completed";
         log_data_before_shutting_down();
