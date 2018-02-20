@@ -28,20 +28,41 @@
 #include "std_msgs/Bool.h"
 #include <signal.h>
 #include "common.h"
+#include <stats_manager/flight_stats_srv.h>
 
 using namespace std;
 string ip_addr__global;
 string localization_method;
-string stats_file_addr;
+string g_stats_file_addr;
 string ns;
+std::string g_supervisor_mailbox; //file to write to when completed
+
+//data to be logged in stats manager
+std::string g_mission_status = "failed";
 
 enum State { setup, waiting, flying, completed, invalid };
+
 
 double dist(coord t, geometry_msgs::Point m)
 {
     // We must convert between the two coordinate systems
     return std::sqrt((t.x-m.y)*(t.x-m.y) + (t.y-m.x)*(t.y-m.x) + (t.z+m.z)*(t.z+m.z));
 }
+
+
+void log_data_before_shutting_down(){
+    stats_manager::flight_stats_srv flight_stats_srv_inst;
+    flight_stats_srv_inst.request.key = "mission_status";
+    flight_stats_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
+    
+    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+}
+
 
 void package_delivery_initialize_params() {
     if(!ros::param::get("/scanning/ip_addr",ip_addr__global)){
@@ -53,11 +74,17 @@ void package_delivery_initialize_params() {
                 (ns + "/localization_method").c_str());
     }
 
-    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
-        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+    if(!ros::param::get("/stats_file_addr",g_stats_file_addr)){
+        ROS_FATAL("Could not start scanning . Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
     }
+
+    if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
+        ROS_FATAL_STREAM("Could not start scanning supervisor_mailbox not provided");
+        //return -1;
+    }
 }
+
 
 geometry_msgs::Point get_start(Drone& drone) {
     geometry_msgs::Point start;
@@ -70,12 +97,14 @@ geometry_msgs::Point get_start(Drone& drone) {
     return start;
 }
 
+
 void get_goal(int& width, int& length, int& lanes) {
     std::cout << "Enter width ,length and number of lanes"<<std::endl
         << "associated with the area you like to sweep "<<endl;
 
     std::cin >> width >> length >> lanes;
 }
+
 
 trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, int width, int length, int lanes) {
     // Request the actual trajectory from the motion_planner node
@@ -100,41 +129,40 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
     return result;
 }
 
+
 bool trajectory_done(trajectory_t trajectory) {
     return trajectory.size() <= 1;
 }
 
-// *** F:DN main function
+
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    exit(0);
+}
+
+
 int main(int argc, char **argv)
 {
-    // ROS node initialization
     ros::init(argc, argv, "scanning", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
     ros::NodeHandle panic_nh;
-    signal(SIGINT, sigIntHandler);
-
-    //----------------------------------------------------------------- 
-	// *** F:DN variables	
-	//----------------------------------------------------------------- 
     string app_name;
     package_delivery_initialize_params();
-
     int width, length, lanes; // size of area to scan
     geometry_msgs::Point start, goal, original_start;
-
 	package_delivery::get_trajectory get_trajectory_srv;
     trajectory_t trajectory, reverse_trajectory;
-	
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
-    
-    //bool delivering_mission_complete = false; //if true, we have delivered the 
-                                              //pkg and successfully returned to origin
-
-    // *** F:DN subscribers,publishers,servers,clients
+    signal(SIGINT, sigIntHandlerPrivate);
 	ros::ServiceClient get_trajectory_client = 
         n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
-    
+    ros::ServiceClient probe_flight_stats_client = 
+      n.serviceClient<stats_manager::flight_stats_srv>("/probe_flight_stats");
+
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
@@ -147,47 +175,35 @@ int main(int argc, char **argv)
                                                       //on the goal
 
     
-    //----------------------------------------------------------------- 
-	// *** F:DN Body
-	//----------------------------------------------------------------- 
     ros::Rate loop_rate(package_delivery_loop_rate);
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
         State next_state = invalid;
-        //std::cout<<stats_file_addr<<std::endl;
-        //update_stats_file(stats_file_addr,"now now");
 
-        if (state == setup)
-        {
+        if (state == setup){
             control_drone(drone);
-
             get_goal(width, length, lanes);
             original_start = get_start(drone);
-
             next_state = waiting;
-        }
-        else if (state == waiting)
-        {
+        } else if (state == waiting) {
             ROS_INFO("Waiting to receive trajectory...");
             start = get_start(drone);
             trajectory = request_trajectory(get_trajectory_client, start, width, length, lanes);
             std::this_thread::sleep_for(std::chrono::seconds(1));
             next_state = flying;
-        }
-        else if (state == flying)
-        {
+        } else if (state == flying){
             follow_trajectory(drone, trajectory, reverse_trajectory);
             next_state = trajectory_done(trajectory) ? completed : flying;
-        }
-        else if (state == completed)
-        {
+        } else if (state == completed){
             drone.fly_velocity(0, 0, 0);
             ROS_INFO("scanned the entire space and returned successfully");
-            update_stats_file(stats_file_addr,"mission_status completed");
-            next_state = setup;
-        }
-        else
-        {
+            //update_stats_file(stats_file_addr,"mission_status completed");
+            g_mission_status = "completed";
+            log_data_before_shutting_down();
+            signal_supervisor(g_supervisor_mailbox, "kill"); 
+            ros::shutdown(); 
+            //next_state = setup;
+        }else{
             ROS_ERROR("Invalid FSM state!");
             break;
         }
@@ -195,7 +211,5 @@ int main(int argc, char **argv)
         state = next_state;
     }
 
-
     return 0;
 }
-

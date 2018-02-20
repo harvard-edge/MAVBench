@@ -55,28 +55,30 @@ def should_terminate(stat_file):
             for line in stat_f_hndlr:
                 words = line.split(' ')
                 #print words[0].strip()
-                if words[0].strip() == "mission_status":
+                if words[0].strip() == "kill":
                     stat_f_hndlr.close()
                     return True
             stat_f_hndlr.close()
             return False
                     
 
-
 def main():
-    #sys.argv[1] time based or not
-    #sys.argv[2] sleep_time_before checking (optinal)
-    polling_freq = 5 
+    """
+    # for debugging 
+    stat_file = "../data/"+"scanning"+"/supervisor_mailbox.txt"
+    max_run_time = 1000000 
+    """
+    
+    polling_freq = 5  #polling 
     assert(len(sys.argv) == 4)
     mav_bench_dir = sys.argv[1]
     app =  sys.argv[2]
     max_run_time= sys.argv[3]
-    stat_file = mav_bench_dir+"/data/"+app+"/signal_completion.txt"
-    # --- populating variables 
-    time_based = sys.argv[2];  
+    stat_file = mav_bench_dir+"/data/"+app+"/supervisor_mailbox.txt"
     stat_f_hndlr = open(stat_file, "w")
     stat_f_hndlr.close()
     initial_time = time() 
+    
     #---- body
     while(True): 
         sleep(float(polling_freq))
@@ -85,7 +87,6 @@ def main():
             action_upon_termination()
             return
         
-
 
 if __name__ == "__main__":
     main()

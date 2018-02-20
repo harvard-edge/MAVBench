@@ -50,6 +50,8 @@ float g_path_computation_time = 0;
 float g_path_computation_time_avg = 0;
 float g_path_computation_time_acc = 0;
 int g_iteration = 0;
+//std::ofstream g_signal_completion_h; //file handle write to when completed
+std::string g_supervisor_mailbox; //file handle write to when completed
 
 void log_data_before_shutting_down(){
     stats_manager::flight_stats_srv flight_stats_srv_inst;
@@ -94,6 +96,7 @@ void log_data_before_shutting_down(){
 void sigIntHandlerPrivate(int signo){
     if (signo == SIGINT) {
         log_data_before_shutting_down(); 
+        signal_supervisor(g_supervisor_mailbox, "kill"); 
         ros::shutdown();
     }
     exit(0);
@@ -116,7 +119,6 @@ void OD_callback(const mapping_and_sar::OD::ConstPtr& msg){
     }
     */
 }
-
 
 int main(int argc, char** argv)
 {
@@ -156,6 +158,10 @@ int main(int argc, char** argv)
     return -1;
   }
  */
+  if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
+      ROS_FATAL_STREAM("Could not start mapping supervisor_mailbox not provided");
+      return -1;
+  }
 
   //behzad change for visualization purposes
   ros::Publisher path_to_follow_marker_pub = nh.advertise<visualization_msgs::Marker>("path_to_follow_topic", 1000);

@@ -12,7 +12,8 @@
     <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
     <!-- stat file-->
-    <param name="stats_file_addr" value="$(find package_delivery)/../data/stats.txt" />
+    <param name="stats_file_addr" value="$(find package_delivery)/../data/scanning/stats.json" />
+    <param name="supervisor_mailbox" value="$(find package_delivery)/../data/scanning/supervisor_mailbox.txt" />
 
     <!-- Set the localization method -->
     <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
@@ -29,10 +30,11 @@
     <!-- arg name="my_launch_prefix" value="/home/nvidia/install/perf/perf record -g fp"/ -->
     
 
-
     <!-- starting nodes --> 
+    <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen">
+    <param name="/ip_addr" value="$(arg host_ip)" />
+    </node>
 
-    <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen"/>
 
     <!-- Octomap -->
 	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">

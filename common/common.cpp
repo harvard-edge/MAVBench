@@ -28,11 +28,21 @@ static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& s
 static multiDOFpoint reverse_point(multiDOFpoint mdp);
 static float yawFromQuat(geometry_msgs::Quaternion q);
 
+
 template <class T>
 static T last_msg (std::string topic) {
     // Return the last message of a latched topic
     return *(ros::topic::waitForMessage<T>(topic));
 }
+
+
+void signal_supervisor(std::string file_to_write_to, std::string msg){
+    std::ofstream file_to_write_to_h; //file handle write to when completed
+    file_to_write_to_h.open(file_to_write_to, std::ofstream::out);
+    file_to_write_to_h<< msg;
+    file_to_write_to_h.close();
+}
+
 
 void update_stats_file(const std::string& stats_file__addr, const std::string& content){
     printf("insed update stats file"); 
@@ -49,6 +59,7 @@ void sigIntHandler(int sig)
     //ros::shutdown();
     exit(0);
 }
+
 
 void action_upon_panic(Drone& drone) {
     const std::string panic_topic = "/panic_topic";
@@ -74,11 +85,13 @@ void action_upon_panic(Drone& drone) {
     ROS_INFO("Done panicking!");
 }
 
+
 void action_upon_future_col(Drone& drone) {
     drone.fly_velocity(0, 0, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     // scan_around(drone, 30);
 }
+
 
 static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) {
     ros::NodeHandle nh;
@@ -104,6 +117,7 @@ static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) 
     return !is_lost.data;
 }
 
+
 static bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic) {
     float init_yaw = drone.get_yaw();
 
@@ -128,7 +142,9 @@ static bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic) {
     return false;
 }
 
-static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t& traj, trajectory_t& reverse_traj) {
+
+static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic,
+                                            trajectory_t& traj, trajectory_t& reverse_traj) {
     const double safe_speed = 0.5;
 
     while (reverse_traj.size() > 1) {
@@ -143,6 +159,7 @@ static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& to
 
     return false;
 }
+
 
 bool action_upon_slam_loss (Drone& drone, slam_recovery_method slm...) {
     va_list args;
@@ -170,9 +187,11 @@ bool action_upon_slam_loss (Drone& drone, slam_recovery_method slm...) {
     return success;
 }
 
+
 float distance(float x, float y, float z) {
   return std::sqrt(x*x + y*y + z*z);
 }
+
 
 void scan_around(Drone &drone, int angle) {
     float init_yaw = drone.get_yaw();
@@ -189,6 +208,7 @@ void scan_around(Drone &drone, int angle) {
     drone.set_yaw(init_yaw);
 }
 
+
 void spin_around(Drone &drone) {
     drone.fly_velocity(0, 0, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -201,10 +221,11 @@ void spin_around(Drone &drone) {
     }
 }
 
+
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
 void follow_trajectory(Drone& drone, trajectory_t& traj,
-        trajectory_t& reverse_traj, yaw_strategy_t yaw_strategy,
-        float max_speed, bool check_position, float time) {
+                       trajectory_t& reverse_traj, yaw_strategy_t yaw_strategy,
+                       float max_speed, bool check_position, float time) {
 
     trajectory_t reversed_commands;
 
@@ -275,6 +296,7 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
     reverse_traj = append_trajectory(reversed_commands, reverse_traj);
 }
 
+
 static multiDOFpoint reverse_point(multiDOFpoint mdp) {
     multiDOFpoint result = mdp;
 
@@ -286,6 +308,7 @@ static multiDOFpoint reverse_point(multiDOFpoint mdp) {
     
     return result;
 }
+
 
 static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second) {
     /*
@@ -313,8 +336,8 @@ static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& s
     return first;
 }
 
-static float yawFromQuat(geometry_msgs::Quaternion q)
-{
+
+static float yawFromQuat(geometry_msgs::Quaternion q){
 	float roll, pitch, yaw;
 
 	// Formulas for roll, pitch, yaw
@@ -328,10 +351,6 @@ static float yawFromQuat(geometry_msgs::Quaternion q)
 
 
 void update_stats(Drone& drone, const std::string& fname, std::string state){
-
     auto static flight_stats = drone.getFlightStats();
 
 }
-
-
-

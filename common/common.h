@@ -18,6 +18,7 @@ typedef struct KeyValuePair{
 
 void sigIntHandler(int sig);
 
+void signal_supervisor(std::string file_to_write_to, std::string);
 // Stats functions
 void update_stats_file(const std::string& stats_file__addr, const std::string& content);
 //void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, std::string mission_status, float coverage, double cpu_compute_enenrgy, double gpu_compute_enenrgy, const std::string& fname);
