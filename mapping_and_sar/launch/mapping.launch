@@ -9,6 +9,7 @@
 
   <!-- stat file-->
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
+  <param name="signal_completion_file" value="$(find mapping_and_sar)/../data/mapping/signal_completion.txt" />
   <param name="status_monitor_rate" value="100" />
 
   <!--node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world world 100" /-->
@@ -40,7 +41,7 @@
     <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
     <arg name="DEBUG" value="$(arg DEBUG)"/> 
     <arg name="update_coverage_freq" value="3"/> 
-    <arg name="coverage_threshold" value="8"/> 
+    <arg name="coverage_threshold" value="7"/> 
     <arg name="app_name" value="mapping" />
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="host_ip" value="$(arg host_ip)"/>

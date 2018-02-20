@@ -111,6 +111,7 @@ int main(int argc, char** argv)
   uint16_t port = 41451;
   std::string ip_addr__global;
   std::string localization_method; 
+  std::string signal_completion_file; 
   std::string ns = ros::this_node::getName();
   if (!ros::param::get("/ip_addr", ip_addr__global)) {
     ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
@@ -134,6 +135,14 @@ int main(int argc, char** argv)
     return -1;
   }
 
+  if(!ros::param::get("/signal_completion_file",signal_completion_file))  {
+      ROS_FATAL_STREAM("Could not start mapping signal_completion_file not provided");
+      return -1;
+    }
+
+
+
+  std::ofstream signal_completion_f; //file to write to when completed
 
   //behzad change for visualization purposes
   ros::Publisher path_to_follow_marker_pub = nh.advertise<visualization_msgs::Marker>("path_to_follow_topic", 1000);
@@ -341,6 +350,9 @@ int main(int argc, char** argv)
     g_path_computation_time_acc += g_path_computation_time;    
     if(g_coverage > coverage_threshold){
         g_mission_status = "completed";
+        signal_completion_f.open(signal_completion_file, std::ofstream::out);
+        signal_completion_f << "mission_status";
+        signal_completion_f.close();
         log_data_before_shutting_down();
         ros::shutdown(); 
     }
