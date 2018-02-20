@@ -64,13 +64,13 @@ def terminate(stat_file):
 
 
 def main():
-    #action_upon_termination();
-    #sys.exit(0)
+    action_upon_termination();
+    sys.exit(0)
     #sys.argv[1] time based or not
     #sys.argv[2] sleep_time_before checking (optinal)
     SLEEP_TIME_BEFORE_CHECKING = 2 
     assert(len(sys.argv) >= 3)
-    stat_file = sys.argv[1]+"data/package_delivery/stats.txt"
+    stat_file = sys.argv[1]+"data/package_delivery/signal_completion.txt"
     # --- populating variables 
     if (len(sys.argv) > 3):
         sleep_time_before_checking = sys.argv[3]

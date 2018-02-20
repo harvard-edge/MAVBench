@@ -108,7 +108,6 @@ int main(int argc, char** argv)
   ros::ServiceClient probe_flight_stats_client = 
       nh.serviceClient<stats_manager::flight_stats_srv>("/probe_flight_stats");
   
-  //ROS_INFO("Started mapping");
   uint16_t port = 41451;
   std::string ip_addr__global;
   std::string localization_method; 
@@ -118,12 +117,11 @@ int main(int argc, char** argv)
               (ns + "/ip_addr").c_str());
     return -1;
   }
-  
     if(!ros::param::get("/localization_method",localization_method))  {
       ROS_FATAL_STREAM("Could not start mapping localization_method not provided");
       return -1;
     }
-  
+
     if(!ros::param::get("/stats_file_addr",stats_file_addr)){
         ROS_FATAL("Could not start mapping . Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
@@ -145,14 +143,11 @@ int main(int argc, char** argv)
   path_to_follow_marker.action = visualization_msgs::Marker::ADD;
   path_to_follow_marker.scale.x = 0.3;
 
-  ROS_INFO("before anything in mapping");
 
   //ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
   //ROS_ERROR_STREAM("blah"<<ip_addr__global);
-  //Drone drone(ip_addr__global.c_str(), port);
   Drone drone(ip_addr__global.c_str(), port, localization_method);
-  
-  ROS_INFO("after anything in mapping");
+
   //dummy segment publisher
   ros::Publisher seg_pub = nh.advertise <multiagent_collision_check::Segment>("evasionSegment", 1);
 
@@ -200,11 +195,8 @@ int main(int argc, char** argv)
       return -1;
   }
   
-  
   double segment_dedicated_time = yaw_t + dt;
-  ROS_INFO("before controol drone");
   control_drone(drone);
-
 
   static int n_seq = 0;
 
@@ -212,9 +204,6 @@ int main(int argc, char** argv)
   mav_msgs::EigenTrajectoryPoint trajectory_point;
   trajectory_msgs::MultiDOFJointTrajectoryPoint trajectory_point_msg;
 
-  
-  
-  
   // Wait for 5 seconds to let the Gazebo GUI show up.
   ros::Duration(5.0).sleep();
 
@@ -224,8 +213,7 @@ int main(int argc, char** argv)
   // This is the initialization motion, necessary that the known free space allows the planning
   // of initial paths.
   //ROS_INFO("Starting the planner: Performing initialization motion");
-  
-  
+
  /* 
   for (double i = 0; i <= 1.0; i = i + 0.25) {
     
@@ -255,9 +243,9 @@ int main(int argc, char** argv)
     ros::Duration(1.0).sleep();
   }
   */
-  spin_around(drone);
-  
+ 
   //take a snapshot of flightStats
+  // Move back a little bit
   stats_manager::flight_stats_srv flight_stats_srv_inst;
   flight_stats_srv_inst.request.key = "snapShot_flightStats";
   if (ros::service::waitForService("/probe_flight_stats", 10)){ 
@@ -265,8 +253,9 @@ int main(int argc, char** argv)
          ROS_ERROR_STREAM("could not probe data using stats manager");
          ros::shutdown();
      }
-  } 
-
+  }
+  
+  spin_around(drone);
   // Move back a little bit
   auto cur_pos = drone.position();
   trajectory_point.position_W.x() = cur_pos.x - 1.5;
@@ -277,7 +266,7 @@ int main(int argc, char** argv)
   samples_array.points.clear();
   n_seq++;
   mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  
+
   samples_array.points.push_back(trajectory_point_msg);
   trajectory_pub.publish(samples_array);
   ros::Duration(1.0).sleep();
@@ -286,12 +275,9 @@ int main(int argc, char** argv)
   // Start planning: The planner is called and the computed path sent to the controller.
   g_iteration = 0;
   multiagent_collision_check::Segment dummy_seg;
-  
   ros::ServiceClient nbvplanner_client= 
         nh.serviceClient<nbvplanner::nbvp_srv>("nbvplanner", true);
   
-
-    
   
   while (ros::ok()) {
 
@@ -350,7 +336,6 @@ int main(int argc, char** argv)
                                     //before sending out another one
     }
     g_iteration++;
-    
     g_coverage =  planSrv.response.coverage;
     g_path_computation_time = planSrv.response.path_computation_time; 
     g_path_computation_time_acc += g_path_computation_time;    

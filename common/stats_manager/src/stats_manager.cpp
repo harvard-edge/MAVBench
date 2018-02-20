@@ -392,7 +392,7 @@ void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightSta
 
 bool probe_flight_stats_cb(stats_manager::flight_stats_srv::Request &req, stats_manager::flight_stats_srv::Response &res)
 {
-    //ROS_ERROR_STREAM("insdie the call back"); 
+    ROS_ERROR_STREAM("inside the call back"); 
     if (g_drone == NULL) {
         ROS_ERROR_STREAM("drone object is not initialized");
         return false; 

@@ -18,4 +18,4 @@ echo "c"
 #sleep 30
 #sleep 15
 # echo "40 -10 -3"
-echo "4 4 2"
+echo "10 10 3"

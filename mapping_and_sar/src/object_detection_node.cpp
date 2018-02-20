@@ -46,7 +46,13 @@ static mapping_and_sar::OD result;
 
 void obj_detect_call_back(const sensor_msgs::ImageConstPtr& msg)
 {
-    
+    if (result.found){
+        result.found = true;
+        result.point.x = result.point.x;
+        result.point.y = result.point.y;
+        return; 
+    }
+
     const double detect_thresh = 0.8;
     //cv::Mat img;
     cv::Mat depth;
@@ -72,19 +78,18 @@ void obj_detect_call_back(const sensor_msgs::ImageConstPtr& msg)
 
     if(bb.conf >= detect_thresh) {
         ROS_INFO_STREAM("found the object"<< bb.conf);
-        update_stats_file(stats_file_addr,"mission_status completed");
+        //update_stats_file(stats_file_addr,"mission_status completed");
         cv::Mat img_to_show;
         cv::Mat img_cpy = cv_ptr->image; 
         cv::rectangle(img_cpy, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(0,255,255)); //yellow
         cv::Size size(512, 512);
         resize(img_cpy, img_to_show, size);
-               for (int i = 0; i < 10000; i++){ 
-            system(("rosnode kill " + mav_name__global + "/SAR").c_str());
+        for (int i = 0; i < 10000; i++){ 
+            //system(("rosnode kill " + mav_name__global + "/SAR").c_str());
             cv::imshow(OPENCV_WINDOW, img_to_show);
             cv::waitKey(3);
-	    }
+        }
 
-        
         result.found = true;
         result.point.x = bb.x;
         result.point.y = bb.y;
@@ -130,9 +135,11 @@ int main(int argc, char** argv){
   result.found = false;
   ros::Rate r(2); 
   while (ros::ok()) {
+      /* 
       if (result.found) {
           ros::shutdown(); 
       }
+      */
       ros::spinOnce(); 
       obj_det_pub.publish(result);
       r.sleep();
