@@ -92,16 +92,11 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
         return trajectory_t();
     }
 
-    trajectory_t result;
-    for (multiDOFpoint p : srv.response.multiDOFtrajectory.points) {
-        result.push_back(p);
-    }
-
-    return result;
+    return create_trajectory(srv.response.multiDOFtrajectory);
 }
 
 bool trajectory_done(trajectory_t trajectory) {
-    return trajectory.size() <= 1;
+    return trajectory.size() == 0;
 }
 
 // *** F:DN main function
@@ -176,7 +171,7 @@ int main(int argc, char **argv)
         }
         else if (state == flying)
         {
-            follow_trajectory(drone, trajectory, reverse_trajectory);
+            follow_trajectory(drone, &trajectory, &reverse_trajectory, ignore_yaw, true);
             next_state = trajectory_done(trajectory) ? completed : flying;
         }
         else if (state == completed)

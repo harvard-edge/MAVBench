@@ -18,7 +18,6 @@ void output_flight_summary(Drone& drone, const std::string& fname);
 
 
 // Functions and classes to manipulate and follow trajectories
-// typedef trajectory_msgs::MultiDOFJointTrajectoryPoint multiDOFpoint;
 struct multiDOFpoint {
     double x, y, z;
     double vx, vy, vz;
@@ -28,7 +27,7 @@ struct multiDOFpoint {
 typedef std::deque<multiDOFpoint> trajectory_t;
 enum yaw_strategy_t { ignore_yaw, face_forward, face_backward, follow_yaw };
 
-trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory&);
+trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory&, bool face_forward = false);
 trajectory_msgs::MultiDOFJointTrajectory create_trajectory_msg(const trajectory_t&);
 
 void follow_trajectory(Drone& drone, trajectory_t * traj,
@@ -40,23 +39,22 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
 
 
 // Recovery methods
-enum slam_recovery_method { spin, backtrack, reset };
-
 trajectory_t create_panic_trajectory(Drone& drone, const geometry_msgs::Vector3& panic_dir);
-// void action_upon_future_col(Drone& drone);
 trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, double stopping_distance);
-bool action_upon_slam_loss(Drone& drone, slam_recovery_method slm...);
 trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj, const trajectory_t& rev_normal_traj);
+
+bool reset_slam(Drone& drone, const std::string& topic);
 
 
 // Spinning commands
 void spin_around(Drone &drone);
 void scan_around(Drone &drone, int angle);
-// void spin(Drone &drone, int n_pies=20);
 
 
 // Utility functions
 float distance(float x, float y, float z);
+float yawFromQuat(geometry_msgs::Quaternion q);
+void waitForLocalization(std::string method);
 
 #endif
 

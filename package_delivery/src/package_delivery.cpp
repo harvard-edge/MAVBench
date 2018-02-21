@@ -116,7 +116,7 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
         return trajectory_t();
     }
 
-    return create_trajectory(srv.response.multiDOFtrajectory);
+    return create_trajectory(srv.response.multiDOFtrajectory, true);
 }
 
 bool trajectory_done(const trajectory_t& trajectory) {
@@ -179,6 +179,10 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
+    
+    // Wait for the localization method to come online
+    waitForLocalization(localization_method);
+
     update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
     log_time(stats_file_addr);
     update_stats_file(stats_file_addr,"###\n");
@@ -217,14 +221,13 @@ int main(int argc, char **argv)
         {
             trajectory_t * forward_traj = nullptr;
             trajectory_t * rev_traj = nullptr;
-            bool check_position = false;
-            yaw_strategy_t yaw_strategy = face_forward;
+            bool check_position = true;
+            yaw_strategy_t yaw_strategy = follow_yaw;
 
             // Handle panic queue
             if (should_panic) {
                 ROS_ERROR("Panicking!");
                 panic_traj = create_panic_trajectory(drone, panic_direction);
-                check_position = false;
                 
                 normal_traj.clear(); // Replan a path once we're done
             } else {
@@ -237,7 +240,10 @@ int main(int argc, char **argv)
                 if (!created_slam_loss_traj)
                     slam_loss_traj = create_slam_loss_trajectory(drone, normal_traj, rev_normal_traj);
 
-                future_col_traj.clear(); // No need to keep this if we're planning to replan anyway. Keeping it could cause collisions in some cases
+                // No need to keep the future collision trajectory if we're
+                // planning to replan anyway. Keeping it could cause collisions
+                // in some cases
+                future_col_traj.clear(); 
 
                 created_slam_loss_traj = true;
             } else {
@@ -254,8 +260,6 @@ int main(int argc, char **argv)
 
                 created_future_col_traj = true;
 
-                check_position = false;
-
                 ROS_WARN_STREAM("Future col length " << future_col_traj.size());
 
                 normal_traj.clear(); // Replan the normal path once we're done
@@ -266,34 +270,31 @@ int main(int argc, char **argv)
 
             // Choose correct queue to use
             if (!panic_traj.empty()) {
-                ROS_ERROR("Chose panic trajectory");
                 forward_traj = &panic_traj;
                 rev_traj = nullptr;
+                check_position = false;
+                yaw_strategy = ignore_yaw;
             } else if (!slam_loss_traj.empty()) {
-                ROS_WARN("Chose SLAM loss trajectory");
                 forward_traj = &slam_loss_traj;
                 rev_traj = &normal_traj;
-                yaw_strategy = ignore_yaw;
+                check_position = false;
             } else if (!future_col_traj.empty()) {
-                ROS_WARN("Chose future collision trajectory");
                 forward_traj = &future_col_traj;
                 rev_traj = &rev_normal_traj;
             } else {
-                ROS_INFO("Chose normal path");
                 forward_traj = &normal_traj;
                 rev_traj = &rev_normal_traj;
             }
 
-            multiDOFpoint p = forward_traj->front();
-            std::cout << forward_traj->size() << " ";
-            std::cout << p.vx << " " << p.vy << " " << p.vz << " " << p.duration << std::endl;
-
             follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position);
 
             // Choose next state (failure, completion, or more flying)
-            
-            if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj))
-                next_state = failed;
+            if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)) {
+                if (reset_slam(drone, "/slam_lost"))
+                    next_state = completed;
+                else
+                    next_state = failed;
+            }
             else if (trajectory_done(*forward_traj))
                 next_state = completed;
             else

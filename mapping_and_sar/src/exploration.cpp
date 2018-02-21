@@ -132,8 +132,10 @@ int main(int argc, char** argv)
               "/nbvp/t_offset");
       return -1;
   }
-  
-  
+
+  // Wait for the localization method to come online
+  waitForLocalization(localization_method);
+
   double segment_dedicated_time = yaw_t + dt;
   ROS_INFO("before controol drone");
   control_drone(drone);

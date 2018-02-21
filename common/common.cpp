@@ -20,14 +20,8 @@ using namespace std;
 
 static const int angular_vel = 15;
 
-static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic,
-        trajectory_t& traj, trajectory_t& reverse_traj);
-static bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic);
-static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic);
-
 static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second);
 static multiDOFpoint reverse_point(multiDOFpoint mdp);
-static float yawFromQuat(geometry_msgs::Quaternion q);
 
 template <class T>
 static T magnitude(T a, T b, T c) {
@@ -121,19 +115,39 @@ trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, doubl
 trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj, const trajectory_t& rev_normal_traj)
 {
     trajectory_t result;
+    float current_yaw = drone.get_yaw();
+    auto current_pos = drone.position();
 
     // Add pause to trajectory
-    /*
     multiDOFpoint pause_p;
+    pause_p.x = current_pos.x;
+    pause_p.y = current_pos.y;
+    pause_p.z = current_pos.z;
     pause_p.vx = pause_p.vy = pause_p.vz = 0;
     pause_p.duration = 2.0;
-    pause_p.yaw = drone.get_yaw();
+    pause_p.yaw = current_yaw;
 
     result.push_back(pause_p);
-    */
+
+    // Add spinning around to trajectory
+    const float scanning_width = 45;
+
+    multiDOFpoint scan_p;
+    scan_p.x = current_pos.x;
+    scan_p.y = current_pos.y;
+    scan_p.z = current_pos.z;
+    scan_p.vx = scan_p.vy = scan_p.vz = 0;
+    scan_p.duration = scanning_width / drone.maxYawRateDuringFlight();
+
+    float yaws[] = {current_yaw - scanning_width, current_yaw, current_yaw + scanning_width, current_yaw};
+
+    for (float y : yaws) {
+        scan_p.yaw = y;
+        result.push_back(scan_p);
+    }
 
     // Add backtrack to trajectory
-    double distance_left = 5.0;
+    double distance_left = 500.0; // TODO: make this a reasonable number
     const double safe_v = 1.0;
 
     for (multiDOFpoint p : rev_normal_traj) {
@@ -158,6 +172,17 @@ trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj
             break;
     }
 
+    // Add one last pause
+    multiDOFpoint last_pause_p;
+    last_pause_p.x = result.back().x;
+    last_pause_p.y = result.back().y;
+    last_pause_p.z = result.back().z;
+    last_pause_p.vx = last_pause_p.vy = last_pause_p.vz = 0;
+    last_pause_p.duration = 2.0;
+    last_pause_p.yaw = YAW_UNCHANGED;
+
+    result.push_back(last_pause_p);
+
     // Slow down normal_traj
     const double max_a = 1.0;
     double max_v = safe_v;
@@ -179,7 +204,7 @@ trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj
 }
 
 
-static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) {
+bool reset_slam(Drone& drone, const std::string& topic) {
     ros::NodeHandle nh;
 	ros::ServiceClient reset_client = nh.serviceClient<std_srvs::Trigger>("/slam_reset");
     std_srvs::Trigger srv;
@@ -189,6 +214,7 @@ static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) 
         ROS_INFO("SLAM resetted succesfully");
     } else {
         ROS_ERROR("Failed to reset SLAM");
+        return false;
     }
 
     // Move around a little to initialize SLAM
@@ -203,72 +229,6 @@ static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) 
     return !is_lost.data;
 }
 
-
-static bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic) {
-    float init_yaw = drone.get_yaw();
-
-    // Spin around until we re-localize
-    for (int i = angular_vel; i <= 360; i += angular_vel) {
-        // Turn slightly
-        int angle = init_yaw + i;
-
-        auto start_turn = std::chrono::system_clock::now();
-        drone.set_yaw(angle <= 180 ? angle : angle - 360);
-
-        auto end_turn = start_turn + std::chrono::seconds(1);
-        std::this_thread::sleep_until(end_turn);
-
-        // Check whether SLAM is back
-        std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
-
-        if (!is_lost.data)
-            return true;
-    }
-
-    return false;
-}
-
-static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic, trajectory_t& traj, trajectory_t& reverse_traj) {
-    const double safe_speed = 0.5;
-
-    while (reverse_traj.size() > 1) {
-        follow_trajectory(drone, &reverse_traj, &traj, face_backward, false, safe_speed);
-
-        // Check whether SLAM is back
-        std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
-        if (!is_lost.data)
-            return true;
-    }
-    ROS_INFO("done");
-
-    return false;
-}
-
-bool action_upon_slam_loss (Drone& drone, slam_recovery_method slm...) {
-    va_list args;
-    va_start(args, slm);
-
-    const std::string lost_topic = "/slam_lost";
-    bool success;
-
-    // Stop the drone
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    if (slm == spin) {
-        success = action_upon_slam_loss_spin(drone, lost_topic);
-    } else if (slm == backtrack) {
-        trajectory_t& traj = *(va_arg(args, trajectory_t*));
-        trajectory_t& reverse_traj = *(va_arg(args, trajectory_t*));
-        success = action_upon_slam_loss_backtrack(drone, lost_topic, traj, reverse_traj);
-    } else if (slm == reset) {
-        success = action_upon_slam_loss_reset(drone, lost_topic);
-    }
-
-    va_end(args);
-
-    return success;
-}
 
 float distance(float x, float y, float z) {
   return std::sqrt(x*x + y*y + z*z);
@@ -386,7 +346,7 @@ static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& s
     return first;
 }
 
-static float yawFromQuat(geometry_msgs::Quaternion q)
+float yawFromQuat(geometry_msgs::Quaternion q)
 {
 	float roll, pitch, yaw;
 
@@ -415,7 +375,7 @@ void output_flight_summary(Drone& drone, const std::string& fname)
     update_stats_file(fname, stats_ss.str());
 }
 
-trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory& t)
+trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory& t, bool face_forward)
 {
     trajectory_t result;
     for (auto it = t.points.begin(); it+1 != t.points.end(); ++it) {
@@ -429,7 +389,14 @@ trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory& t
         mdp.vy = it->velocities[0].linear.y;
         mdp.vz = it->velocities[0].linear.z;
 
-        mdp.yaw = yawFromQuat(it->transforms[0].rotation);
+        if (face_forward) {
+            if (mdp.vx == 0 && mdp.vy == 0)
+                mdp.yaw = YAW_UNCHANGED;
+            else
+                mdp.yaw = 90 - atan2(mdp.vy, mdp.vx)*180.0/3.14;
+        } else {
+            mdp.yaw = yawFromQuat(it->transforms[0].rotation);
+        }
 
         mdp.duration = ((it+1)->time_from_start - it->time_from_start).toSec();
 
@@ -491,5 +458,20 @@ trajectory_msgs::MultiDOFJointTrajectory create_trajectory_msg(const trajectory_
     result.points.push_back(mdp);
 
     return result;
+}
+
+void waitForLocalization(std::string method)
+{
+    // Wait for the localization method to come online
+    tf::TransformListener tfListen;
+    while(1) {
+        try {
+            tf::StampedTransform tf;
+            tfListen.lookupTransform("/world", "/"+method, ros::Time(0), tf);
+            break;
+        } catch(tf::TransformException& ex) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
 }
 
