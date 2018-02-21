@@ -15,6 +15,30 @@ typedef struct KeyValuePair{
 
 } KeyValuePairStruct;
 
+typedef struct stats{
+    long long accumulate;
+    long long accumulate_sqr;
+    int ctr; 
+     
+    stats(){
+         this->accumulate = 0;
+         this->accumulate_sqr = 0;
+         this->ctr = 0;
+    }
+    
+    stats(long long accumulate, long long accumulate_sqr, int ctr): 
+                 accumulate(accumulate), accumulate_sqr(accumulate_sqr), 
+                 ctr(ctr) {
+    }
+
+	// accumulate values  
+	void acc(long long accumulate, long long accumulate_sqr){
+        this->accumulate += accumulate;
+        this->accumulate_sqr += accumulate_sqr;
+        this->ctr += 1;
+    }
+} statsStruct;
+
 
 void sigIntHandler(int sig);
 

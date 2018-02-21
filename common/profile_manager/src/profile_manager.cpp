@@ -1,5 +1,5 @@
 #include "ros/ros.h"
-
+#include <cmath>
 #include <iostream>
 #include <signal.h>
 #include <string>
@@ -319,7 +319,7 @@ msr::airlib::FlightStats g_init_stats, g_end_stats;
 string g_ns;
 uint16_t g_port; 
 vector<KeyValuePairStruct> g_highlevel_application_stats;
-std::map <std::string, double> g_topics_stats;
+std::map <std::string, statsStruct> g_topics_stats;
 
 xpu_sample_stat xs_cpu, xs_gpu;
 rapl_sysfs_stats rs;
@@ -357,34 +357,43 @@ void output_flight_summary(void){
     
     //Flight Stats dependent metrics
     stats_ss << endl<<"{"<<endl;
-    stats_ss << "  \"distance_travelled\": " << g_end_stats.distance_traveled - g_init_stats.distance_traveled<< "," << endl;
-    stats_ss << "  \"flight_time\": " << g_end_stats.flight_time - g_init_stats.flight_time<< "," << endl;
-    stats_ss << "  \"collision_count\": " << g_end_stats.collision_count  - g_init_stats.collision_count << "," << endl;
+    stats_ss << "\t\"distance_travelled\": " << g_end_stats.distance_traveled - g_init_stats.distance_traveled<< "," << endl;
+    stats_ss << "\t\"flight_time\": " << g_end_stats.flight_time - g_init_stats.flight_time<< "," << endl;
+    stats_ss << "\t\"collision_count\": " << g_end_stats.collision_count  - g_init_stats.collision_count << "," << endl;
     
-    stats_ss << "  \"initial_voltage\": " << g_init_stats.voltage << "," << endl;
-    stats_ss << "  \"end_voltage\": " << g_end_stats.voltage << "," << endl;
-    stats_ss << "  \"StateOfCharge\": " << 100 - (g_init_stats.state_of_charge  - g_end_stats.state_of_charge) << "," << endl;
-    stats_ss << "  \"rotor energy consumed \": " << g_end_stats.energy_consumed - g_init_stats.energy_consumed << ","<<endl; 
+    stats_ss << "\t\"initial_voltage\": " << g_init_stats.voltage << "," << endl;
+    stats_ss << "\t\"end_voltage\": " << g_end_stats.voltage << "," << endl;
+    stats_ss << "\t\"StateOfCharge\": " << 100 - (g_init_stats.state_of_charge  - g_end_stats.state_of_charge) << "," << endl;
+    stats_ss << "\t\"rotor energy consumed \": " << g_end_stats.energy_consumed - g_init_stats.energy_consumed << ","<<endl; 
 
     // the rest of metrics 
     for (auto result_el: g_highlevel_application_stats) {
-        stats_ss<<  '"'<< result_el.key<<'"' <<": " << result_el.value<<"," << endl;
+        stats_ss<<  "\t\""<< result_el.key<<'"' <<": " << result_el.value<<"," << endl;
         if(result_el.key == "gpu_compute_energy" || result_el.key == "cpu_compute_energy"){
             total_energy_consumed += result_el.value; 
         }
     }
     total_energy_consumed +=  (g_end_stats.energy_consumed - g_init_stats.energy_consumed);
-    stats_ss << '"' <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
+    stats_ss << "\t\"" <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
     
     // topic rates
-    stats_ss << '"  ' <<"topic_rates:"<<'"'<<":{" << endl;
+    stats_ss << "\t\""  <<"topic_rates"<<'"'<<":{" << endl;
     for (auto it = std::begin(g_topics_stats); it !=std::end(g_topics_stats); ++it) {
-        if (it->second != 0){
+        if (it->second.ctr != 0){
             if (next(it) ==  g_topics_stats.end()){
-                stats_ss << '"' <<it->first<<'"'<<":" << it->second<< endl <<"}" << ","<<endl;
-            }
+                stats_ss << "\t\t\"" <<it->first<<'"'<<":{" << endl;
+                stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<<(it->second.accumulate)/(it->second.ctr)<<","<< endl;
+                float std =  -1*pow((it->second.accumulate)/(it->second.ctr), 2);
+                std +=  ((it->second.accumulate_sqr)/(it->second.ctr));
+                stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<<pow(std, .5) << endl <<"\t\t}" << endl;
+                stats_ss <<"}" << ","<<endl;
+              }
             else{
-                stats_ss << '"' <<it->first<<'"'<<":" << it->second<< "," << endl;
+                stats_ss << "\t\t\"" <<it->first<<'"'<<":{" << endl;
+                stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<<(it->second.accumulate)/(it->second.ctr)<<"," <<endl;
+                float std =  -1*pow((it->second.accumulate)/(it->second.ctr), 2);
+                std +=  ((it->second.accumulate_sqr)/(it->second.ctr));
+                stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<<pow(std, .5) << endl <<"\t\t}" << ","<<endl;
             }
         }
     }
@@ -413,7 +422,7 @@ bool probe_flight_stats_cb(profile_manager::flight_stats_srv::Request &req, prof
         ros::master::getTopics(master_topics);
         for (ros::master::V_TopicInfo::iterator it = master_topics.begin() ; it != master_topics.end(); it++) {
               const ros::master::TopicInfo& info = *it;
-              g_topics_stats[info.name]  = 0;
+              g_topics_stats[info.name] = statsStruct(0, 0, 0);
               //std::cout << "topic_" << it - master_topics.begin() << ": " << info.name << std::endl;
         }
     }else{ 
@@ -427,7 +436,10 @@ void topic_statistics_cb(const rosgraph_msgs::TopicStatistics::ConstPtr& msg) {
     if (g_topics_stats.size() == 0) {//while not populated with the topic, return
         return;
     }
-    g_topics_stats[msg->topic] = (double)1.0/(double)msg->period_mean.toSec(); 
+    int pub_rate  = (int) ((double)1.0/(double)msg->period_mean.toSec());
+    int pub_rate_sqr = pub_rate*pub_rate; 
+    g_topics_stats[msg->topic].acc(pub_rate, pub_rate_sqr);
+    //ROS_INFO_STREAM(g_topics_stats[msg->topic].accumulate);
 }
 
 
