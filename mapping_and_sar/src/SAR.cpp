@@ -29,7 +29,7 @@
 #include <std_srvs/Empty.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <multiagent_collision_check/Segment.h>
-#include <stats_manager/flight_stats_srv.h>
+#include <profile_manager/flight_stats_srv.h>
 #include <mapping_and_sar/OD.h>
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
@@ -54,7 +54,7 @@ int g_iteration = 0;
 std::string g_supervisor_mailbox; //file handle write to when completed
 
 void log_data_before_shutting_down(){
-    stats_manager::flight_stats_srv flight_stats_srv_inst;
+    profile_manager::flight_stats_srv flight_stats_srv_inst;
     
     flight_stats_srv_inst.request.key = "mission_status";
     flight_stats_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
@@ -129,7 +129,7 @@ int main(int argc, char** argv)
       > (mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
   ros::Subscriber obj_det_sub = nh.subscribe <mapping_and_sar::OD>("/OD_topic", 2, OD_callback);
   ros::ServiceClient probe_flight_stats_client = 
-      nh.serviceClient<stats_manager::flight_stats_srv>("/probe_flight_stats");
+      nh.serviceClient<profile_manager::flight_stats_srv>("/probe_flight_stats");
   
   uint16_t port = 41451;
   std::string ip_addr__global;
@@ -266,8 +266,8 @@ int main(int argc, char** argv)
     ros::Duration(1.0).sleep();
   }
   */
-  stats_manager::flight_stats_srv flight_stats_srv_inst;
-  flight_stats_srv_inst.request.key = "snapShot_flightStats";
+  profile_manager::flight_stats_srv flight_stats_srv_inst;
+  flight_stats_srv_inst.request.key = "start_profiling";
   if (ros::service::waitForService("/probe_flight_stats", 10)){ 
      if(!probe_flight_stats_client.call(flight_stats_srv_inst)){
          ROS_ERROR_STREAM("could not probe data using stats manager");

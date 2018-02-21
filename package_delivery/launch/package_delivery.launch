@@ -19,10 +19,13 @@
     <!-- orb slam location--> 
     <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
     
+    
+        
     <!-- Set the localization method /-->
     <!-- arg name="localization_method" default="orb_slam2_rgbd" /-->
     <arg name="localization_method" default="ground_truth" />
     <!--arg name="localization_method" default="gps" /-->
+    
     
     <!-- stat file-->
     <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
@@ -30,7 +33,14 @@
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)-->
     <arg name="DEBUG" default="false" />
+    <arg name="CLCT_DATA" value="true" />
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
+
+
+    <group if="$(arg CLCT_DATA)">
+    <param name="enable_statistics" value="true"/>
+    </group> 
+
 
     <!-- set this to "" if you don't want perf -->
     <arg name="my_launch_prefix" default="" /> 
@@ -38,7 +48,7 @@
 
     <!-- starting nodes -->
 
-    <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen">
+    <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
     <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
     <param name="ip_addr" value="$(arg host_ip)"/>
     </node>

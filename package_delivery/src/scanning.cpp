@@ -28,7 +28,7 @@
 #include "std_msgs/Bool.h"
 #include <signal.h>
 #include "common.h"
-#include <stats_manager/flight_stats_srv.h>
+#include <profile_manager/flight_stats_srv.h>
 
 using namespace std;
 string ip_addr__global;
@@ -51,7 +51,7 @@ double dist(coord t, geometry_msgs::Point m)
 
 
 void log_data_before_shutting_down(){
-    stats_manager::flight_stats_srv flight_stats_srv_inst;
+    profile_manager::flight_stats_srv flight_stats_srv_inst;
     flight_stats_srv_inst.request.key = "mission_status";
     flight_stats_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
     
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
 	ros::ServiceClient get_trajectory_client = 
         n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
     ros::ServiceClient probe_flight_stats_client = 
-      n.serviceClient<stats_manager::flight_stats_srv>("/probe_flight_stats");
+      n.serviceClient<profile_manager::flight_stats_srv>("/probe_flight_stats");
 
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)

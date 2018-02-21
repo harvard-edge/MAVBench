@@ -23,15 +23,21 @@
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)--> 
     <arg name="DEBUG" value="true" /> 
+    <arg name="CLCT_DATA" value="true" />
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
 
     <!-- set this to "" if you don't want perf -->
     <arg name="my_launch_prefix" value="" /> 
     <!-- arg name="my_launch_prefix" value="/home/nvidia/install/perf/perf record -g fp"/ -->
     
+    
+    <group if="$(arg CLCT_DATA)">
+    <param name="enable_statistics" value="true"/>
+    </group> 
+
 
     <!-- starting nodes --> 
-    <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen">
+    <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
     <param name="/ip_addr" value="$(arg host_ip)" />
     </node>
 

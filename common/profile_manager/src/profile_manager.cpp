@@ -4,11 +4,13 @@
 #include <signal.h>
 #include <string>
 #include <sstream>
-#include <stats_manager/flight_stats_srv.h>
+#include <profile_manager/flight_stats_srv.h>
+#include <rosgraph_msgs/TopicStatistics.h>
 #include "Drone.h"
 #include "common.h"
-
+#include <map>
 using namespace std;
+
 
 #ifdef USE_NVML
 #include "nvml.h"
@@ -29,7 +31,6 @@ static int package_map[MAX_PACKAGES];
 /* TODO: on Skylake, also may support  PSys "platform" domain,    */
 /* the whole SoC not just the package.                */
 /* see dcee75b3b7f025cc6765e6c92ba0a4e59a4d25f4            */
-
 
 
 static int detect_cpu(void) {
@@ -136,7 +137,7 @@ static int setup_rapl_sysfs(rapl_sysfs_stats *s) {
     }
 
     detect_packages();
-	// printf("\nTrying sysfs powercap interface to gather results\n\n");
+	// printf("\nTrying sysfs powercap interface to gather g_highlevel_application_stats\n\n");
 
 	/* /sys/class/powercap/intel-rapl/intel-rapl:0/ */
 	/* name has name */
@@ -317,25 +318,25 @@ bool g_end_requested = false;
 msr::airlib::FlightStats g_init_stats, g_end_stats;
 string g_ns;
 uint16_t g_port; 
-vector<KeyValuePairStruct> results;
-
+vector<KeyValuePairStruct> g_highlevel_application_stats;
+std::map <std::string, double> g_topics_stats;
 
 xpu_sample_stat xs_cpu, xs_gpu;
 rapl_sysfs_stats rs;
 
 void initialize_params() {
-    if(!ros::param::get("/stats_manager/ip_addr",g_ip_addr)){
-        ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for stats_manager/ip_addr");
+    if(!ros::param::get("/profile_manager/ip_addr",g_ip_addr)){
+        ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for profile_manager/ip_addr");
       return; 
     }
     
     if(!ros::param::get("/stats_file_addr", g_stats_fname)){
-        ROS_FATAL("Could not start exploration. Parameter missing! Lookining for stats_manager/stats_file_addr");
+        ROS_FATAL("Could not start exploration. Parameter missing! Lookining for profile_manager/stats_file_addr");
       return; 
     }
     g_port = 41451;
     /* 
-    if(!ros::param::get("/stats_manager/localization_method",localization_method)){
+    if(!ros::param::get("/profile_manager/localization_method",localization_method)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/localization_method").c_str());
        return; 
@@ -348,49 +349,50 @@ void initialize_params() {
     */
 }
 
-void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, 
-        vector<KeyValuePairStruct>results,const std::string& fname){
-    
+void output_flight_summary(void){
+    //msr::airlib::FlightStats init, msr::airlib::FlightStats end, 
+    //   vector<KeyValuePairStruct>g_highlevel_application_stats,const std::string& fname){
     stringstream stats_ss;
     float total_energy_consumed = 0;
     
     //Flight Stats dependent metrics
     stats_ss << endl<<"{"<<endl;
-    stats_ss << "  \"distance_travelled\": " << end.distance_traveled - init.distance_traveled<< "," << endl;
-    stats_ss << "  \"flight_time\": " << end.flight_time -init.flight_time<< "," << endl;
-    stats_ss << "  \"collision_count\": " << end.collision_count  - init.collision_count << "," << endl;
+    stats_ss << "  \"distance_travelled\": " << g_end_stats.distance_traveled - g_init_stats.distance_traveled<< "," << endl;
+    stats_ss << "  \"flight_time\": " << g_end_stats.flight_time - g_init_stats.flight_time<< "," << endl;
+    stats_ss << "  \"collision_count\": " << g_end_stats.collision_count  - g_init_stats.collision_count << "," << endl;
     
-    stats_ss << "  \"initial_voltage\": " << init.voltage << "," << endl;
-    stats_ss << "  \"end_voltage\": " << end.voltage << "," << endl;
-    stats_ss << "  \"StateOfCharge\": " << (init.state_of_charge  - end.state_of_charge) + end.state_of_charge << "," << endl;
-    stats_ss << "  \"rotor energy consumed \": " << end.energy_consumed - init.energy_consumed << ","<<endl; 
+    stats_ss << "  \"initial_voltage\": " << g_init_stats.voltage << "," << endl;
+    stats_ss << "  \"end_voltage\": " << g_end_stats.voltage << "," << endl;
+    stats_ss << "  \"StateOfCharge\": " << (g_init_stats.state_of_charge  - g_end_stats.state_of_charge) + g_end_stats.state_of_charge << "," << endl;
+    stats_ss << "  \"rotor energy consumed \": " << g_end_stats.energy_consumed - g_init_stats.energy_consumed << ","<<endl; 
 
     // the rest of metrics 
-    for (auto result_el: results) {
+    for (auto result_el: g_highlevel_application_stats) {
         stats_ss<<  '"'<< result_el.key<<'"' <<": " << result_el.value<<"," << endl;
         if(result_el.key == "gpu_compute_energy" || result_el.key == "cpu_compute_energy"){
             total_energy_consumed += result_el.value; 
         }
     }
-    
-    total_energy_consumed +=  (end.energy_consumed - init.energy_consumed);
+    total_energy_consumed +=  (g_end_stats.energy_consumed - g_init_stats.energy_consumed);
     stats_ss << '"' <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
     
+    // topic rates
+    stats_ss << '"' <<"topic_rates:"<<'"'<<":{" << endl;
+    for (auto it = std::begin(g_topics_stats); it !=std::end(g_topics_stats); ++it) {
+        if (it->second != 0){
+            if (next(it) ==  g_topics_stats.end()){
+                stats_ss << '"' <<it->first<<'"'<<":" << it->second<< endl <<"}" << endl<<",";
+            }
+            else{
+                stats_ss << '"' <<it->first<<'"'<<":" << it->second<< "," << endl;
+            }
+        }
+    }
 
-    /* 
-    stats_ss<<  "  \"mission_status\": " << '"'<<mission_status<<'"'<<"," << endl;
-    stats_ss<<  "  \"coverage\": " << coverage<<"," << endl;
-    
-    //power/energy related values
-        stats_ss << "  \"cpu_compute_energy\": " << cpu_compute_energy << "," << endl;
-    stats_ss << "  \"gpu_compute_energy\": " << gpu_compute_energy << ",";
-    
-    //stats_ss << "}" << endl;
-    */ 
-    update_stats_file(fname, stats_ss.str());
+    update_stats_file(g_stats_fname, stats_ss.str());
 }
 
-bool probe_flight_stats_cb(stats_manager::flight_stats_srv::Request &req, stats_manager::flight_stats_srv::Response &res)
+bool probe_flight_stats_cb(profile_manager::flight_stats_srv::Request &req, profile_manager::flight_stats_srv::Response &res)
 {
     ROS_ERROR_STREAM("inside the call back"); 
     if (g_drone == NULL) {
@@ -398,26 +400,45 @@ bool probe_flight_stats_cb(stats_manager::flight_stats_srv::Request &req, stats_
         return false; 
     }
 
-    if(req.key == "snapShot_flightStats"){  
+    if(req.key == "start_profiling"){  
         g_init_stats = g_drone->getFlightStats();
         xs_gpu.start = xs_cpu.start = std::chrono::system_clock::now();
         xs_gpu.running = xs_cpu.running = true;
         #ifdef USE_INTEL
         setup_rapl_sysfs(&rs);
         #endif // USE_INTEL
+    
+        //get list of topics 
+        ros::master::V_TopicInfo master_topics;
+        ros::master::getTopics(master_topics);
+        for (ros::master::V_TopicInfo::iterator it = master_topics.begin() ; it != master_topics.end(); it++) {
+              const ros::master::TopicInfo& info = *it;
+              g_topics_stats[info.name]  = 0;
+              //std::cout << "topic_" << it - master_topics.begin() << ": " << info.name << std::endl;
+        }
     }else{ 
-        results.push_back(KeyValuePairStruct(req.key, req.value));
+        g_highlevel_application_stats.push_back(KeyValuePairStruct(req.key, req.value));
     } 
     return true; 
 }
 
-// *** F:DN main function
+
+void topic_statistics_cb(const rosgraph_msgs::TopicStatistics::ConstPtr& msg) {
+    if (g_topics_stats.size() == 0) {//while not populated with the topic, return
+        return;
+    }
+    g_topics_stats[msg->topic] = (double)1.0/(double)msg->period_mean.toSec(); 
+}
+
+
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "stats_manager");
+    ros::init(argc, argv, "profile_manager");
     ros::NodeHandle nh;
     ros::ServiceServer probe_flight_stats_service = nh.advertiseService("probe_flight_stats", probe_flight_stats_cb);
     initialize_params();
+    ros::Subscriber topic_statistics_sub =  
+		nh.subscribe<rosgraph_msgs::TopicStatistics>("/statistics", 20, topic_statistics_cb);
     g_drone = new Drone(g_ip_addr.c_str(), g_port);
 
 #ifdef USE_NVML
@@ -427,7 +448,7 @@ int main(int argc, char **argv)
     }
 #endif
 
-    ros::Rate loop_rate(1);
+    ros::Rate loop_rate(2);
     while (ros::ok()) {
         read_gpu_power_sample(&xs_gpu);
         #ifndef USE_INTEL
@@ -451,9 +472,9 @@ int main(int argc, char **argv)
     
     g_end_stats = g_drone->getFlightStats();
     ROS_ERROR_STREAM("shouldn't be here yet"); 
-    results.push_back(KeyValuePairStruct("gpu_compute_energy", gpu_compute_energy));
-    results.push_back(KeyValuePairStruct("cpu_compute_energy", cpu_compute_energy));
-    output_flight_summary(g_init_stats, g_end_stats, results, g_stats_fname);
+    g_highlevel_application_stats.push_back(KeyValuePairStruct("gpu_compute_energy", gpu_compute_energy));
+    g_highlevel_application_stats.push_back(KeyValuePairStruct("cpu_compute_energy", cpu_compute_energy));
+    output_flight_summary();//g_init_stats, g_end_stats, g_highlevel_application_stats, g_topics_stats, g_stats_fname);
     return 0;
 }
 

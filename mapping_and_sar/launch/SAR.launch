@@ -3,11 +3,16 @@
   <arg name="enable_logging" default="true" />
   <arg name="enable_ground_truth" default="true" />
   <arg name="log_file" default="$(arg mav_name)" />
+  <arg name="CLCT_DATA" value="true" />
   <arg name="DEBUG" value="true" />
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
 
+  <group if="$(arg CLCT_DATA)">
+  <param name="enable_statistics" value="true"/>
+  </group> 
+ 
   <!-- stat file-->
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/SAR/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />
@@ -32,7 +37,7 @@
     
     <param name="/ip_addr" value="$(arg host_ip)" />
 
-    <node pkg="stats_manager" type="stats_manager" name="stats_manager" output="screen">
+    <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
         <param name="/ip_addr" value="$(arg host_ip)" />
      </node>
 

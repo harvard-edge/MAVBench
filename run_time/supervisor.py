@@ -6,7 +6,7 @@ import subprocess
 def action_upon_termination():
     ctr = 0
     ros_node_pid_list = []
-    process_ignore_list = ["stats_manager", "rosmaster", "rosout"]
+    process_ignore_list = ["profile_manager", "rosmaster", "rosout"]
     
     while(True): #repeately ask for killing of the processes
         ros_process_list = (subprocess.check_output("ps aux | grep ros |grep log", shell=True)).splitlines()
@@ -65,9 +65,9 @@ def should_terminate(stat_file):
 def main():
     """
     # for debugging 
-    stat_file = "../data/"+"scanning"+"/supervisor_mailbox.txt"
+    stat_file = "../data/"+"mapping"+"/supervisor_mailbox.txt"
     max_run_time = 1000000 
-    """
+    """ 
     
     polling_freq = 5  #polling 
     assert(len(sys.argv) == 4)
