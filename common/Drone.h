@@ -48,19 +48,20 @@ public:
     coord position(); 
     geometry_msgs::Pose pose();
     geometry_msgs::PoseWithCovariance pose_with_covariance();
-
-    //coord gps();
-
-    // *** F:DN Query data
     float get_pitch();
     float get_yaw();
     float get_roll();
-    //geometry_msgs::Pose get_geometry_pose();
-    //geometry_msgs::PoseWithCovariance get_geometry_pose_with_coveraiance();
+    //coord gps();
+
+    // *** F:DN Stats functions
     msr::airlib::FlightStats getFlightStats();
 
     // *** F:DN Collison functions
     msr::airlib::CollisionInfo getCollisionInfo();
+
+    // *** F:DN Drone parameters functions
+    float maxYawRate();
+    float maxYawRateDuringFlight();
 
 private:
     msr::airlib::MultirotorRpcLibClient * client;
@@ -72,6 +73,9 @@ private:
 
     float max_yaw_rate = 15.0;
     float max_yaw_rate_during_flight = 10.0;
+
+    // Initial position as determined by the flight-controller 
+    coord initial_fc_pos;
 };
 
 #endif
