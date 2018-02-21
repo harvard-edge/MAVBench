@@ -363,7 +363,7 @@ void output_flight_summary(void){
     
     stats_ss << "  \"initial_voltage\": " << g_init_stats.voltage << "," << endl;
     stats_ss << "  \"end_voltage\": " << g_end_stats.voltage << "," << endl;
-    stats_ss << "  \"StateOfCharge\": " << (g_init_stats.state_of_charge  - g_end_stats.state_of_charge) + g_end_stats.state_of_charge << "," << endl;
+    stats_ss << "  \"StateOfCharge\": " << 100 - (g_init_stats.state_of_charge  - g_end_stats.state_of_charge) << "," << endl;
     stats_ss << "  \"rotor energy consumed \": " << g_end_stats.energy_consumed - g_init_stats.energy_consumed << ","<<endl; 
 
     // the rest of metrics 
@@ -377,11 +377,11 @@ void output_flight_summary(void){
     stats_ss << '"' <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
     
     // topic rates
-    stats_ss << '"' <<"topic_rates:"<<'"'<<":{" << endl;
+    stats_ss << '"  ' <<"topic_rates:"<<'"'<<":{" << endl;
     for (auto it = std::begin(g_topics_stats); it !=std::end(g_topics_stats); ++it) {
         if (it->second != 0){
             if (next(it) ==  g_topics_stats.end()){
-                stats_ss << '"' <<it->first<<'"'<<":" << it->second<< endl <<"}" << endl<<",";
+                stats_ss << '"' <<it->first<<'"'<<":" << it->second<< endl <<"}" << ","<<endl;
             }
             else{
                 stats_ss << '"' <<it->first<<'"'<<":" << it->second<< "," << endl;
