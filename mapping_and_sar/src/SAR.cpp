@@ -29,7 +29,7 @@
 #include <std_srvs/Empty.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <multiagent_collision_check/Segment.h>
-#include <profile_manager/flight_stats_srv.h>
+#include <profile_manager/profiling_data_srv.h>
 #include <mapping_and_sar/OD.h>
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
@@ -54,39 +54,39 @@ int g_iteration = 0;
 std::string g_supervisor_mailbox; //file handle write to when completed
 
 void log_data_before_shutting_down(){
-    profile_manager::flight_stats_srv flight_stats_srv_inst;
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
     
-    flight_stats_srv_inst.request.key = "mission_status";
-    flight_stats_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
-    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
-        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+    profiling_data_srv_inst.request.key = "mission_status";
+    profiling_data_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
             ros::shutdown();
         }
     }
 
-    flight_stats_srv_inst.request.key = "coverage";
-    flight_stats_srv_inst.request.value = g_coverage;
-    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
-        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+    profiling_data_srv_inst.request.key = "coverage";
+    profiling_data_srv_inst.request.value = g_coverage;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
             ros::shutdown();
         }
     }
 
-    flight_stats_srv_inst.request.key = "g_path_computation_time_avg";
-    flight_stats_srv_inst.request.value = g_path_computation_time_acc/g_iteration;
-    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
-        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+    profiling_data_srv_inst.request.key = "g_path_computation_time_avg";
+    profiling_data_srv_inst.request.value = g_path_computation_time_acc/g_iteration;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
             ros::shutdown();
         }
     }
 
-    flight_stats_srv_inst.request.key = "g_path_computation_time_acc";
-    flight_stats_srv_inst.request.value = g_path_computation_time_acc;
-    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
-        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+    profiling_data_srv_inst.request.key = "g_path_computation_time_acc";
+    profiling_data_srv_inst.request.value = g_path_computation_time_acc;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
             ros::shutdown();
         }
@@ -128,8 +128,8 @@ int main(int argc, char** argv)
   ros::Publisher trajectory_pub = nh.advertise < trajectory_msgs::MultiDOFJointTrajectory
       > (mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
   ros::Subscriber obj_det_sub = nh.subscribe <mapping_and_sar::OD>("/OD_topic", 2, OD_callback);
-  ros::ServiceClient probe_flight_stats_client = 
-      nh.serviceClient<profile_manager::flight_stats_srv>("/probe_flight_stats");
+  ros::ServiceClient record_profiling_data_client = 
+      nh.serviceClient<profile_manager::profiling_data_srv>("/record_profiling_data");
   
   uint16_t port = 41451;
   std::string ip_addr__global;
@@ -266,10 +266,10 @@ int main(int argc, char** argv)
     ros::Duration(1.0).sleep();
   }
   */
-  profile_manager::flight_stats_srv flight_stats_srv_inst;
-  flight_stats_srv_inst.request.key = "start_profiling";
-  if (ros::service::waitForService("/probe_flight_stats", 10)){ 
-     if(!probe_flight_stats_client.call(flight_stats_srv_inst)){
+  profile_manager::profiling_data_srv profiling_data_srv_inst;
+  profiling_data_srv_inst.request.key = "start_profiling";
+  if (ros::service::waitForService("/record_profiling_data", 10)){ 
+     if(!record_profiling_data_client.call(profiling_data_srv_inst)){
          ROS_ERROR_STREAM("could not probe data using stats manager");
          ros::shutdown();
      }

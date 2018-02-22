@@ -349,8 +349,9 @@ static float yawFromQuat(geometry_msgs::Quaternion q){
     return (yaw <= 180 ? yaw : yaw - 360);
 }
 
-
+/*
 void update_stats(Drone& drone, const std::string& fname, std::string state){
-    auto static flight_stats = drone.getFlightStats();
+    auto static profiling_data = drone.getFlightStats();
 
 }
+*/

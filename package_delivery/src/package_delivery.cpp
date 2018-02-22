@@ -10,7 +10,7 @@
 #include <limits>
 #include <signal.h>
 
-#include <profile_manager/flight_stats_srv.h>
+#include <profile_manager/profiling_data_srv.h>
 #include "control_drone.h"
 #include "common/Common.hpp"
 #include "Drone.h"
@@ -39,12 +39,12 @@ string ns;
 enum State { setup, waiting, flying, completed, failed, invalid };
 
 void log_data_before_shutting_down(){
-    profile_manager::flight_stats_srv flight_stats_srv_inst;
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
     
-    flight_stats_srv_inst.request.key = "mission_status";
-    flight_stats_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
-    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
-        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+    profiling_data_srv_inst.request.key = "mission_status";
+    profiling_data_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
             ros::shutdown();
         }
@@ -190,8 +190,8 @@ int main(int argc, char **argv)
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
         nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
-	ros::ServiceClient probe_flight_stats_client = 
-        nh.serviceClient<profile_manager::flight_stats_srv>("probe_flight_stats");
+	ros::ServiceClient record_profiling_data_client = 
+        nh.serviceClient<profile_manager::profiling_data_srv>("record_profiling_data");
     ros::Subscriber panic_sub =  
 		nh.subscribe<std_msgs::Bool>("panic_topic", 1000, panic_call_back);
     ros::Subscriber col_imminent_sub = 
@@ -221,7 +221,7 @@ int main(int argc, char **argv)
     //update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
     //log_time(stats_file_addr);
     //update_stats_file(stats_file_addr,"###\n");
-    profile_manager::flight_stats_srv flight_stats_srv_inst;
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
     
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
@@ -233,9 +233,9 @@ int main(int argc, char **argv)
 
             goal = get_goal();
             start = get_start(drone);
-            flight_stats_srv_inst.request.key = "start_profiling";
-            if (ros::service::waitForService("/probe_flight_stats", 10)){ 
-                if(!probe_flight_stats_client.call(flight_stats_srv_inst)){
+            profiling_data_srv_inst.request.key = "start_profiling";
+            if (ros::service::waitForService("/record_profiling_data", 10)){ 
+                if(!record_profiling_data_client.call(profiling_data_srv_inst)){
                     ROS_ERROR_STREAM("could not probe data using stats manager");
                     ros::shutdown();
                 }

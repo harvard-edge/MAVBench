@@ -16,26 +16,45 @@ typedef struct KeyValuePair{
 } KeyValuePairStruct;
 
 typedef struct stats{
-    long long accumulate;
-    long long accumulate_sqr;
+    long long pub_rate_accumulate;
+    long long pub_rate_accumulate_sqr;
+    long long droppage_rate_accumulate;
+    double mean_pub_rate; 
+    double std_pub_rate;
+    double  mean_droppage_rate;
     int ctr; 
-     
     stats(){
-         this->accumulate = 0;
-         this->accumulate_sqr = 0;
+         this->pub_rate_accumulate = 0;
+         this->pub_rate_accumulate_sqr = 0;
+         this->droppage_rate_accumulate = 0;
+         this->mean_pub_rate = 0; 
+         this->std_pub_rate = 0;
+         this->mean_droppage_rate = 0;
          this->ctr = 0;
     }
     
-    stats(long long accumulate, long long accumulate_sqr, int ctr): 
-                 accumulate(accumulate), accumulate_sqr(accumulate_sqr), 
-                 ctr(ctr) {
+    stats(long long pub_rate_accumulate, double droppage_rate_accumulate, int ctr): 
+                 pub_rate_accumulate(pub_rate_accumulate), 
+                 droppage_rate_accumulate(droppage_rate_accumulate), ctr(ctr), 
+                 pub_rate_accumulate_sqr(0), 
+                 mean_pub_rate(0), std_pub_rate(0), mean_droppage_rate(0) {
     }
 
 	// accumulate values  
-	void acc(long long accumulate, long long accumulate_sqr){
-        this->accumulate += accumulate;
-        this->accumulate_sqr += accumulate_sqr;
+	void acc(long long pub_rate, long long droppage_rate){
+        this->pub_rate_accumulate += pub_rate;
+        this->pub_rate_accumulate_sqr += pub_rate*pub_rate;
+        this->droppage_rate_accumulate += droppage_rate;
         this->ctr += 1;
+    }
+
+
+	void calc_stats() {
+        this->mean_pub_rate = (double)this->pub_rate_accumulate/this->ctr;
+        double var = -1*pow((double)this->pub_rate_accumulate/this->ctr, 2);
+        var +=  (double)this->pub_rate_accumulate_sqr/this->ctr;
+        this->std_pub_rate = pow(var,.5);
+        this->mean_droppage_rate = (double)this->droppage_rate_accumulate/this->ctr;
     }
 } statsStruct;
 

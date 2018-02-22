@@ -1,6 +1,6 @@
 <launch>
     <param name="enable_statistics" type="bool" value="true" />
-    <!--node pkg="rqt_topic" type="rqt_topic" name="rqt_topic"/-->
+    <node pkg="rqt_topic" type="rqt_topic" name="rqt_topic"/>
 	<node pkg="rqt_graph" type="rqt_graph" name="rqt_graph"/>
 
 </launch>

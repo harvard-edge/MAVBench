@@ -51,8 +51,8 @@ nbvInspection::nbvPlanner<stateVec>::nbvPlanner(const ros::NodeHandle& nh,
   plannerService_ = nh_.advertiseService("nbvplanner",
                                          &nbvInspection::nbvPlanner<stateVec>::plannerCallback,
                                          this);
-  posClient_ = nh_.subscribe("pose", 10, &nbvInspection::nbvPlanner<stateVec>::posCallback, this);
-  odomClient_ = nh_.subscribe("odometry", 10, &nbvInspection::nbvPlanner<stateVec>::odomCallback, this);
+  posClient_ = nh_.subscribe("pose", 1, &nbvInspection::nbvPlanner<stateVec>::posCallback, this);
+  odomClient_ = nh_.subscribe("odometry", 1, &nbvInspection::nbvPlanner<stateVec>::odomCallback, this);
 
   pointcloud_sub_ = nh_.subscribe("pointcloud_throttled", 1,
                                   &nbvInspection::nbvPlanner<stateVec>::insertPointcloudWithTf,
@@ -154,6 +154,7 @@ template<typename stateVec>
 void nbvInspection::nbvPlanner<stateVec>::posCallback(
     const geometry_msgs::PoseWithCovarianceStamped& pose)
 {
+    //ROS_INFO_STREAM("n pcb"); 
     tree_->setStateFromPoseMsg(pose);
   // Planner is now ready to plan.
   ready_ = true;

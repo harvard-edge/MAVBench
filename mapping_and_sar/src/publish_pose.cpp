@@ -103,7 +103,7 @@ int main(int argc, char **argv)
     uint16_t port = 41451;
     ros::param::get("/publish_pose/ip_addr",ip_addr__global);
     //ROS_ERROR_STREAM("blah"<<ip_addr__global);
-    ros::Rate pub_rate(5);
+    ros::Rate pub_rate(20);
     if(!ros::param::get("/publish_pose/localization_method",localization_method))  {
         ROS_FATAL_STREAM("Could not start pubslish pose cause localization_method not provided");
         return -1; 

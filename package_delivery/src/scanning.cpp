@@ -28,7 +28,7 @@
 #include "std_msgs/Bool.h"
 #include <signal.h>
 #include "common.h"
-#include <profile_manager/flight_stats_srv.h>
+#include <profile_manager/profiling_data_srv.h>
 
 using namespace std;
 string ip_addr__global;
@@ -51,12 +51,12 @@ double dist(coord t, geometry_msgs::Point m)
 
 
 void log_data_before_shutting_down(){
-    profile_manager::flight_stats_srv flight_stats_srv_inst;
-    flight_stats_srv_inst.request.key = "mission_status";
-    flight_stats_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
+    profiling_data_srv_inst.request.key = "mission_status";
+    profiling_data_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
     
-    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
-        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
             ros::shutdown();
         }
@@ -160,8 +160,8 @@ int main(int argc, char **argv)
     signal(SIGINT, sigIntHandlerPrivate);
 	ros::ServiceClient get_trajectory_client = 
         n.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
-    ros::ServiceClient probe_flight_stats_client = 
-      n.serviceClient<profile_manager::flight_stats_srv>("/probe_flight_stats");
+    ros::ServiceClient record_profiling_data_client = 
+      n.serviceClient<profile_manager::profiling_data_srv>("/record_profiling_data");
 
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)

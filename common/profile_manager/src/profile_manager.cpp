@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <string>
 #include <sstream>
-#include <profile_manager/flight_stats_srv.h>
+#include <profile_manager/profiling_data_srv.h>
 #include <rosgraph_msgs/TopicStatistics.h>
 #include "Drone.h"
 #include "common.h"
@@ -377,23 +377,22 @@ void output_flight_summary(void){
     stats_ss << "\t\"" <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
     
     // topic rates
-    stats_ss << "\t\""  <<"topic_rates"<<'"'<<":{" << endl;
+    stats_ss << "\t\""  <<"topic_statistics"<<'"'<<":{" << endl;
     for (auto it = std::begin(g_topics_stats); it !=std::end(g_topics_stats); ++it) {
         if (it->second.ctr != 0){
+            it->second.calc_stats(); 
             if (next(it) ==  g_topics_stats.end()){
                 stats_ss << "\t\t\"" <<it->first<<'"'<<":{" << endl;
-                stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<<(it->second.accumulate)/(it->second.ctr)<<","<< endl;
-                float std =  -1*pow((it->second.accumulate)/(it->second.ctr), 2);
-                std +=  ((it->second.accumulate_sqr)/(it->second.ctr));
-                stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<<pow(std, .5) << endl <<"\t\t}" << endl;
+                stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<< it->second.mean_pub_rate <<","<< endl;
+                stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<< it->second.std_pub_rate << ","<< endl;
+                stats_ss << "\t\t\t\""<<"droppage_rate"<<'"'<<":"<< it->second.mean_droppage_rate << endl <<"\t\t}" << endl;
                 stats_ss <<"}" << ","<<endl;
-              }
+            }
             else{
                 stats_ss << "\t\t\"" <<it->first<<'"'<<":{" << endl;
-                stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<<(it->second.accumulate)/(it->second.ctr)<<"," <<endl;
-                float std =  -1*pow((it->second.accumulate)/(it->second.ctr), 2);
-                std +=  ((it->second.accumulate_sqr)/(it->second.ctr));
-                stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<<pow(std, .5) << endl <<"\t\t}" << ","<<endl;
+                stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<< it->second.mean_pub_rate<<","<< endl;
+                stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<< it->second.std_pub_rate << "," << endl;
+                stats_ss << "\t\t\t\""<<"droppage_rate"<<'"'<<":"<<it->second.mean_droppage_rate << endl <<"\t\t}," << endl;
             }
         }
     }
@@ -401,7 +400,7 @@ void output_flight_summary(void){
     update_stats_file(g_stats_fname, stats_ss.str());
 }
 
-bool probe_flight_stats_cb(profile_manager::flight_stats_srv::Request &req, profile_manager::flight_stats_srv::Response &res)
+bool record_profiling_data_cb(profile_manager::profiling_data_srv::Request &req, profile_manager::profiling_data_srv::Response &res)
 {
     ROS_ERROR_STREAM("inside the call back"); 
     if (g_drone == NULL) {
@@ -422,7 +421,7 @@ bool probe_flight_stats_cb(profile_manager::flight_stats_srv::Request &req, prof
         ros::master::getTopics(master_topics);
         for (ros::master::V_TopicInfo::iterator it = master_topics.begin() ; it != master_topics.end(); it++) {
               const ros::master::TopicInfo& info = *it;
-              g_topics_stats[info.name] = statsStruct(0, 0, 0);
+              g_topics_stats[info.name] = statsStruct();
               //std::cout << "topic_" << it - master_topics.begin() << ": " << info.name << std::endl;
         }
     }else{ 
@@ -436,9 +435,24 @@ void topic_statistics_cb(const rosgraph_msgs::TopicStatistics::ConstPtr& msg) {
     if (g_topics_stats.size() == 0) {//while not populated with the topic, return
         return;
     }
+    long long window_start_sec =  msg->window_start.sec;
+    long long window_stop_sec =  msg->window_stop.sec;
+    long long window_start_nsec =  msg->window_start.nsec;
+    long long window_stop_nsec =  msg->window_stop.nsec;
+    double window_duration = (window_stop_sec - window_start_sec)+
+        (window_stop_nsec - window_start_nsec)/1000000000;
+    long long msg_droppage_rate = msg->dropped_msgs/window_duration;
+    
     int pub_rate  = (int) ((double)1.0/(double)msg->period_mean.toSec());
     int pub_rate_sqr = pub_rate*pub_rate; 
-    g_topics_stats[msg->topic].acc(pub_rate, pub_rate_sqr);
+    
+    g_topics_stats[msg->topic].acc(pub_rate, msg_droppage_rate);
+    
+    /* 
+    if(msg->topic == "/airsim_qc/nbvPlanner/octomap_free"){
+        ROS_ERROR_STREAM(pub_rate);
+    }
+    */
     //ROS_INFO_STREAM(g_topics_stats[msg->topic].accumulate);
 }
 
@@ -447,7 +461,7 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "profile_manager");
     ros::NodeHandle nh;
-    ros::ServiceServer probe_flight_stats_service = nh.advertiseService("probe_flight_stats", probe_flight_stats_cb);
+    ros::ServiceServer record_profiling_data_service = nh.advertiseService("record_profiling_data", record_profiling_data_cb);
     initialize_params();
     ros::Subscriber topic_statistics_sub =  
 		nh.subscribe<rosgraph_msgs::TopicStatistics>("/statistics", 20, topic_statistics_cb);

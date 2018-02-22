@@ -33,7 +33,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 add_service_files(
   FILES
-  flight_stats_srv.srv
+  profiling_data_srv.srv
 )
 
 generate_messages(
