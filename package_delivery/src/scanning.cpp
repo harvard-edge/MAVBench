@@ -121,17 +121,12 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
         return trajectory_t();
     }
 
-    trajectory_t result;
-    for (multiDOFpoint p : srv.response.multiDOFtrajectory.points) {
-        result.push_back(p);
-    }
-
-    return result;
+    return create_trajectory(srv.response.multiDOFtrajectory);
 }
 
 
 bool trajectory_done(trajectory_t trajectory) {
-    return trajectory.size() <= 1;
+    return trajectory.size() == 0;
 }
 
 
@@ -191,8 +186,9 @@ int main(int argc, char **argv)
             trajectory = request_trajectory(get_trajectory_client, start, width, length, lanes);
             std::this_thread::sleep_for(std::chrono::seconds(1));
             next_state = flying;
-        } else if (state == flying){
-            follow_trajectory(drone, trajectory, reverse_trajectory);
+        } else if (state == flying)
+        {
+            follow_trajectory(drone, &trajectory, &reverse_trajectory, ignore_yaw, true);
             next_state = trajectory_done(trajectory) ? completed : flying;
         } else if (state == completed){
             drone.fly_velocity(0, 0, 0);
@@ -203,7 +199,7 @@ int main(int argc, char **argv)
             signal_supervisor(g_supervisor_mailbox, "kill"); 
             ros::shutdown(); 
             //next_state = setup;
-        }else{
+        } else {
             ROS_ERROR("Invalid FSM state!");
             break;
         }

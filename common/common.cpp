@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <deque>
+#include <algorithm>
 #include <cmath>
 #include <cstdarg>
 
@@ -19,14 +20,13 @@ using namespace std;
 
 static const int angular_vel = 15;
 
-static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic,
-        trajectory_t& traj, trajectory_t& reverse_traj);
-static bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic);
-static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic);
-
 static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second);
 static multiDOFpoint reverse_point(multiDOFpoint mdp);
-static float yawFromQuat(geometry_msgs::Quaternion q);
+
+template <class T>
+static T magnitude(T a, T b, T c) {
+    return std::sqrt(a*a + b*b + c*c);
+}
 
 
 template <class T>
@@ -60,40 +60,160 @@ void sigIntHandler(int sig)
     exit(0);
 }
 
+trajectory_t create_panic_trajectory(Drone& drone, const geometry_msgs::Vector3& panic_dir)
+{
+    multiDOFpoint p;
 
-void action_upon_panic(Drone& drone) {
-    const std::string panic_topic = "/panic_topic";
+    p.yaw = drone.get_yaw();
 
-    // Move backwards at 1 m/s
-    float yaw = drone.get_yaw();
-    double vx = -std::sin(yaw*M_PI/180);
-    double vy = -std::cos(yaw*M_PI/180);
+    p.vx = panic_dir.x * std::sin(p.yaw*M_PI/180);
+    p.vy = panic_dir.y * std::cos(p.yaw*M_PI/180);
+    p.vz = panic_dir.z + 0.1; // Counter-act AirSim's slight downward drift
 
-    bool panicking = true;
-    while (panicking) {
-        drone.fly_velocity(vx, vy, 0);
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
-        ROS_INFO("Panicking..");
+    // p.vx = -std::sin(p.yaw*M_PI/180);
+    // p.vy = -std::cos(p.yaw*M_PI/180);
+    // p.vz = 0.1; // Counter-act AirSim's slight downward drift
 
-        panicking = last_msg<std_msgs::Bool>(panic_topic).data;
+    p.duration = std::numeric_limits<double>::infinity();
+
+    trajectory_t result;
+    result.push_back(p);
+
+    return result;
+}
+
+
+trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, double stopping_distance)
+{
+    if (normal_traj.empty())
+        return trajectory_t();
+
+    trajectory_t result;
+
+    multiDOFpoint first_p = normal_traj.front();
+
+    double initial_velocity = magnitude(first_p.vx, first_p.vy, first_p.vz);
+    initial_velocity = std::max(initial_velocity, 1.0);
+    double distance_left = stopping_distance;
+
+    for (multiDOFpoint p : normal_traj) {
+        double v = magnitude(p.vx, p.vy, p.vz);
+        double max_v = initial_velocity * distance_left/stopping_distance;
+
+        if (v*p.duration > distance_left) {
+            p.duration = distance_left / v;
+        }
+
+        distance_left -= v*p.duration;
+        
+        double scale = v > max_v ? max_v/v : 1;
+
+        p.vx *= scale;
+        p.vy *= scale;
+        p.vz *= scale;
+        p.duration /= scale;
+
+        result.push_back(p);
+
+        if (distance_left <= 0)
+            break;
     }
 
-    // Stop afterwards
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    ROS_INFO("Done panicking!");
+    return result;
 }
 
+trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj, const trajectory_t& rev_normal_traj)
+{
+    trajectory_t result;
+    float current_yaw = drone.get_yaw();
+    auto current_pos = drone.position();
 
-void action_upon_future_col(Drone& drone) {
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    // scan_around(drone, 30);
+    // Add pause to trajectory
+    multiDOFpoint pause_p;
+    pause_p.x = current_pos.x;
+    pause_p.y = current_pos.y;
+    pause_p.z = current_pos.z;
+    pause_p.vx = pause_p.vy = pause_p.vz = 0;
+    pause_p.duration = 2.0;
+    pause_p.yaw = current_yaw;
+
+    result.push_back(pause_p);
+
+    // Add spinning around to trajectory
+    const float scanning_width = 45;
+
+    multiDOFpoint scan_p;
+    scan_p.x = current_pos.x;
+    scan_p.y = current_pos.y;
+    scan_p.z = current_pos.z;
+    scan_p.vx = scan_p.vy = scan_p.vz = 0;
+    scan_p.duration = scanning_width / drone.maxYawRateDuringFlight();
+
+    float yaws[] = {current_yaw - scanning_width, current_yaw, current_yaw + scanning_width, current_yaw};
+
+    for (float y : yaws) {
+        scan_p.yaw = y;
+        result.push_back(scan_p);
+    }
+
+    // Add backtrack to trajectory
+    double distance_left = 500.0; // TODO: make this a reasonable number
+    const double safe_v = 1.0;
+
+    for (multiDOFpoint p : rev_normal_traj) {
+        double v = magnitude(p.vx, p.vy, p.vz);
+
+        if (v*p.duration > distance_left) {
+            p.duration = distance_left / v;
+        }
+
+        distance_left -= v*p.duration;
+        
+        double scale = v > safe_v ? safe_v/v : 1;
+
+        p.vx *= scale;
+        p.vy *= scale;
+        p.vz *= scale;
+        p.duration /= scale;
+
+        result.push_back(p);
+
+        if (distance_left <= 0)
+            break;
+    }
+
+    // Add one last pause
+    multiDOFpoint last_pause_p;
+    last_pause_p.x = result.back().x;
+    last_pause_p.y = result.back().y;
+    last_pause_p.z = result.back().z;
+    last_pause_p.vx = last_pause_p.vy = last_pause_p.vz = 0;
+    last_pause_p.duration = 2.0;
+    last_pause_p.yaw = YAW_UNCHANGED;
+
+    result.push_back(last_pause_p);
+
+    // Slow down normal_traj
+    const double max_a = 1.0;
+    double max_v = safe_v;
+
+    for (multiDOFpoint& p : normal_traj) {
+        double v = magnitude(p.vx, p.vy, p.vz);
+
+        double scale = v > max_v ? max_v/v : 1;
+
+        p.vx *= scale;
+        p.vy *= scale;
+        p.vz *= scale;
+        p.duration /= scale;
+
+        max_v += max_a*p.duration;
+    }
+
+    return result;
 }
 
-
-static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) {
+bool reset_slam(Drone& drone, const std::string& topic) {
     ros::NodeHandle nh;
 	ros::ServiceClient reset_client = nh.serviceClient<std_srvs::Trigger>("/slam_reset");
     std_srvs::Trigger srv;
@@ -103,6 +223,7 @@ static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) 
         ROS_INFO("SLAM resetted succesfully");
     } else {
         ROS_ERROR("Failed to reset SLAM");
+        return false;
     }
 
     // Move around a little to initialize SLAM
@@ -115,76 +236,6 @@ static bool action_upon_slam_loss_reset(Drone& drone, const std::string& topic) 
 
     std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
     return !is_lost.data;
-}
-
-
-static bool action_upon_slam_loss_spin(Drone& drone, const std::string& topic) {
-    float init_yaw = drone.get_yaw();
-
-    // Spin around until we re-localize
-    for (int i = angular_vel; i <= 360; i += angular_vel) {
-        // Turn slightly
-        int angle = init_yaw + i;
-
-        auto start_turn = std::chrono::system_clock::now();
-        drone.set_yaw(angle <= 180 ? angle : angle - 360);
-
-        auto end_turn = start_turn + std::chrono::seconds(1);
-        std::this_thread::sleep_until(end_turn);
-
-        // Check whether SLAM is back
-        std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
-
-        if (!is_lost.data)
-            return true;
-    }
-
-    return false;
-}
-
-
-static bool action_upon_slam_loss_backtrack (Drone& drone, const std::string& topic,
-                                            trajectory_t& traj, trajectory_t& reverse_traj) {
-    const double safe_speed = 0.5;
-
-    while (reverse_traj.size() > 1) {
-        follow_trajectory(drone, reverse_traj, traj, face_backward, safe_speed, false);
-
-        // Check whether SLAM is back
-        std_msgs::Bool is_lost = last_msg<std_msgs::Bool>(topic);
-        if (!is_lost.data)
-            return true;
-    }
-    ROS_INFO("done");
-
-    return false;
-}
-
-
-bool action_upon_slam_loss (Drone& drone, slam_recovery_method slm...) {
-    va_list args;
-    va_start(args, slm);
-
-    const std::string lost_topic = "/slam_lost";
-    bool success;
-
-    // Stop the drone
-    drone.fly_velocity(0, 0, 0);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-
-    if (slm == spin) {
-        success = action_upon_slam_loss_spin(drone, lost_topic);
-    } else if (slm == backtrack) {
-        trajectory_t& traj = *(va_arg(args, trajectory_t*));
-        trajectory_t& reverse_traj = *(va_arg(args, trajectory_t*));
-        success = action_upon_slam_loss_backtrack(drone, lost_topic, traj, reverse_traj);
-    } else if (slm == reset) {
-        success = action_upon_slam_loss_reset(drone, lost_topic);
-    }
-
-    va_end(args);
-
-    return success;
 }
 
 
@@ -223,35 +274,29 @@ void spin_around(Drone &drone) {
 
 
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
-void follow_trajectory(Drone& drone, trajectory_t& traj,
-                       trajectory_t& reverse_traj, yaw_strategy_t yaw_strategy,
-                       float max_speed, bool check_position, float time) {
+void follow_trajectory(Drone& drone, trajectory_t * traj,
+        trajectory_t * reverse_traj, yaw_strategy_t yaw_strategy,
+        bool check_position, float max_speed, float time) {
 
     trajectory_t reversed_commands;
 
-    while (time > 0 && traj.size() > 1) {
-        multiDOFpoint p = traj.front();
-        multiDOFpoint p_next = traj[1];
-
-        // Calculate the positions we should be at
-        double p_x = p.transforms[0].translation.x;
-        double p_y = p.transforms[0].translation.y;
-        double p_z = p.transforms[0].translation.z;
+    while (time > 0 && traj->size() > 0) {
+        multiDOFpoint p = traj->front();
 
         // Calculate the velocities we should be flying at
-        double v_x = p.velocities[0].linear.x;
-        double v_y = p.velocities[0].linear.y;
-        double v_z = p.velocities[0].linear.z;
+        double v_x = p.vx;
+        double v_y = p.vy;
+        double v_z = p.vz;
 
         if (check_position) {
             auto pos = drone.position();
-            v_x += 0.05*(p_x-pos.x);
-            v_y += 0.05*(p_y-pos.y);
-            v_z += 0.2*(p_z-pos.z);
+            v_x += 0.05*(p.x-pos.x);
+            v_y += 0.05*(p.y-pos.y);
+            v_z += 0.2*(p.z-pos.z);
         }
 
         // Calculate the yaw we should be flying with
-        float yaw = yawFromQuat(p.transforms[0].rotation);
+        float yaw = p.yaw;
         if (yaw_strategy == ignore_yaw)
             yaw = YAW_UNCHANGED;
         else if (yaw_strategy == face_forward)
@@ -272,8 +317,7 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
         }
 
         // Calculate the time for which these flight commands should run
-        double segment_length = (p_next.time_from_start - p.time_from_start).toSec();
-        double flight_time = segment_length <= time ? segment_length : time;
+        double flight_time = p.duration <= time ? p.duration : time;
         double scaled_flight_time = flight_time / scale;
 
         // Fly for flight_time seconds
@@ -282,62 +326,42 @@ void follow_trajectory(Drone& drone, trajectory_t& traj,
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 
-        // Push completed command onto stack
-        reversed_commands.push_front(reverse_point(p));
+        // Push completed command onto reverse-command stack
+        multiDOFpoint rev_point = reverse_point(p);
+        rev_point.duration = flight_time;
+        reversed_commands.push_front(rev_point);
 
         // Update trajectory
-        traj.front().time_from_start += ros::Duration(flight_time);
-        if (traj.front().time_from_start >= p_next.time_from_start)
-            traj.pop_front();
+        traj->front().duration -= flight_time;
+        if (traj->front().duration <= 0)
+            traj->pop_front();
 
         time -= flight_time;
     }
 
-    reverse_traj = append_trajectory(reversed_commands, reverse_traj);
+    if (reverse_traj != nullptr)
+        *reverse_traj = append_trajectory(reversed_commands, *reverse_traj);
 }
 
 
 static multiDOFpoint reverse_point(multiDOFpoint mdp) {
     multiDOFpoint result = mdp;
 
-    result.time_from_start = -mdp.time_from_start;
+    result.vx = -mdp.vx;
+    result.vy = -mdp.vy;
+    result.vz = -mdp.vz;
 
-    result.velocities[0].linear.x = -mdp.velocities[0].linear.x;
-    result.velocities[0].linear.y = -mdp.velocities[0].linear.y;
-    result.velocities[0].linear.z = -mdp.velocities[0].linear.z;
-    
     return result;
 }
 
 
 static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second) {
-    /*
-    if (first.size() == 0)
-        return second;
-
-    ros::Duration time_step(0.5);
-    if (second.size() > 1) {
-        time_step = second[1].time_from_start - second[0].time_from_start;
-    } else if (first.size() > 1) {
-        time_step = first[1].time_from_start - first[0].time_from_start;
-    }
-
-    ros::Duration time_shift = first.back().time_from_start;
-    time_shift -= second.front().time_from_start;
-    time_shift += time_step;
-
-    for (auto mdp : second) {
-        mdp.time_from_start += time_shift;
-        first.push_back(mdp);
-    }
-    */
-
     first.insert(first.end(), second.begin(), second.end());
     return first;
 }
 
-
-static float yawFromQuat(geometry_msgs::Quaternion q){
+float yawFromQuat(geometry_msgs::Quaternion q)
+{
 	float roll, pitch, yaw;
 
 	// Formulas for roll, pitch, yaw
@@ -355,3 +379,105 @@ void update_stats(Drone& drone, const std::string& fname, std::string state){
 
 }
 */
+
+trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory& t, bool face_forward)
+{
+    trajectory_t result;
+    for (auto it = t.points.begin(); it+1 != t.points.end(); ++it) {
+        multiDOFpoint mdp;
+
+        mdp.x = it->transforms[0].translation.x;
+        mdp.y = it->transforms[0].translation.y;
+        mdp.z = it->transforms[0].translation.z;
+
+        mdp.vx = it->velocities[0].linear.x;
+        mdp.vy = it->velocities[0].linear.y;
+        mdp.vz = it->velocities[0].linear.z;
+
+        if (face_forward) {
+            if (mdp.vx == 0 && mdp.vy == 0)
+                mdp.yaw = YAW_UNCHANGED;
+            else
+                mdp.yaw = 90 - atan2(mdp.vy, mdp.vx)*180.0/3.14;
+        } else {
+            mdp.yaw = yawFromQuat(it->transforms[0].rotation);
+        }
+
+        mdp.duration = ((it+1)->time_from_start - it->time_from_start).toSec();
+
+        result.push_back(mdp);
+    }
+
+    return result;
+}
+
+trajectory_msgs::MultiDOFJointTrajectory create_trajectory_msg(const trajectory_t& t)
+{
+    trajectory_msgs::MultiDOFJointTrajectory result;
+
+    double time_from_start = 0;
+    for (const multiDOFpoint& p : t) {
+        trajectory_msgs::MultiDOFJointTrajectoryPoint mdp;
+
+		geometry_msgs::Transform pos;
+		pos.translation.x = p.x;
+		pos.translation.y = p.y;
+		pos.translation.z = p.z;
+
+		geometry_msgs::Twist vel;
+		vel.linear.x = p.vx;
+		vel.linear.y = p.vy;
+		vel.linear.z = p.vz;
+
+		ros::Duration dur(time_from_start);
+
+		mdp.transforms.push_back(pos);
+		mdp.velocities.push_back(vel);
+		mdp.time_from_start = dur;
+
+		result.points.push_back(mdp);
+
+        time_from_start += p.duration;
+    }
+
+    // Add final point
+    multiDOFpoint last_p = t.back();
+    trajectory_msgs::MultiDOFJointTrajectoryPoint mdp;
+
+    geometry_msgs::Transform pos;
+    pos.translation.x = last_p.x + last_p.vx*last_p.duration;
+    pos.translation.y = last_p.y + last_p.vy*last_p.duration;
+    pos.translation.z = last_p.z + last_p.vz*last_p.duration;
+
+    geometry_msgs::Twist vel;
+    vel.linear.x = last_p.vx;
+    vel.linear.y = last_p.vy;
+    vel.linear.z = last_p.vz;
+
+    ros::Duration dur(time_from_start);
+
+    mdp.transforms.push_back(pos);
+    mdp.velocities.push_back(vel);
+    mdp.time_from_start = dur;
+
+    result.points.push_back(mdp);
+
+    return result;
+}
+
+void waitForLocalization(std::string method)
+{
+    // Wait for the localization method to come online
+    tf::TransformListener tfListen;
+    while(1) {
+        try {
+            tf::StampedTransform tf;
+            tfListen.lookupTransform("/world", "/"+method, ros::Time(0), tf);
+            break;
+        } catch(tf::TransformException& ex) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+    }
+}
+
+>>>>>>> 73f1121a5736152494764112a112104c8cd850ba
