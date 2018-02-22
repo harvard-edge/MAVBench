@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 #include <profile_manager/profiling_data_srv.h>
+#include <profile_manager/start_profiling_srv.h>
 #include <rosgraph_msgs/TopicStatistics.h>
 #include "Drone.h"
 #include "common.h"
@@ -18,6 +19,25 @@ using namespace std;
 #include <cstdio>
 #include <chrono>
 #include <ctime>
+
+
+
+
+string g_ip_addr;
+string g_stats_fname;
+Drone *g_drone;//ip_addr.c_str(), port);
+string g_mission_status = "failed";//ip_addr.c_str(), port);
+float g_coverage = 0;
+bool g_end_requested = false;
+msr::airlib::FlightStats g_init_stats, g_end_stats;
+string g_ns;
+uint16_t g_port; 
+
+//profiling variable
+vector<KeyValuePairStruct> g_highlevel_application_stats;
+std::map <std::string, statsStruct> g_topics_stats;
+bool g_start_profiling_data = false;
+
 
 #define MAX_CPUS    1024
 #define MAX_PACKAGES    16
@@ -243,6 +263,11 @@ struct xpu_sample_stat {
     std::chrono::time_point<std::chrono::system_clock> start;
 };
 
+
+xpu_sample_stat xs_cpu, xs_gpu;
+rapl_sysfs_stats rs;
+
+
 double read_gpu_power_sample(xpu_sample_stat *s = nullptr) {
     if (!s->running) return 0;
 
@@ -309,20 +334,6 @@ double read_cpu_power_sample(xpu_sample_stat *s = nullptr) {
 }
 
 
-string g_ip_addr;
-string g_stats_fname;
-Drone *g_drone;//ip_addr.c_str(), port);
-string g_mission_status = "failed";//ip_addr.c_str(), port);
-float g_coverage = 0;
-bool g_end_requested = false;
-msr::airlib::FlightStats g_init_stats, g_end_stats;
-string g_ns;
-uint16_t g_port; 
-vector<KeyValuePairStruct> g_highlevel_application_stats;
-std::map <std::string, statsStruct> g_topics_stats;
-
-xpu_sample_stat xs_cpu, xs_gpu;
-rapl_sysfs_stats rs;
 
 void initialize_params() {
     if(!ros::param::get("/profile_manager/ip_addr",g_ip_addr)){
@@ -400,6 +411,17 @@ void output_flight_summary(void){
     update_stats_file(g_stats_fname, stats_ss.str());
 }
 
+
+bool start_profiling_cb(profile_manager::start_profiling_srv::Request &req, profile_manager::start_profiling_srv::Response &res){
+ if (g_start_profiling_data) {
+     res.start = true;
+ }else{
+     res.start = false;
+ }
+ return true;
+}
+
+
 bool record_profiling_data_cb(profile_manager::profiling_data_srv::Request &req, profile_manager::profiling_data_srv::Response &res)
 {
     ROS_ERROR_STREAM("inside the call back"); 
@@ -424,6 +446,7 @@ bool record_profiling_data_cb(profile_manager::profiling_data_srv::Request &req,
               g_topics_stats[info.name] = statsStruct();
               //std::cout << "topic_" << it - master_topics.begin() << ": " << info.name << std::endl;
         }
+        g_start_profiling_data = true;
     }else{ 
         g_highlevel_application_stats.push_back(KeyValuePairStruct(req.key, req.value));
     } 
@@ -462,6 +485,8 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "profile_manager");
     ros::NodeHandle nh;
     ros::ServiceServer record_profiling_data_service = nh.advertiseService("record_profiling_data", record_profiling_data_cb);
+    ros::ServiceServer start_profiling = nh.advertiseService("start_profiling", start_profiling_cb);
+    
     initialize_params();
     ros::Subscriber topic_statistics_sub =  
 		nh.subscribe<rosgraph_msgs::TopicStatistics>("/statistics", 20, topic_statistics_cb);

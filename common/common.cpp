@@ -479,5 +479,3 @@ void waitForLocalization(std::string method)
         }
     }
 }
-
->>>>>>> 73f1121a5736152494764112a112104c8cd850ba

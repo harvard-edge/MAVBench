@@ -34,13 +34,14 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   profiling_data_srv.srv
-)
+  start_profiling_srv.srv
+  )
 
 generate_messages(
   DEPENDENCIES
   std_msgs
   geometry_msgs
-)
+  )
 
 #message(cuda_include_dirs )
 include_directories(
