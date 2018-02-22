@@ -10,11 +10,46 @@
 
 #include "Drone.h"
 
+
+typedef struct KeyValuePair{
+    std::string key;
+    double value;
+    KeyValuePair(std::string key, double value): key(key), value(value){
+    }
+
+} KeyValuePairStruct;
+
+typedef struct stats{
+    long long accumulate;
+    long long accumulate_sqr;
+    int ctr; 
+     
+    stats(){
+         this->accumulate = 0;
+         this->accumulate_sqr = 0;
+         this->ctr = 0;
+    }
+    
+    stats(long long accumulate, long long accumulate_sqr, int ctr): 
+                 accumulate(accumulate), accumulate_sqr(accumulate_sqr), 
+                 ctr(ctr) {
+    }
+
+	// accumulate values  
+	void acc(long long accumulate, long long accumulate_sqr){
+        this->accumulate += accumulate;
+        this->accumulate_sqr += accumulate_sqr;
+        this->ctr += 1;
+    }
+} statsStruct;
+
+
 void sigIntHandler(int sig);
 
+void signal_supervisor(std::string file_to_write_to, std::string);
 // Stats functions
 void update_stats_file(const std::string& stats_file__addr, const std::string& content);
-void output_flight_summary(Drone& drone, const std::string& fname);
+//void output_flight_summary(msr::airlib::FlightStats init, msr::airlib::FlightStats end, std::string mission_status, float coverage, double cpu_compute_enenrgy, double gpu_compute_enenrgy, const std::string& fname);
 
 
 // Functions and classes to manipulate and follow trajectories

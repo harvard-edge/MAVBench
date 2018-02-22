@@ -27,9 +27,10 @@
 #include <ros/package.h>
 #include <tf/tf.h>
 #include <std_srvs/Empty.h>
+
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <multiagent_collision_check/Segment.h>
-
+#include <profile_manager/flight_stats_srv.h>
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
 #include <nbvplanner/nbvp_srv.h>
@@ -38,37 +39,115 @@
 #include "Drone.h"
 #include "control_drone.h"
 #include "common.h"
-
 visualization_msgs::Marker path_to_follow_marker;
-std::string stats_file_addr;
+std::string g_stats_file_addr;
+
+//data to be logged in stats manager
+std::string g_mission_status = "failed";
+float g_coverage = 0 ;
+float g_path_computation_time = 0;
+float g_path_computation_time_avg = 0;
+float g_path_computation_time_acc = 0;
+int g_iteration = 0;
+std::string g_supervisor_mailbox; //file to write to when completed
+//std::ofstream g_signal_completion_h; //file to write to when completed
+
+
+void log_data_before_shutting_down(){
+    profile_manager::flight_stats_srv flight_stats_srv_inst;
+    
+    flight_stats_srv_inst.request.key = "mission_status";
+    flight_stats_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
+    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    flight_stats_srv_inst.request.key = "coverage";
+    flight_stats_srv_inst.request.value = g_coverage;
+    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    flight_stats_srv_inst.request.key = "g_path_computation_time_avg";
+    flight_stats_srv_inst.request.value = g_path_computation_time_acc/g_iteration;
+    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    flight_stats_srv_inst.request.key = "g_path_computation_time_acc";
+    flight_stats_srv_inst.request.value = g_path_computation_time_acc;
+    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+}
+
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    exit(0);
+}
+
+
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "exploration");
+  ros::init(argc, argv, "mapping");
   ros::NodeHandle nh;
+  signal(SIGINT, sigIntHandlerPrivate);
   ros::Publisher trajectory_pub = nh.advertise < trajectory_msgs::MultiDOFJointTrajectory
       > (mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
-  //ROS_INFO("Started exploration");
+  
+  ros::ServiceClient probe_flight_stats_client = 
+      nh.serviceClient<profile_manager::flight_stats_srv>("/probe_flight_stats");
+  
+  
+
+
+
   uint16_t port = 41451;
   std::string ip_addr__global;
   std::string localization_method; 
   std::string ns = ros::this_node::getName();
   if (!ros::param::get("/ip_addr", ip_addr__global)) {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
+    ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
               (ns + "/ip_addr").c_str());
     return -1;
   }
-  
     if(!ros::param::get("/localization_method",localization_method))  {
-      ROS_FATAL_STREAM("Could not start exploration localization_method not provided");
+      ROS_FATAL_STREAM("Could not start mapping localization_method not provided");
       return -1;
     }
-  
-    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
-        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+
+    if(!ros::param::get("/stats_file_addr",g_stats_file_addr)){
+        ROS_FATAL("Could not start mapping . Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
     }
 
+  float coverage_threshold;
+  if (!ros::param::get("/coverage_threshold", coverage_threshold)) {
+    ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
+              (ns + "/coverage_threshold").c_str());
+    return -1;
+  }
+
+  if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
+      ROS_FATAL_STREAM("Could not start mapping supervisor_mailbox not provided");
+      return -1;
+    }
 
   //behzad change for visualization purposes
   ros::Publisher path_to_follow_marker_pub = nh.advertise<visualization_msgs::Marker>("path_to_follow_topic", 1000);
@@ -78,14 +157,11 @@ int main(int argc, char** argv)
   path_to_follow_marker.action = visualization_msgs::Marker::ADD;
   path_to_follow_marker.scale.x = 0.3;
 
-  ROS_INFO("before anything in exploration");
 
   //ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
   //ROS_ERROR_STREAM("blah"<<ip_addr__global);
-  //Drone drone(ip_addr__global.c_str(), port);
   Drone drone(ip_addr__global.c_str(), port, localization_method);
-  
-  ROS_INFO("after anything in exploration");
+
   //dummy segment publisher
   ros::Publisher seg_pub = nh.advertise <multiagent_collision_check::Segment>("evasionSegment", 1);
 
@@ -114,7 +190,7 @@ int main(int argc, char** argv)
   double yaw_t; 
   //std::string ns = ros::this_node::getName();
   if (!ros::param::get(ns + "/nbvp/dt", dt)) {
-    ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s",
+    ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
               (ns + "/nbvp/dt").c_str());
     return -1;
   }
@@ -122,13 +198,13 @@ int main(int argc, char** argv)
   //behzad change using segment_dedicated_time instead of dt
   //ros::param::get("/follow_trajectory/yaw_t",yaw_t);
   if (!ros::param::get(ns + "/follow_trajectory/yaw_t",yaw_t)){
-      ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for"<<
+      ROS_FATAL_STREAM("Could not start mapping. Parameter missing! Looking for"<<
               "/follow_trajectory/yaw_t");
       return -1;
   }
   double t_offset; 
   if (!ros::param::get(ns + "/nbvp/t_offset",t_offset)){
-      ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for"<<
+      ROS_FATAL_STREAM("Could not start mapping. Parameter missing! Looking for"<<
               "/nbvp/t_offset");
       return -1;
   }
@@ -137,20 +213,7 @@ int main(int argc, char** argv)
   waitForLocalization(localization_method);
 
   double segment_dedicated_time = yaw_t + dt;
-  ROS_INFO("before controol drone");
   control_drone(drone);
-
-
-
- /* 
-  ros::param::get("/follow_trajectory/segment_dedicated_time",segment_dedicated_time);
-    if (!ros::param::get("/follow_trajectory/segment_dedicated_time",segment_dedicated_time)){
-    ROS_FATAL_STREAM("Could not start exploration. Parameter missing! Looking for"<<
-              "/follow_trajectory/segment_dedicated_time");
-    return -1;
-  }
-*/
-
 
   static int n_seq = 0;
 
@@ -158,9 +221,6 @@ int main(int argc, char** argv)
   mav_msgs::EigenTrajectoryPoint trajectory_point;
   trajectory_msgs::MultiDOFJointTrajectoryPoint trajectory_point_msg;
 
-  
-  
-  
   // Wait for 5 seconds to let the Gazebo GUI show up.
   ros::Duration(5.0).sleep();
 
@@ -170,8 +230,7 @@ int main(int argc, char** argv)
   // This is the initialization motion, necessary that the known free space allows the planning
   // of initial paths.
   //ROS_INFO("Starting the planner: Performing initialization motion");
-  
-  
+
  /* 
   for (double i = 0; i <= 1.0; i = i + 0.25) {
     
@@ -201,8 +260,19 @@ int main(int argc, char** argv)
     ros::Duration(1.0).sleep();
   }
   */
-  spin_around(drone);
+ 
+  //take a snapshot of flightStats
+  // Move back a little bit
+  profile_manager::flight_stats_srv flight_stats_srv_inst;
+  flight_stats_srv_inst.request.key = "start_profiling";
+  if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+     if(!probe_flight_stats_client.call(flight_stats_srv_inst)){
+         ROS_ERROR_STREAM("could not probe data using stats manager");
+         ros::shutdown();
+     }
+  }
   
+  spin_around(drone);
   // Move back a little bit
   auto cur_pos = drone.position();
   trajectory_point.position_W.x() = cur_pos.x - 1.5;
@@ -213,25 +283,28 @@ int main(int argc, char** argv)
   samples_array.points.clear();
   n_seq++;
   mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-  
+
   samples_array.points.push_back(trajectory_point_msg);
   trajectory_pub.publish(samples_array);
   ros::Duration(1.0).sleep();
 
 
   // Start planning: The planner is called and the computed path sent to the controller.
-  int iteration = 0;
+  g_iteration = 0;
   multiagent_collision_check::Segment dummy_seg;
+  ros::ServiceClient nbvplanner_client= 
+        nh.serviceClient<nbvplanner::nbvp_srv>("nbvplanner", true);
+  
   
   while (ros::ok()) {
-      
 
-    ROS_INFO_THROTTLE(0.5, "Planning iteration %i", iteration);
+    ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
-    planSrv.request.header.seq = iteration;
+    planSrv.request.header.seq = g_iteration;
     planSrv.request.header.frame_id = "world";
-    if (ros::service::call("nbvplanner", planSrv)) {
+    
+    if(nbvplanner_client.call(planSrv)){ 
       n_seq++;
       if (planSrv.response.path.size() == 0) {
           ROS_ERROR("path size is zero");
@@ -279,7 +352,16 @@ int main(int argc, char** argv)
                                     //than 1.5*dt, this way we can finish up the command 
                                     //before sending out another one
     }
-    iteration++;
+    g_iteration++;
+    g_coverage =  planSrv.response.coverage;
+    g_path_computation_time = planSrv.response.path_computation_time; 
+    g_path_computation_time_acc += g_path_computation_time;    
+    if(g_coverage > coverage_threshold){
+        g_mission_status = "completed";
+        log_data_before_shutting_down();
+        signal_supervisor(g_supervisor_mailbox, "kill"); 
+        ros::shutdown(); 
+    }
   }
 }
 

@@ -28,6 +28,7 @@ find_package(catkin REQUIRED COMPONENTS
   mav_trajectory_generation
   mav_trajectory_generation_ros
   nlopt
+  minkindr_conversions
   octomap_world
 )
 

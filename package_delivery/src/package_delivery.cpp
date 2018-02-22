@@ -10,6 +10,7 @@
 #include <limits>
 #include <signal.h>
 
+#include <profile_manager/flight_stats_srv.h>
 #include "control_drone.h"
 #include "common/Common.hpp"
 #include "Drone.h"
@@ -23,6 +24,10 @@
 #include "timer.h"
 
 using namespace std;
+
+//global variable to log in stats manager
+std::string g_mission_status = "failed";
+
 bool should_panic = false;
 bool col_imminent = false;
 bool col_coming = false;
@@ -34,6 +39,27 @@ string stats_file_addr;
 string ns;
 	
 enum State { setup, waiting, flying, completed, failed, invalid };
+
+void log_data_before_shutting_down(){
+    profile_manager::flight_stats_srv flight_stats_srv_inst;
+    
+    flight_stats_srv_inst.request.key = "mission_status";
+    flight_stats_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
+    if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+        if(!ros::service::call("/probe_flight_stats",flight_stats_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+}
+
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    exit(0);
+}
 
 double dist(coord t, geometry_msgs::Point m)
 {
@@ -129,7 +155,7 @@ int main(int argc, char **argv)
     // ROS node initialization
     ros::init(argc, argv, "package_delivery", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
-    signal(SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandlerPrivate);
     ns = ros::this_node::getName();
     
     //----------------------------------------------------------------- 
@@ -154,6 +180,8 @@ int main(int argc, char **argv)
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
         nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
+	ros::ServiceClient probe_flight_stats_client = 
+        nh.serviceClient<profile_manager::flight_stats_srv>("probe_flight_stats");
     ros::Subscriber panic_sub = 
 		nh.subscribe<std_msgs::Bool>("panic_topic", 1, panic_callback);
     ros::Subscriber panic_dir_sub = 
@@ -174,8 +202,8 @@ int main(int argc, char **argv)
                                            //flight controler to land exactly
                                            //on the goal
 
-    
-    
+    msr::airlib::FlightStats init_stats, end_stats;
+    std::string mission_status;
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
@@ -183,10 +211,11 @@ int main(int argc, char **argv)
     // Wait for the localization method to come online
     waitForLocalization(localization_method);
 
-    update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
-    log_time(stats_file_addr);
-    update_stats_file(stats_file_addr,"###\n");
-
+    //update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
+    //log_time(stats_file_addr);
+    //update_stats_file(stats_file_addr,"###\n");
+    profile_manager::flight_stats_srv flight_stats_srv_inst;
+    
     for (State state = setup; ros::ok(); ) {
         ros::spinOnce();
         State next_state = invalid;
@@ -197,7 +226,13 @@ int main(int argc, char **argv)
 
             goal = get_goal();
             start = get_start(drone);
-
+            flight_stats_srv_inst.request.key = "start_profiling";
+            if (ros::service::waitForService("/probe_flight_stats", 10)){ 
+                if(!probe_flight_stats_client.call(flight_stats_srv_inst)){
+                    ROS_ERROR_STREAM("could not probe data using stats manager");
+                    ros::shutdown();
+                }
+            }
             spin_around(drone);
             next_state = waiting;
         }
@@ -306,8 +341,12 @@ int main(int argc, char **argv)
 
             if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
-                update_stats_file(stats_file_addr,"mission_status completed");
+                mission_status = "completed"; 
+                g_mission_status = mission_status;            
+                //update_stats_file(stats_file_addr,"mission_status completed");
                 next_state = setup;
+                log_data_before_shutting_down();
+                ros::shutdown();
             } else { //If we've drifted too far off from the destination
                 ROS_WARN("We're a little off...");
 
@@ -322,7 +361,11 @@ int main(int argc, char **argv)
         }
         else if (state == failed) {
             ROS_ERROR("Failed to reach destination");
-            update_stats_file(stats_file_addr,"mission_status failed");
+            mission_status = "failed"; 
+            g_mission_status = mission_status;            
+            log_data_before_shutting_down();
+            ros::shutdown();
+            //update_stats_file(stats_file_addr,"mission_status failed");
             next_state = setup;
         }
         else
@@ -333,7 +376,10 @@ int main(int argc, char **argv)
 
         state = next_state;
     }
-
+    
+    //collect data before shutting down
+        //end_stats = drone.getFlightStats();
+    //output_flight_summary(init_stats, end_stats, mission_status, stats_file_addr);
     return 0;
 }
 

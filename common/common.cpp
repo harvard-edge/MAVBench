@@ -28,13 +28,24 @@ static T magnitude(T a, T b, T c) {
     return std::sqrt(a*a + b*b + c*c);
 }
 
+
 template <class T>
 static T last_msg (std::string topic) {
     // Return the last message of a latched topic
     return *(ros::topic::waitForMessage<T>(topic));
 }
 
+
+void signal_supervisor(std::string file_to_write_to, std::string msg){
+    std::ofstream file_to_write_to_h; //file handle write to when completed
+    file_to_write_to_h.open(file_to_write_to, std::ofstream::out);
+    file_to_write_to_h<< msg;
+    file_to_write_to_h.close();
+}
+
+
 void update_stats_file(const std::string& stats_file__addr, const std::string& content){
+    printf("insed update stats file"); 
     std::ofstream myfile;
     myfile.open(stats_file__addr, std::ofstream::out | std::ofstream::app);
     myfile << content << std::endl;
@@ -45,8 +56,8 @@ void update_stats_file(const std::string& stats_file__addr, const std::string& c
 
 void sigIntHandler(int sig)
 {
-    ros::shutdown();
-    //exit(0);
+    //ros::shutdown();
+    exit(0);
 }
 
 trajectory_t create_panic_trajectory(Drone& drone, const geometry_msgs::Vector3& panic_dir)
@@ -110,7 +121,6 @@ trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, doubl
 
     return result;
 }
-
 
 trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj, const trajectory_t& rev_normal_traj)
 {
@@ -203,7 +213,6 @@ trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj
     return result;
 }
 
-
 bool reset_slam(Drone& drone, const std::string& topic) {
     ros::NodeHandle nh;
 	ros::ServiceClient reset_client = nh.serviceClient<std_srvs::Trigger>("/slam_reset");
@@ -234,6 +243,7 @@ float distance(float x, float y, float z) {
   return std::sqrt(x*x + y*y + z*z);
 }
 
+
 void scan_around(Drone &drone, int angle) {
     float init_yaw = drone.get_yaw();
     ROS_INFO("Scanning around from %f degrees...", init_yaw);
@@ -249,6 +259,7 @@ void scan_around(Drone &drone, int angle) {
     drone.set_yaw(init_yaw);
 }
 
+
 void spin_around(Drone &drone) {
     drone.fly_velocity(0, 0, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -260,6 +271,7 @@ void spin_around(Drone &drone) {
         drone.set_yaw(angle <= 180 ? angle : angle - 360);
     }
 }
+
 
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
 void follow_trajectory(Drone& drone, trajectory_t * traj,
@@ -331,6 +343,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         *reverse_traj = append_trajectory(reversed_commands, *reverse_traj);
 }
 
+
 static multiDOFpoint reverse_point(multiDOFpoint mdp) {
     multiDOFpoint result = mdp;
 
@@ -340,6 +353,7 @@ static multiDOFpoint reverse_point(multiDOFpoint mdp) {
 
     return result;
 }
+
 
 static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second) {
     first.insert(first.end(), second.begin(), second.end());
@@ -359,20 +373,10 @@ float yawFromQuat(geometry_msgs::Quaternion q)
     return (yaw <= 180 ? yaw : yaw - 360);
 }
 
-void output_flight_summary(Drone& drone, const std::string& fname)
-{
-    auto flight_stats = drone.getFlightStats();
 
-    stringstream stats_ss;
+void update_stats(Drone& drone, const std::string& fname, std::string state){
+    auto static flight_stats = drone.getFlightStats();
 
-    stats_ss << "{  StateOfCharge: " << flight_stats.state_of_charge << "," << endl;
-    stats_ss << "  Voltage: " << flight_stats.voltage << "," << endl;
-    stats_ss << "  EnergyConsumed: " << flight_stats.energy_consumed << "," << endl;
-    stats_ss << "  DistanceTravelled: " << flight_stats.distance_traveled << "," << endl;
-    stats_ss << "  FlightTime: " << flight_stats.flight_time << endl;
-    stats_ss << "}" << endl;
-
-    update_stats_file(fname, stats_ss.str());
 }
 
 trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory& t, bool face_forward)

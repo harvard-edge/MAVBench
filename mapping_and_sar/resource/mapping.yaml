@@ -1,5 +1,5 @@
 system/v_max: .5
-system/dyaw_max: 0.75
+system/dyaw_max: 0.17
 #system/dyaw_max: 3.14
 system/camera/pitch: [0.0]
 system/camera/horizontal: [180.0]
@@ -55,5 +55,5 @@ bbx/softBounds: false
 
 
 
-pcl_throttle: 0.0
+pcl_throttle: .3
 inspection_throttle: 0.5
