@@ -29,6 +29,8 @@
     
     <!-- stat file-->
     <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
+   <param name="supervisor_mailbox" value="$(find package_delivery)/../data/mapping/supervisor_mailbox.txt" />
+ 
 
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)-->

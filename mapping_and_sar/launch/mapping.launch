@@ -4,14 +4,12 @@
   <arg name="enable_ground_truth" default="true" />
   <arg name="log_file" default="$(arg mav_name)" />
   <arg name="DEBUG" value="true" />
-  <arg name="CLCT_DATA" value="false" />
+  <arg name="CLCT_DATA" value="true" />
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
+  <arg name="planning_resolution" value=".8"/>
+  <arg name="mapping_resolution" value=".1" />
 
-  <group if="$(arg CLCT_DATA)">
-  <param name="enable_statistics" value="true"/>
-  </group> 
- 
   <!-- stat file-->
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />
@@ -20,9 +18,9 @@
   <!--node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world world 100" /-->
     
     <!-- Set the localization method -->
-    <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
+    <arg name="localization_method" value="orb_slam2_rgbd" />
     <!-- arg name="localization_method" value="ground_truth" /-->
-    <arg name="localization_method" value="gps" />
+    <!--arg name="localization_method" value="gps" /-->
 
     <!-- node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 $(arg localization_method) camera 100" /-->
 
@@ -36,17 +34,19 @@
     <!-- arg name="host_ip" default="169.254.250.191" / -->
     <!-- Wenzhi's workstation ip -->
     <!-- arg name="host_ip" default="10.157.90.62" /-->
-
     <param name="/ip_addr" value="$(arg host_ip)" />
-   
-    <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
+
+    <group if="$(arg CLCT_DATA)">
+        <param name="enable_statistics" value="true"/>
+        <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
         <param name="/ip_addr" value="$(arg host_ip)" />
-    </node>
-    
+        </node>
+    </group> 
+
     <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
     <arg name="DEBUG" value="$(arg DEBUG)"/> 
     <arg name="update_coverage_freq" value="3"/> 
-    <arg name="coverage_threshold" value="7"/> 
+    <arg name="coverage_threshold" value="40"/> 
     <arg name="app_name" value="mapping" />
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="host_ip" value="$(arg host_ip)"/>
@@ -61,7 +61,7 @@
     <!-- the following is for octomap --> 
     <arg name="tf_frame" value="world" />
     <arg name="pcl_topic" value="/points" />
-    <arg name="resolution" value="0.4" />
+    <arg name="resolution" value="$(arg planning_resolution)" />
     <arg name="visualize_max_z" value="10" />
     <arg name="sensor_max_range" value="6.0" />
   </include>
@@ -71,6 +71,66 @@
   <arg name="localization_method" value="$(arg localization_method)"/>
   <arg name="host_ip" value="$(arg host_ip)"/>
   </include>
+
+
+
+    <!--- get rid of this if you wan to directly use octomap_world octomap/-->
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+        <param name="resolution" value="$(arg planning_resolution)" />
+		
+		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+		<param name="frame_id" type="string" value="world" />
+		
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="sensor_model/max_range" value="6" />
+
+		<!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/points" />
+
+		<!-- Filter ground for binary occupancy map -->
+		<param name="base_frame_id" value="world" />
+		<!-- <param name="filter_ground" value="true" />
+		<param name="ground_filter_plane_distance" value="1.00" />
+		<param name="ground_filter/distance" value="0.50" /> -->
+	    <param name="pointcloud_min_z" type="double" value="-2.0" />
+	    <param name="pointcloud_max_z" type="double" value="10.0" />
+	    <param name="occupancy_min_z" type="double" value="-2.00" />
+	    <param name="occupancy_max_z" type="double" value="10.0" />
+        <!-- <param name="ground_filter_plane_distance" value="0.07" />
+		<param name="ground_filter/distance" value="0.04" />
+		<param name="ground_filter/angle" value="0.4" /> -->
+	</node>
+
+
+    <!--- get rid of this if you wan to directly use octomap_world octomap/-->
+    <node pkg="octomap_server" type="octomap_server_node" name="octomap_server_2">
+        <param name="resolution" value="$(arg mapping_resolution)" />
+		
+		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+		<param name="frame_id" type="string" value="world" />
+		
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="sensor_model/max_range" value="6" />
+
+		<!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/points" />
+		<!-- Filter ground for binary occupancy map -->
+		<param name="base_frame_id" value="world" />
+		<!-- <param name="filter_ground" value="true" />
+		<param name="ground_filter_plane_distance" value="1.00" />
+		<param name="ground_filter/distance" value="0.50" /> -->
+	    <param name="pointcloud_min_z" type="double" value="-2.0" />
+	    <param name="pointcloud_max_z" type="double" value="10.0" />
+	    <param name="occupancy_min_z" type="double" value="-2.00" />
+	    <param name="occupancy_max_z" type="double" value="10.0" />
+	    <remap from="octomap_binary" to="/octomap_binary2_2"/>	
+	    <remap from="occupied_cells_vis_array" to="/occupied_cells_vis_array_2"/>	
+        <!-- <param name="ground_filter_plane_distance" value="0.07" />
+		<param name="ground_filter/distance" value="0.04" />
+		<param name="ground_filter/angle" value="0.4" /> -->
+	</node>
+
+
 
   <arg name="param_file" value="$(find mapping_and_sar)/resource/mapping.yaml" />
   <!-- following the tejactory --> 

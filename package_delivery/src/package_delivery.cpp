@@ -37,7 +37,8 @@ string ip_addr__global;
 string localization_method;
 string stats_file_addr;
 string ns;
-	
+std::string g_supervisor_mailbox; //file to write to when completed
+
 enum State { setup, waiting, flying, completed, failed, invalid };
 
 void log_data_before_shutting_down(){
@@ -89,6 +90,11 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 }
 
 void package_delivery_initialize_params() {
+    if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
+      ROS_FATAL_STREAM("Could not start mapping supervisor_mailbox not provided");
+      return ;
+    }
+    
     if(!ros::param::get("/package_delivery/ip_addr",ip_addr__global)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/ip_addr").c_str());
@@ -346,6 +352,7 @@ int main(int argc, char **argv)
                 //update_stats_file(stats_file_addr,"mission_status completed");
                 next_state = setup;
                 log_data_before_shutting_down();
+                signal_supervisor(g_supervisor_mailbox, "kill"); 
                 ros::shutdown();
             } else { //If we've drifted too far off from the destination
                 ROS_WARN("We're a little off...");
@@ -364,6 +371,7 @@ int main(int argc, char **argv)
             mission_status = "failed"; 
             g_mission_status = mission_status;            
             log_data_before_shutting_down();
+            signal_supervisor(g_supervisor_mailbox, "kill"); 
             ros::shutdown();
             //update_stats_file(stats_file_addr,"mission_status failed");
             next_state = setup;

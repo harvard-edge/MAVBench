@@ -133,7 +133,7 @@ int main(int argc, char** argv){
     return -1;
   }
   result.found = false;
-  ros::Rate r(2); 
+  ros::Rate r(10); 
   while (ros::ok()) {
       /* 
       if (result.found) {

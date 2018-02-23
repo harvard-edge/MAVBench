@@ -68,15 +68,14 @@ def main():
     """ 
     stat_file = "../data/"+"mapping"+"/supervisor_mailbox.txt"
     max_run_time = 1000000 
-    """
     polling_freq = 5  #polling 
-     
+    """ 
     assert(len(sys.argv) == 4)
     mav_bench_dir = sys.argv[1]
     app =  sys.argv[2]
     max_run_time= sys.argv[3]
     stat_file = mav_bench_dir+"/data/"+app+"/supervisor_mailbox.txt"
-     
+      
     stat_f_hndlr = open(stat_file, "w")
     stat_f_hndlr.close()
     initial_time = time() 

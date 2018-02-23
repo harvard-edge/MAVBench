@@ -30,6 +30,7 @@
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <multiagent_collision_check/Segment.h>
 #include <profile_manager/profiling_data_srv.h>
+#include <profile_manager/start_profiling_srv.h>
 #include <mapping_and_sar/OD.h>
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
@@ -41,7 +42,7 @@
 #include "common.h"
 
 visualization_msgs::Marker path_to_follow_marker;
-std::string stats_file_addr;
+std::string g_stats_file_addr;
 
 //data to be logged in stats manager
 std::string g_mission_status = "failed";
@@ -50,12 +51,24 @@ float g_path_computation_time = 0;
 float g_path_computation_time_avg = 0;
 float g_path_computation_time_acc = 0;
 int g_iteration = 0;
-//std::ofstream g_signal_completion_h; //file handle write to when completed
-std::string g_supervisor_mailbox; //file handle write to when completed
+long long g_accumulate_loop_time_ms = 0; //it is in ms
+int g_loop_ctr = 0; 
+bool g_start_profiling = false; 
+std::string g_supervisor_mailbox; //file to write to when completed
 
 void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
-    
+
+    std::string ns = ros::this_node::getName();
+    profiling_data_srv_inst.request.key = ns+"_mean_loop_time";
+    profiling_data_srv_inst.request.value = ((g_accumulate_loop_time_ms)/1000)/g_loop_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
     profiling_data_srv_inst.request.key = "mission_status";
     profiling_data_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
@@ -131,6 +144,12 @@ int main(int argc, char** argv)
   ros::ServiceClient record_profiling_data_client = 
       nh.serviceClient<profile_manager::profiling_data_srv>("/record_profiling_data");
   
+  ros::ServiceClient start_profiling_client = 
+      nh.serviceClient<profile_manager::start_profiling_srv>("/start_profiling");
+  
+  profile_manager::start_profiling_srv start_profiling_srv_inst;
+  start_profiling_srv_inst.request.key = "";
+  bool clct_data = true;
   uint16_t port = 41451;
   std::string ip_addr__global;
   std::string localization_method; 
@@ -146,7 +165,7 @@ int main(int argc, char** argv)
   }
   
   
-  if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+  if(!ros::param::get("/stats_file_addr",g_stats_file_addr)){
       ROS_FATAL("Could not start SAR. Parameter missing! Looking for %s", 
               (ns + "/stats_file_addr").c_str());
   }
@@ -225,7 +244,7 @@ int main(int argc, char** argv)
 
   // Wait for the localization method to come online
   waitForLocalization(localization_method);
-  
+
   double segment_dedicated_time = yaw_t + dt;
   control_drone(drone);
 
@@ -236,7 +255,7 @@ int main(int argc, char** argv)
   trajectory_msgs::MultiDOFJointTrajectoryPoint trajectory_point_msg;
 
   // Wait for 5 seconds to let the Gazebo GUI show up.
-  ros::Duration(5.0).sleep();
+  //ros::Duration(5.0).sleep();
 
   // This is the initialization motion, necessary that the known free space allows the planning
   // of initial paths.
@@ -279,19 +298,22 @@ int main(int argc, char** argv)
   }
   spin_around(drone);
   // Move back a little bit
-  auto cur_pos = drone.position();
-  trajectory_point.position_W.x() = cur_pos.x - 1.5;
-  trajectory_point.position_W.y() = cur_pos.y - 1.5;
-  trajectory_point.position_W.z() = cur_pos.z;
-  samples_array.header.seq = n_seq;
-  samples_array.header.stamp = ros::Time::now();
-  samples_array.points.clear();
-  n_seq++;
-  mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
-
-  samples_array.points.push_back(trajectory_point_msg);
-  trajectory_pub.publish(samples_array);
-  ros::Duration(1.0).sleep();
+  int ctr =0; 
+  while(ctr < 10) { 
+      auto cur_pos = drone.position();
+      trajectory_point.position_W.x() = cur_pos.x - .2;
+      trajectory_point.position_W.y() = cur_pos.y - .2;
+      trajectory_point.position_W.z() = cur_pos.z;
+      samples_array.header.seq = n_seq;
+      samples_array.header.stamp = ros::Time::now();
+      samples_array.points.clear();
+      n_seq++;
+      mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+      samples_array.points.push_back(trajectory_point_msg);
+      trajectory_pub.publish(samples_array);
+      ros::Duration(1).sleep();
+      ctr++;
+  }
 
 
   // Start planning: The planner is called and the computed path sent to the controller.
@@ -300,9 +322,10 @@ int main(int argc, char** argv)
   ros::ServiceClient nbvplanner_client= 
         nh.serviceClient<nbvplanner::nbvp_srv>("nbvplanner", true);
   
-
+  ros::Time loop_start_t(0,0); 
+  ros::Time loop_end_t(0,0); //if zero, it's not valid
   while (ros::ok()) {
-
+    loop_start_t = ros::Time::now();
     ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
@@ -368,6 +391,23 @@ int main(int argc, char** argv)
         ros::shutdown(); 
     }
     */
+    loop_end_t = ros::Time::now(); 
+    if (clct_data) { 
+        if (ros::service::waitForService("/start_profiling", 10)){ 
+            if(!start_profiling_client.call(start_profiling_srv_inst)){
+                ROS_ERROR_STREAM("could not probe data using stats manager");
+                ros::shutdown();
+            }
+            //ROS_INFO_STREAM("now it is true");
+            g_start_profiling = start_profiling_srv_inst.response.start; 
+        }
+    } 
+    if (g_start_profiling){ 
+        if (loop_end_t.isValid()) {
+            g_accumulate_loop_time_ms += ((loop_end_t - loop_start_t).toSec())*1000;
+            g_loop_ctr++; 
+        }
+    }
     ros::spinOnce(); 
   }
 }

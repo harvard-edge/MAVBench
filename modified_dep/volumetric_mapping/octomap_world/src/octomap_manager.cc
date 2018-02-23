@@ -422,14 +422,39 @@ void OctomapManager::insertDisparityImageWithTf(
 }
 
 void OctomapManager::insertPointcloudWithTf(
-   //insert hooks 
    const sensor_msgs::PointCloud2::ConstPtr& pointcloud) {
+  
+  //insert hooks 
+  static ros::Time loop_start_t(0,0); 
+  static ros::Time loop_end_t(0,0); //if zero, it's not valid
+  static long long g_accumulate_loop_time_ms  = 0;
+  static long long g_invocation_time_ms = 0;
+  loop_start_t = ros::Time::now();
+  static int g_loop_ctr = 0; 
+  if (g_loop_ctr !=0) {
+    g_invocation_time_ms += ((loop_start_t - loop_end_t).toSec())*1000;
+  }else{
+      ROS_ERROR_STREAM("not valid once");
+  }
+  if (g_loop_ctr % 10 == 0) {
+      ROS_INFO_STREAM("avg insertion time"<<(float)g_accumulate_loop_time_ms/(1000*g_loop_ctr));
+      ROS_INFO_STREAM("avg invocation rate"<<(float)g_invocation_time_ms/(1000*g_loop_ctr));
+  
+  }
+  
+
   // Look up transform from sensor frame to world frame.
   Transformation sensor_to_world;
   if (lookupTransform(pointcloud->header.frame_id, world_frame_,
                       pointcloud->header.stamp, &sensor_to_world)) {
     insertPointcloud(sensor_to_world, pointcloud);
   }
+
+  
+  loop_end_t = ros::Time::now(); 
+  g_accumulate_loop_time_ms += ((loop_end_t - loop_start_t).toSec())*1000;
+  g_loop_ctr++; 
+
 }
 
 bool OctomapManager::lookupTransform(const std::string& from_frame,
