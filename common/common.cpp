@@ -280,6 +280,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
 
     trajectory_t reversed_commands;
 
+    
     while (time > 0 && traj->size() > 0) {
         multiDOFpoint p = traj->front();
 

@@ -155,6 +155,17 @@ int main(int argc, char **argv){
             rev_traj = &rev_normal_traj;
         }
 
+        // to keep spinning while hovering to maximize coverage (increasing visibility)
+        static bool started_planning = false; 
+        if (forward_traj->size() > 0) {
+            started_planning = true;
+        }       
+        if (forward_traj->size() == 0 && started_planning) {//if no trajectory recieved,
+                                                            //spin
+            int angle = drone.get_yaw()+ 10;
+            drone.set_yaw(angle <= 180 ? angle : angle - 360);
+        }       
+
         follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position);
 
         // Choose next state (failure, completion, or more flying)
