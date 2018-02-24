@@ -195,6 +195,7 @@ void OctomapManager::octomapCallback(const octomap_msgs::Octomap& msg) {
   setOctomapFromMsg(msg);
   publishAll();
   ROS_INFO_ONCE("Got octomap from message.");
+
 }
 
 void OctomapManager::advertiseServices() {

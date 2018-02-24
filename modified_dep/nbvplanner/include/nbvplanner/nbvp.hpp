@@ -183,7 +183,8 @@ float nbvInspection::nbvPlanner<stateVec>::update_coverage(int update_coverage_f
 bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::Request& req,
                                                           nbvplanner::nbvp_srv::Response& res)
 {
-  ros::Time computationTime = ros::Time::now();
+   //ROS_INFO_STREAM("in planner");
+    ros::Time computationTime = ros::Time::now();
   // Check that planner is ready to compute path.
   if (!ros::ok()) {
     ROS_INFO_THROTTLE(1, "Exploration finished. Not planning any further moves.");

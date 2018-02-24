@@ -952,9 +952,15 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::samplePath(StateVec sta
   if (yaw_direction < -M_PI) {
     yaw_direction += 2.0 * M_PI;
   }
+  
   double disc = std::min(params_.dt_ * params_.v_max_ / distance.norm(),
                          params_.dt_ * params_.dyaw_max_ / abs(yaw_direction));
   
+  //disc = .5;
+  
+  assert(disc > 0.0);
+
+
   assert(disc > 0.0);
   for (double it = 0.0; it <= 1.0; it += disc) {
     tf::Vector3 origin((1.0 - it) * start[0] + it * end[0], (1.0 - it) * start[1] + it * end[1],

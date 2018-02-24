@@ -123,7 +123,7 @@ int main(int argc, char **argv){
 		n.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
     
     // Spin loop
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(20);
     while (ros::ok()) {
         ros::spinOnce();
 
@@ -164,6 +164,7 @@ int main(int argc, char **argv){
                                                             //spin
             int angle = drone.get_yaw()+ 10;
             drone.set_yaw(angle <= 180 ? angle : angle - 360);
+
         }       
 
         follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position);
