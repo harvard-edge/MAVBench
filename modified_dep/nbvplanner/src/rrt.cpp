@@ -830,6 +830,7 @@ std::vector<geometry_msgs::Pose> nbvInspection::RrtTree::getPathBackToPrevious(
     return ret;
   }
   ret = samplePath(root_, history_.top(), targetFrame);
+  exact_root_ = history_.top(); 
   history_.pop();
   return ret;
 }
