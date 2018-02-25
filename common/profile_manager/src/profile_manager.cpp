@@ -27,6 +27,7 @@ string g_ip_addr;
 string g_stats_fname;
 Drone *g_drone;//ip_addr.c_str(), port);
 string g_mission_status = "failed";//ip_addr.c_str(), port);
+string g_localization_status = "healthy";//ip_addr.c_str(), port);
 float g_coverage = 0;
 bool g_end_requested = false;
 msr::airlib::FlightStats g_init_stats, g_end_stats;
@@ -386,7 +387,6 @@ void output_flight_summary(void){
     }
     total_energy_consumed +=  (g_end_stats.energy_consumed - g_init_stats.energy_consumed);
     stats_ss << "\t\"" <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
-    
     // topic rates
     stats_ss << "\t\""  <<"topic_statistics"<<'"'<<":{" << endl;
     for (auto it = std::begin(g_topics_stats); it !=std::end(g_topics_stats); ++it) {
@@ -397,7 +397,7 @@ void output_flight_summary(void){
                 stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<< it->second.mean_pub_rate <<","<< endl;
                 stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<< it->second.std_pub_rate << ","<< endl;
                 stats_ss << "\t\t\t\""<<"droppage_rate"<<'"'<<":"<< it->second.mean_droppage_rate << endl <<"\t\t}" << endl;
-                stats_ss <<"}" << ","<<endl;
+                stats_ss <<"\t}" << ","<<endl;
             }
             else{
                 stats_ss << "\t\t\"" <<it->first<<'"'<<":{" << endl;

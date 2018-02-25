@@ -12,13 +12,38 @@
 #include "Drone.h"
 #include <iostream>
 #include <fstream>
+#include <profile_manager/profiling_data_srv.h>
+#include <profile_manager/start_profiling_srv.h>
 
 using namespace std;
 bool slam_lost = false;
+float g_localization_status = 1.0;
+std::string g_supervisor_mailbox; //file to write to when completed
+//bool g_dummy = false;
+
+void log_data_before_shutting_down(){
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
+    profiling_data_srv_inst.request.key = "localization_status";
+    profiling_data_srv_inst.request.value = g_localization_status;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+}
+
 
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     slam_lost = msg->data;
 }
+
+/*
+void dummy_cb(const std_msgs::Bool::ConstPtr& msg) {
+    g_dummy = msg->data; 
+    //slam_lost = msg->data;
+}
+*/
 
 multiDOFpoint current_point(Drone& drone)
 {
@@ -88,11 +113,20 @@ bool trajectory_done(const trajectory_t& trajectory) {
     return trajectory.size() == 0;
 }
 
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        signal_supervisor(g_supervisor_mailbox, "kill"); 
+        ros::shutdown();
+    }
+    exit(0);
+}
+
 
 int main(int argc, char **argv){
     ros::init(argc, argv, "follow_trajectory", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
-    signal(SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandlerPrivate);
 
     // Read parameters
     std::string localization_method; 
@@ -105,6 +139,11 @@ int main(int argc, char **argv){
         ROS_FATAL_STREAM("Could not start follow trajectory cause localization_method not provided");
         return -1; 
     }
+
+    if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
+      ROS_FATAL_STREAM("Could not start follow_trajectory supervisor_mailbox not provided");
+      return -1;
+  }
 
     // Flight queues
     trajectory_t normal_traj, rev_normal_traj;
@@ -121,6 +160,9 @@ int main(int argc, char **argv){
     ros::Subscriber trajectory_follower_sub = n.subscribe<trajectory_msgs::MultiDOFJointTrajectory>(topic_name, 100, boost::bind(callback_trajectory, _1, &drone, &normal_traj));
 	ros::Subscriber slam_lost_sub = 
 		n.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+    
+  // ros::Subscriber dummy_sub = 
+//		n.subscribe<std_msgs::Bool>("/dummy_topic", 1, dummy_cb);
     
     // Spin loop
     ros::Rate loop_rate(20);
@@ -170,8 +212,14 @@ int main(int argc, char **argv){
         follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position);
 
         // Choose next state (failure, completion, or more flying)
-        if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj))
-            reset_slam(drone, "/slam_lost");
+        if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){
+        //if (g_dummy){   
+            log_data_before_shutting_down(); 
+            g_localization_status = 0; 
+            signal_supervisor(g_supervisor_mailbox, "kill"); 
+            ros::shutdown();
+        }
+        //reset_slam(drone, "/slam_lost");
         else if (trajectory_done(*forward_traj))
             loop_rate.sleep();
     }

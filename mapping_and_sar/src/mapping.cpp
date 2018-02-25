@@ -42,7 +42,7 @@
 
 visualization_msgs::Marker path_to_follow_marker;
 std::string g_stats_file_addr;
-
+bool g_slam_lost = false;
 //data to be logged in stats manager
 std::string g_mission_status = "failed";
 float g_coverage = 0 ;
@@ -115,6 +115,10 @@ void sigIntHandlerPrivate(int signo){
 }
 
 
+void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
+    g_slam_lost = msg->data;
+}
+
 
 int main(int argc, char** argv)
 {
@@ -130,6 +134,9 @@ int main(int argc, char** argv)
   ros::ServiceClient start_profiling_client = 
       nh.serviceClient<profile_manager::start_profiling_srv>("/start_profiling");
   
+   ros::Subscriber slam_lost_sub = 
+		nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+    
   profile_manager::start_profiling_srv start_profiling_srv_inst;
   start_profiling_srv_inst.request.key = "";
   bool clct_data = true;
@@ -317,6 +324,11 @@ int main(int argc, char** argv)
 
   while (ros::ok()) {
     loop_start_t = ros::Time::now();
+    
+    if (g_slam_lost) { //skip the iteration
+        continue;
+    }
+    
     ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();

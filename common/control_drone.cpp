@@ -47,7 +47,6 @@ void control_drone(Drone& drone)
 
 	while(cmd != "c") {
 		cin >> cmd;
-
         if (cmd == "q") {
           //LOG_TIME(package_delivery);
           cout << "bye~" << endl;
@@ -56,7 +55,8 @@ void control_drone(Drone& drone)
           return;
         }
 
-	    if (cmd == "a") {
+	    
+        if (cmd == "a") {
             drone.arm();
         } else if (cmd == "s") {
             sleep(5);
