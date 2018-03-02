@@ -85,7 +85,8 @@ int main(int argc, char **argv)
         IMU_msg.linear_acceleration_covariance[0] = .00001;
         IMU_msg.linear_acceleration_covariance[4] = .00001;
         IMU_msg.linear_acceleration_covariance[8] = .00001;
-
+        IMU_msg.header.stamp = ros::Time(uint32_t(IMU_stats.time_stamp / 1000000000 ),
+                IMU_stats.time_stamp%(IMU_stats.time_stamp/1000000000));
         IMU_pub.publish(IMU_msg);
         pub_rate.sleep();
     }
