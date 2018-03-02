@@ -213,6 +213,7 @@ int main(int argc, char **argv){
 
         // Choose next state (failure, completion, or more flying)
         if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){
+            ROS_INFO_STREAM("slam loss");
         //if (g_dummy){   
             log_data_before_shutting_down(); 
             g_localization_status = 0; 

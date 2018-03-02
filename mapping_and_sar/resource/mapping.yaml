@@ -1,6 +1,6 @@
-system/v_max: 4.5 
-system/dyaw_max: 1.57 
-#system/dyaw_max: .17 
+system/v_max: 1.5 
+#system/dyaw_max: 1.57 
+system/dyaw_max: .17 
 #system/dyaw_max: 3.14
 system/camera/pitch: [0.0]
 system/camera/horizontal: [180.0]
@@ -15,14 +15,14 @@ nbvp/gain/occupied: 0.0
 nbvp/gain/unmapped: 1.0
 nbvp/gain/area: 1.0
 nbvp/gain/probabilistic: 0.0
-nbvp/gain/range: 4.5
+#nbvp/gain/range: 4.5
 nbvp/gain/zero: 0.0
 nbvp/status_monitor_rate: 100
 
 
 nbvp/gain/degressive_coeff: 0.25
 
-nbvp/tree/extension_range: 4 
+#nbvp/tree/extension_range: 4 
 nbvp/tree/exact_root: true
 nbvp/tree/initial_iterations: 15
 nbvp/tree/cuttoff_iterations: 80

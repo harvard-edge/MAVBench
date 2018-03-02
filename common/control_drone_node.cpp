@@ -44,7 +44,7 @@ int main(int argc, char **argv)
  
     uint16_t port = 41451;
     // ros::param::get("/ip_addr",ip_addr__global);
-    ip_addr__global = "10.157.90.51";
+    ip_addr__global = "10.157.90.49";
     ROS_INFO_STREAM("ip to contact to"<<ip_addr__global);
     Drone drone(ip_addr__global.c_str(), port);
 	ros::Rate pub_rate(5);

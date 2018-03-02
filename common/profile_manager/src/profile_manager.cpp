@@ -368,7 +368,7 @@ void output_flight_summary(void){
     float total_energy_consumed = 0;
     
     //Flight Stats dependent metrics
-    stats_ss << endl<<"{"<<endl;
+    stats_ss << "{"<<endl;
     stats_ss << "\t\"distance_travelled\": " << g_end_stats.distance_traveled - g_init_stats.distance_traveled<< "," << endl;
     stats_ss << "\t\"flight_time\": " << g_end_stats.flight_time - g_init_stats.flight_time<< "," << endl;
     stats_ss << "\t\"collision_count\": " << g_end_stats.collision_count  - g_init_stats.collision_count << "," << endl;

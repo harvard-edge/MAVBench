@@ -2,8 +2,8 @@
     <!-- args --> 
     <!-- Behzad's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.101" /--> 
-    <!--arg name="host_ip" value="10.157.90.51" /--> 
-    <arg name="host_ip" value="169.254.153.158" /> 
+    <arg name="host_ip" value="10.157.90.51" /> 
+    <!--arg name="host_ip" value="169.254.153.158" /--> 
     <!-- Hasans's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.208" /--> 
     <arg name="img_width" value="512"/>

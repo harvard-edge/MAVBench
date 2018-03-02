@@ -44,12 +44,12 @@
     </group> 
 
 
+    
     <!-- set this to "" if you don't want perf -->
     <arg name="my_launch_prefix" default="" /> 
     <!-- arg name="my_launch_prefix" default="/home/nvidia/install/perf/perf record -g fp"/ -->
 
     <!-- starting nodes -->
-
     <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
     <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
     <param name="ip_addr" value="$(arg host_ip)"/>
@@ -83,9 +83,10 @@
 		<param name="ground_filter/distance" value="0.04" />
 		<param name="ground_filter/angle" value="0.4" /> -->
 	</node>
-
+    
+    
     <comment>
-	<node pkg="octomap_world" type="octomap_manager" name="octomap_manager">
+    <node pkg="octomap_world" type="octomap_manager" name="octomap_manager">
        <remap from="cam0/camera_info" to="/Airsim/left/camera_info"/>
        <remap from="cam1/camera_info" to="/Airsim/right/camera_info"/>
 	   <remap from="pointcloud" to="/points" />
@@ -121,7 +122,6 @@
 	</node>
 
 
-
 	<!-- Nodelet manager for this pipeline -->
 	<node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager"/>
 
@@ -133,16 +133,17 @@
 		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
 		<!-- Input: Rectified depth image -->
 		<remap from="image_rect" to="/Airsim/depth"/>
-
     </node>
 	
+    
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
 		<param name="panic_distance" value="0.5"/>
     </node>
 
-    <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
-    </node>
+
+    <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen"/>
     
+
     <?ignore 
     <!-- Convert to point cloud -->
 	<node pkg="package_delivery" type="panic" name="panic">
