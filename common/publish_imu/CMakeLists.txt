@@ -79,6 +79,7 @@ include_directories(
     $ENV{HOME}/AirSim/AirLib/include
     ${common_utility_include} 
     ${CUDA_INCLUDE_DIRS}
+    ${common_utility_src}/publish_imu/src
 )
 
 link_directories(
@@ -99,7 +100,7 @@ catkin_package(
 
 
 add_executable(publish_imu ${common_utility_src}/publish_imu/src/publish_imu.cpp 
-    ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp) 
+    ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/publish_imu/src/HelperFunctions/QuatRotEuler.cpp) 
 target_link_libraries(publish_imu ${CUDA_OPENCVLIBS}  ${catkin_LIBRARIES}  ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_curand_LIBRARY} AirLib MavLinkCom rpc pthread)
 add_dependencies(publish_imu ${catkin_EXPORTED_TARGETS})
 

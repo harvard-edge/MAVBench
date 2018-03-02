@@ -26,7 +26,7 @@
 
     <!-- starting nodes --> 
 	<!-- Point-cloud publisher -->
- 	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
+ 	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
 		<!-- IP of the Airsim computer -->
         <param name="localization_method" value="$(arg localization_method)" />
         <param name="Airsim_ip" value="$(arg host_ip)" />

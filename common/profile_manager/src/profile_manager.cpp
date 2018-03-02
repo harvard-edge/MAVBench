@@ -505,6 +505,10 @@ int main(int argc, char **argv)
         #ifndef USE_INTEL
         read_cpu_power_sample(&xs_cpu);
         #endif // NOT USE_INTEL
+        
+        if (g_drone->getFlightStats().collision_count > 1) {
+            ROS_INFO_STREAM("collision count too high");
+        }
         loop_rate.sleep();
         ros::spinOnce();
     }

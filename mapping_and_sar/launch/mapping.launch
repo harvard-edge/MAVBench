@@ -3,7 +3,7 @@
   <arg name="enable_logging" default="true" />
   <arg name="enable_ground_truth" default="true" />
   <arg name="log_file" default="$(arg mav_name)" />
-  <arg name="DEBUG" value="false" />
+  <arg name="DEBUG" value="true" />
   <arg name="CLCT_DATA" value="true" />
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
@@ -18,9 +18,10 @@
   <!--node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world world 100" /-->
     
     <!-- Set the localization method -->
-    <arg name="localization_method" value="orb_slam2_rgbd" />
-    <!-- arg name="localization_method" value="ground_truth" /-->
+    <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
+    <!--arg name="localization_method" value="ground_truth" /-->
     <!--arg name="localization_method" value="gps" /-->
+    <arg name="localization_method" value="vins_mono"/>
 
     <!-- node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 $(arg localization_method) camera 100" /-->
 
@@ -148,8 +149,9 @@
 	
     <group if="$(eval localization_method == 'orb_slam2_rgbd')">
     <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" />
-    <node pkg="publish_imu" type="publish_imu" name="publish_imu"/> 
     </group>
+
+  <node pkg="publish_imu" type="publish_imu" name="publish_imu"/> 
 
   <!--comment-->
   <!-- rviz -->

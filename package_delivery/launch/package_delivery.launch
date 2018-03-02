@@ -22,9 +22,10 @@
     
         
     <!-- Set the localization method /-->
-    <!-- arg name="localization_method" default="orb_slam2_rgbd" /-->
-    <arg name="localization_method" default="ground_truth" />
+    <arg name="localization_method" default="orb_slam2_rgbd" />
+    <!-- arg name="localization_method" default="ground_truth" /-->
     <!--arg name="localization_method" default="gps" /-->
+    <!--arg name="localization_method" default="vins_mono" /-->
     
     
     <!-- stat file-->
@@ -35,7 +36,7 @@
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)-->
     <arg name="DEBUG" default="false" />
-    <arg name="CLCT_DATA" value="true" />
+    <arg name="CLCT_DATA" value="false" />
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
 
 
@@ -198,6 +199,8 @@
         <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" output="screen"/>
 	</group>
     
+  <node pkg="publish_imu" type="publish_imu" name="publish_imu" output="screen"/> 
+
     <!-- rviz -->
 	<group if="$(arg DEBUG)">
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
