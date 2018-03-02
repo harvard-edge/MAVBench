@@ -4,11 +4,15 @@
   <arg name="enable_ground_truth" default="true" />
   <arg name="log_file" default="$(arg mav_name)" />
   <arg name="DEBUG" value="true" />
+  <arg name="nbvp/gain/range" default="1"/>
+  <arg name="nbvp/tree/extension_range" default="1.5"/>
   <arg name="CLCT_DATA" value="true" />
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
-  <arg name="planning_resolution" value=".8"/>
-  <arg name="mapping_resolution" value=".1" />
+  <arg name="planning_resolution" default=".8"/>
+  <arg name="mapping_resolution" default=".1" />
+  <arg name="coverage_threshold" default="50"/>
+
 
   <!-- stat file-->
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
@@ -46,8 +50,10 @@
 
     <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
     <arg name="DEBUG" value="$(arg DEBUG)"/> 
+    <arg name="nbvp/gain/range" value="$(arg nbvp/gain/range)"/>
+    <arg name="nbvp/tree/extension_range" value="$(arg nbvp/tree/extension_range)"/>
     <arg name="update_coverage_freq" value="3"/> 
-    <arg name="coverage_threshold" value="50"/> 
+    <arg name="coverage_threshold" value="$(arg coverage_threshold)"/> 
     <arg name="app_name" value="mapping" />
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="host_ip" value="$(arg host_ip)"/>
