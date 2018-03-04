@@ -19,7 +19,11 @@ using namespace std;
 bool slam_lost = false;
 float g_localization_status = 1.0;
 std::string g_supervisor_mailbox; //file to write to when completed
+float g_v_max;
+float g_max_yaw_rate;
+float g_max_yaw_rate_during_flight;
 //bool g_dummy = false;
+
 
 void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
@@ -32,7 +36,6 @@ void log_data_before_shutting_down(){
         }
     }
 }
-
 
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     slam_lost = msg->data;
@@ -140,10 +143,33 @@ int main(int argc, char **argv){
         return -1; 
     }
 
+    if(!ros::param::get("v_max",g_v_max))  {
+        ROS_FATAL_STREAM("Could not start follow_trajectory vmax not provided");
+        return -1;
+    }
+
+    if(!ros::param::get("max_yaw_rate",g_max_yaw_rate))  {
+        ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate not provided");
+        return -1;
+    }
+
+    if(!ros::param::get("max_yaw_rate_during_flight",g_max_yaw_rate_during_flight))  {
+        ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate_during_flight not provided");
+        return -1;
+    }
+
     if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
-      ROS_FATAL_STREAM("Could not start follow_trajectory supervisor_mailbox not provided");
-      return -1;
-  }
+        ROS_FATAL_STREAM("Could not start follow_trajectory supervisor_mailbox not provided");
+        return -1;
+    }
+
+    /*
+       if(!ros::param::get("/wiggle_speed",wiggle_speed))  {
+
+       ROS_FATAL_STREAM("Could not start follow_trajectory swiggle_speed not provided");
+       return -1;
+       }
+    */
 
     // Flight queues
     trajectory_t normal_traj, rev_normal_traj;
@@ -153,7 +179,8 @@ int main(int argc, char **argv){
 
     // Connect to drone
     uint16_t port = 41451;
-    Drone drone(ip_addr.c_str(), port, localization_method);
+    Drone drone(ip_addr.c_str(), port, localization_method,
+                g_max_yaw_rate, g_max_yaw_rate_during_flight);
 
     // Subscribe to topics
     std::string topic_name =  mav_name + "/" + mav_msgs::default_topics::COMMAND_TRAJECTORY;
@@ -166,6 +193,11 @@ int main(int argc, char **argv){
     
     // Spin loop
     ros::Rate loop_rate(20);
+    
+    int v_x, v_y, v_z;
+    v_z = .6; 
+    //v_x = .5;
+    ros::Time last_time = ros::Time::now();
     while (ros::ok()) {
         ros::spinOnce();
 
@@ -202,14 +234,31 @@ int main(int argc, char **argv){
         if (forward_traj->size() > 0) {
             started_planning = true;
         }       
+         
+        /* 
         if (forward_traj->size() == 0 && started_planning) {//if no trajectory recieved,
                                                             //spin
             int angle = drone.get_yaw()+ 10;
-            drone.set_yaw(angle <= 180 ? angle : angle - 360);
+            //drone.set_yaw(angle <= 180 ? angle : angle - 360);
 
         }       
+        */
+        
+        if (forward_traj->size() == 0 && started_planning) {//if no trajectory recieved,
+            double dt = (ros::Time::now() - last_time).toSec(); 
+            if (dt > .6) { 
+                //v_y = -v_x;
+                //v_z = -v_x;
+                //v_x = -v_x;
+                v_z *=-1; 
+                drone.fly_velocity(0*v_x, 0*v_y, v_z, drone.get_yaw()+30, 0.3); 
+                //drone.fly_velocity(0*v_x, 0*v_y, v_z, drone.get_yaw()+30, 0.3); 
+                last_time = ros::Time::now();
+            }
+        } 
 
-        follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position);
+//        ROS_INFO_STREAM("g_v_max"<<g_v_max); 
+        follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position, g_v_max);
 
         // Choose next state (failure, completion, or more flying)
         if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){

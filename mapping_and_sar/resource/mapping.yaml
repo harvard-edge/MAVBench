@@ -1,6 +1,7 @@
-system/v_max: 1.5 
+#system/v_max: 1.5 
 #system/dyaw_max: 1.57 
-system/dyaw_max: .17 
+#system/dyaw_max: .17 
+#system/dyaw_max: .5 
 #system/dyaw_max: 3.14
 system/camera/pitch: [0.0]
 system/camera/horizontal: [180.0]
@@ -39,10 +40,10 @@ nbvp/log/on: true
 # scenario (smaller than actual gazebo scenario)
 bbx/minX: -15.0
 bbx/minY: -30.0
-bbx/minZ: 2.0
+bbx/minZ: 1.0
 bbx/maxX: 15.0
 bbx/maxY: 30.0
-bbx/maxZ: 4.0
+bbx/maxZ: 8.0
 bbx/softBounds: false
 
 #bbx/minX: -2.0

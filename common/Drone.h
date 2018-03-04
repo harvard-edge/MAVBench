@@ -27,7 +27,10 @@ public:
     Drone();
     Drone(const std::string& ip_addr, uint16_t port);
     Drone(const std::string& ip_addr, uint16_t port, std::string localization_method);
-    
+    Drone(const std::string& ip_addr, uint16_t port, std::string localization_method, 
+         float max_yaw_rate, float max_yaw_rate_during_flight);
+
+
     ~Drone();
 
     // *** F:DN Connection functions
@@ -73,9 +76,9 @@ private:
 
     uint64_t collision_count;
 
-    float max_yaw_rate = 15.0;
+    float max_yaw_rate = 90.0;
     //float max_yaw_rate_during_flight = 90.0;
-    float max_yaw_rate_during_flight = 10.0;
+    float max_yaw_rate_during_flight = 90.0;
     // Initial position as determined by the flight-controller 
     coord initial_fc_pos;
 };

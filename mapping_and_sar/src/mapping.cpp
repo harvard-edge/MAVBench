@@ -54,6 +54,10 @@ long long g_accumulate_loop_time_ms = 0; //it is in ms
 int g_loop_ctr = 0; 
 bool g_start_profiling = false; 
 std::string g_supervisor_mailbox; //file to write to when completed
+float g_max_yaw_rate;
+float g_max_yaw_rate_during_flight;
+
+
 
 void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
@@ -171,6 +175,16 @@ int main(int argc, char** argv)
       return -1;
   }
 
+  if(!ros::param::get("/max_yaw_rate",g_max_yaw_rate))  {
+      ROS_FATAL_STREAM("Could not start mapping, max_yaw_rate not provided");
+      return -1;
+  }
+
+  if(!ros::param::get("/max_yaw_rate_during_flight",g_max_yaw_rate_during_flight))  {
+      ROS_FATAL_STREAM("Could not start mapping,  max_yaw_rate_during_flight not provided");
+      return -1;
+  }
+
   //behzad change for visualization purposes
   ros::Publisher path_to_follow_marker_pub = nh.advertise<visualization_msgs::Marker>("path_to_follow_topic", 1000);
   geometry_msgs::Point p_marker;
@@ -182,8 +196,10 @@ int main(int argc, char** argv)
 
   //ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
   //ROS_ERROR_STREAM("blah"<<ip_addr__global);
-  Drone drone(ip_addr__global.c_str(), port, localization_method);
+  Drone drone(ip_addr__global.c_str(), port, localization_method,
+              g_max_yaw_rate, g_max_yaw_rate_during_flight);
 
+  
   //dummy segment publisher
   ros::Publisher seg_pub = nh.advertise <multiagent_collision_check::Segment>("evasionSegment", 1);
 

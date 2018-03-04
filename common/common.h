@@ -89,7 +89,8 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         yaw_strategy_t yaw_strategy = ignore_yaw,
         bool check_position = true,
         float max_speed = std::numeric_limits<double>::infinity(),
-        float time = 0.5);
+        //float max_speed = 3,
+        float time = 2);
 
 
 // Recovery methods

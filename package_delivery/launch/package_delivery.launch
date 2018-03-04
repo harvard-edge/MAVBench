@@ -14,7 +14,7 @@
 
     <!-- Drone's physical characteristics /-->
     <arg name="v_max" default="2"/> 
-    <arg name="a_max" default="6"/> 
+    <arg name="a_max" default="8"/> 
 
     <!-- orb slam location--> 
     <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
@@ -22,10 +22,9 @@
     
         
     <!-- Set the localization method /-->
-    <arg name="localization_method" default="orb_slam2_rgbd" />
-    <!-- arg name="localization_method" default="ground_truth" /-->
-    <!--arg name="localization_method" default="gps" /-->
+    <!-- arg name="localization_method" default="orb_slam2_rgbd" /-->
     <!--arg name="localization_method" default="vins_mono" /-->
+    <arg name="localization_method" default="gps" />
     
     
     <!-- stat file-->
@@ -35,8 +34,8 @@
 
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)-->
-    <arg name="DEBUG" default="false" />
-    <arg name="CLCT_DATA" value="false" />
+    <arg name="DEBUG" default="true" />
+    <arg name="CLCT_DATA" value="true" />
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
 
 
@@ -45,12 +44,12 @@
     </group> 
 
 
-    
     <!-- set this to "" if you don't want perf -->
     <arg name="my_launch_prefix" default="" /> 
     <!-- arg name="my_launch_prefix" default="/home/nvidia/install/perf/perf record -g fp"/ -->
 
     <!-- starting nodes -->
+
     <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
     <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
     <param name="ip_addr" value="$(arg host_ip)"/>
@@ -59,7 +58,11 @@
          
     <!--comment-->
     <!-- Octomap -->
-	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+	<!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" -->
+
+    <node pkg="nodelet" type="nodelet" name="standalone_nodelet" args="manager"/>
+
+    <node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager">
         <param name="resolution" value="0.5" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
@@ -69,7 +72,7 @@
 		<param name="sensor_model/max_range" value="20" />
 
 		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points" />
+		<!-- remap from="octomap_server_nodelet/cloud_in" to="/points" /-->
 
 		<!-- Filter ground for binary occupancy map -->
 		<param name="base_frame_id" value="world" />
@@ -84,10 +87,9 @@
 		<param name="ground_filter/distance" value="0.04" />
 		<param name="ground_filter/angle" value="0.4" /> -->
 	</node>
-    
-    
+
     <comment>
-    <node pkg="octomap_world" type="octomap_manager" name="octomap_manager">
+	<node pkg="octomap_world" type="octomap_manager" name="octomap_manager">
        <remap from="cam0/camera_info" to="/Airsim/left/camera_info"/>
        <remap from="cam1/camera_info" to="/Airsim/right/camera_info"/>
 	   <remap from="pointcloud" to="/points" />
@@ -123,8 +125,11 @@
 	</node>
 
 
+
 	<!-- Nodelet manager for this pipeline -->
-	<node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager"/>
+	<node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager">
+		<remap from="/points" to="/cloud_in" />
+    </node>
 
 	<!-- Convert to point cloud -->
 	<node pkg="nodelet" type="nodelet" name="cloudify"
@@ -134,17 +139,16 @@
 		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
 		<!-- Input: Rectified depth image -->
 		<remap from="image_rect" to="/Airsim/depth"/>
+
     </node>
 	
-    
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
 		<param name="panic_distance" value="0.5"/>
     </node>
 
-
-    <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen"/>
+    <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
+    </node>
     
-
     <?ignore 
     <!-- Convert to point cloud -->
 	<node pkg="package_delivery" type="panic" name="panic">
@@ -200,12 +204,11 @@
         <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" output="screen"/>
 	</group>
     
-  <node pkg="publish_imu" type="publish_imu" name="publish_imu" output="screen"/> 
-
     <!-- rviz -->
 	<group if="$(arg DEBUG)">
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
     </group>
 
+  <node pkg="publish_imu" type="publish_imu" name="publish_imu"/> 
 </launch>
 

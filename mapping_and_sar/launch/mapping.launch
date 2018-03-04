@@ -3,43 +3,56 @@
   <arg name="enable_logging" default="true" />
   <arg name="enable_ground_truth" default="true" />
   <arg name="log_file" default="$(arg mav_name)" />
-  <arg name="DEBUG" value="true" />
+  
+  <!-- important params affecting performance -->
   <arg name="nbvp/gain/range" default="1"/>
-  <arg name="nbvp/tree/extension_range" default="1.5"/>
-  <arg name="CLCT_DATA" value="true" />
-  <!-- orb slam location--> 
-  <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
+  <arg name="system/v_max" default=".5"/>
+  <arg name="nbvp/tree/extension_range" default="3.5"/>
   <arg name="planning_resolution" default=".8"/>
   <arg name="mapping_resolution" default=".1" />
+
+  <!-- orb slam location--> 
+  <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
+  <!-- localization method -->
+  <arg name="localization_method" value="orb_slam2_rgbd" />
+  <!--arg name="localization_method" value="ground_truth" /-->
+  <!--arg name="localization_method" value="gps" /-->
+  <!-- arg name="localization_method" value="vins_mono"/-->
+
+  <!--- set according to the localization method--> 
+  <arg name="system/dyaw_max" default=".25"/>
+  <arg name="max_yaw_rate" default="15"/>
+  <arg name="max_yaw_rate_during_flight" default="15"/>
+  <param name="v_max" value="$(arg system/v_max)"/>
+  <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
+  <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
+
+  <!-- termination criteria-->
   <arg name="coverage_threshold" default="50"/>
 
-
-  <!-- stat file-->
+  <!-- DEBUGING-data collection params--> 
+  <arg name="DEBUG" value="true" />
+  <arg name="CLCT_DATA" value="true" />
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />
   <param name="status_monitor_rate" value="100" />
 
+
   <!--node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world world 100" /-->
-    
-    <!-- Set the localization method -->
-    <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
-    <!--arg name="localization_method" value="ground_truth" /-->
-    <!--arg name="localization_method" value="gps" /-->
-    <arg name="localization_method" value="vins_mono"/>
 
-    <!-- node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 $(arg localization_method) camera 100" /-->
+  <!-- node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 $(arg localization_method) camera 100" /-->
 
-    <!-- Behzad's workstation ip --> 
-    <!-- arg name="host_ip" value="10.157.34.101" /--> 
-    <arg name="host_ip" value="10.157.90.51" />
-    <!-- arg name="host_ip" value="169.254.153.158" /-->
-    <!-- Hasans's workstation ip --> 
-    <!--arg name="host_ip" default="10.157.90.49" /-->
-    <!-- Hasans's direct connection ip --> 
-    <!-- arg name="host_ip" default="169.254.250.191" / -->
-    <!-- Wenzhi's workstation ip -->
-    <!-- arg name="host_ip" default="10.157.90.62" /-->
-    <param name="/ip_addr" value="$(arg host_ip)" />
+  <!-- Behzad's workstation ip --> 
+  <!-- arg name="host_ip" value="10.157.34.101" /--> 
+  <arg name="host_ip" value="10.157.90.51" />
+  <!--arg name="host_ip" value="169.254.153.158" /-->
+  <!-- Hasans's workstation ip --> 
+  <!--arg name="host_ip" default="10.157.90.49" /-->
+  <!-- Hasans's direct connection ip --> 
+  <!-- arg name="host_ip" default="169.254.250.191" / -->
+  <!-- Wenzhi's workstation ip -->
+  <!-- arg name="host_ip" default="10.157.90.62" /-->
+  <param name="/ip_addr" value="$(arg host_ip)" />
 
     <group if="$(arg CLCT_DATA)">
         <param name="enable_statistics" value="true"/>
@@ -47,13 +60,17 @@
         <param name="/ip_addr" value="$(arg host_ip)" />
         </node>
     </group> 
-
     <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
     <arg name="DEBUG" value="$(arg DEBUG)"/> 
     <arg name="nbvp/gain/range" value="$(arg nbvp/gain/range)"/>
+    <arg name="system/v_max" value="$(arg system/v_max)"/>
+    <arg name="system/dyaw_max" value="$(arg system/dyaw_max)"/>
+
     <arg name="nbvp/tree/extension_range" value="$(arg nbvp/tree/extension_range)"/>
     <arg name="update_coverage_freq" value="3"/> 
     <arg name="coverage_threshold" value="$(arg coverage_threshold)"/> 
+    <arg name="max_yaw_rate" value="$(arg max_yaw_rate)"/> 
+    <arg name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/> 
     <arg name="app_name" value="mapping" />
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="host_ip" value="$(arg host_ip)"/>
@@ -72,13 +89,13 @@
     <arg name="visualize_max_z" value="10" />
     <arg name="sensor_max_range" value="6.0" />
   </include>
-    
+  <!--comment -->
   <!-- point cloud and pose -->
   <include file="$(find mapping_and_sar)/launch/point_cloud_and_pose.launch">
   <arg name="localization_method" value="$(arg localization_method)"/>
   <arg name="host_ip" value="$(arg host_ip)"/>
   </include>
-
+  <!--/comment-->
 
 
     <!--- get rid of this if you wan to directly use octomap_world octomap/-->
@@ -108,8 +125,8 @@
 		<param name="ground_filter/angle" value="0.4" /> -->
 	</node>
 
-
-    <!--- get rid of this if you wan to directly use octomap_world octomap/-->
+    <comment>
+    <!--- octomap for planning-->
     <node pkg="octomap_server" type="octomap_server_node" name="octomap_server_2">
         <param name="resolution" value="$(arg mapping_resolution)" />
 		
@@ -137,7 +154,7 @@
 		<param name="ground_filter/angle" value="0.4" /> -->
 	</node>
 
-
+   </comment>
 
   <arg name="param_file" value="$(find mapping_and_sar)/resource/mapping.yaml" />
   <!-- following the tejactory --> 

@@ -38,6 +38,20 @@ Drone::Drone(const std::string& ip_addr, uint16_t port, std::string localization
     this->localization_method = localization_method;
 }
 
+Drone::Drone(const std::string& ip_addr, uint16_t port, 
+             std::string localization_method, float max_yaw_rate, 
+             float max_yaw_rate_during_flight) : client(0), collision_count(0)
+{
+	connect(ip_addr, port);
+
+	auto pos = client->getPosition();
+    initial_fc_pos = {pos.y(), pos.x(), -pos.z()};
+    this->localization_method = localization_method;
+    this->max_yaw_rate_during_flight = max_yaw_rate_during_flight;
+    this->max_yaw_rate = max_yaw_rate;
+}
+
+
 Drone::~Drone()
 {
 	if (client != 0)
