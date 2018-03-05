@@ -45,7 +45,6 @@ void signal_supervisor(std::string file_to_write_to, std::string msg){
 
 
 void update_stats_file(const std::string& stats_file__addr, const std::string& content){
-    printf("insed update stats file"); 
     std::ofstream myfile;
     myfile.open(stats_file__addr, std::ofstream::out | std::ofstream::app);
     myfile << content << std::endl;

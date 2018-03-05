@@ -1,8 +1,5 @@
 <launch>
-
-    <!-- obj trackingnode --> 
-    <param name="stats_file_addr" value="$(find package_delivery)/../data/stats.txt" />
-    <node pkg="follow_the_leader" type="tracking_continuous" name="tracking_continuous" output="screen">
+    <node pkg="follow_the_leader" type="track_continously" name="track_continously" output="screen">
     <param name="max_n_track_before_det_count" type="int" value="30" />
     <param name="tracking_threshold" type="double" value=".8" />
     <param name="min_allowed_tracking_treshold" type="double" value=".6" />
@@ -13,7 +10,7 @@
     <comment launch-prefix="gdb -ex run --args"/>
 
 
-    <node pkg="follow_the_leader" type="buffer_track_node" name="buffer_track_node" output="screen">
+    <node pkg="follow_the_leader" type="buffer_then_track" name="buffer_then_track" output="screen">
     <param name="max_n_track_before_det_count" type="int" value="30" />
     <param name="tracking_threshold" type="double" value=".8" />
     <param name="min_allowed_tracking_treshold" type="double" value=".6" />

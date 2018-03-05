@@ -2,7 +2,6 @@
     
     <!-- obj detection node --> 
     <param name="detect_thresh" type="double" value=".4" />
-    <!--param name="stats_file_addr" value="$(find package_delivery)/../data/stats.txt" /-->
     <node pkg="follow_the_leader" type="detection_node" name="detection_node"  output="screen">
     </node> 
     <!-- param name="mav_name" type="string" value="$(arg mav_name)" / -->

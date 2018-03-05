@@ -49,7 +49,6 @@
     <!-- arg name="my_launch_prefix" default="/home/nvidia/install/perf/perf record -g fp"/ -->
 
     <!-- starting nodes -->
-
     <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
     <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
     <param name="ip_addr" value="$(arg host_ip)"/>

@@ -8,7 +8,7 @@
     <!-- arg name="host_ip" value="10.157.34.208" /--> 
     <arg name="img_width" value="512"/>
     <arg name="img_height" value="512"/>
-    
+    <arg name="CLCT_DATA" value="true" />
 
     <!-- orb slam location--> 
     <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
@@ -19,6 +19,8 @@
     <arg name="localization_method" value="gps" />
     <param name="localization_method" value="$(arg localization_method)" />
     <param name="detec_fail_ctr_threshold" value="10" />
+    <param name="supervisor_mailbox" value="$(find package_delivery)/../data/follow_the_leader/supervisor_mailbox.txt" />
+    <param name="stats_file_addr" value="$(find package_delivery)/../data/follow_the_leader/stats.json" />
 
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)--> 
@@ -70,16 +72,11 @@
 
     </node>
     
-
-
-
-
     <include file="$(find follow_the_leader)/launch/detection_node.launch"/>
     <include file="$(find follow_the_leader)/launch/tracking_node.launch"/>
 
-
     <param name="ip_addr" type="string" value="$(arg host_ip)" />
-    <node pkg="follow_the_leader" type="main_follow_the_leader_node" name="main_follow_the_leader_node"  output="screen"/>
+    <node pkg="follow_the_leader" type="follow_the_leader_node" name="follow_the_leader_node"  output="screen"/>
     <!-- param name="mav_name" type="string" value="$(arg mav_name)" / -->
     <comment launch-prefix="gdb -ex run --args"/>
 
@@ -109,6 +106,12 @@
         <param name="ip_addr__global" value="$(arg host_ip)"/>
     </node>
 
+    <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
+    <param name="ip_addr" value="$(arg host_ip)"/>
+    </node>
 
+    <group if="$(arg CLCT_DATA)">
+    <param name="enable_statistics" value="true"/>
+    </group> 
 
 </launch>

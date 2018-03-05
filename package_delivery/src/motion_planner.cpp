@@ -75,7 +75,7 @@ double sampling_interval__global;
 double v_max__global, a_max__global;
 int max_roadmap_size__global;
 std::function<piecewise_trajectory (geometry_msgs::Point, geometry_msgs::Point, int, int , int, octomap::OcTree *)> motion_planning_core;
-static float g_path_computation_time_acc = 0;
+long long g_path_computation_without_OM_PULL_time_acc = 0;
 static int g_number_of_planning = 0 ;
 
 //*** F:DN global variables
@@ -232,7 +232,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     traj_topic = res.multiDOFtrajectory;
 
     auto loop_end_t = ros::Time::now(); 
-    g_path_computation_time_acc += (loop_end_t - loop_start_t).toSec();
+    g_path_computation_without_OM_PULL_time_acc += (((loop_end_t - loop_start_t).toSec())*1e9);
     g_number_of_planning++; 
     //ROS_INFO_STREAM("planning takes"<<(loop_end_t - loop_start_t).toSec());
     return true;
@@ -296,8 +296,8 @@ void log_data_before_shutting_down(){
         }
     }
 
-    profiling_data_srv_inst.request.key = "g_path_computation_time_acc";
-    profiling_data_srv_inst.request.value = g_path_computation_time_acc;
+    profiling_data_srv_inst.request.key = "g_path_computation_without_OM_PULL_time_acc";
+    profiling_data_srv_inst.request.value = g_path_computation_without_OM_PULL_time_acc;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -306,7 +306,7 @@ void log_data_before_shutting_down(){
     }
     
     profiling_data_srv_inst.request.key = "g_path_computation_time_avg";
-    profiling_data_srv_inst.request.value = g_path_computation_time_acc/g_number_of_planning;
+    profiling_data_srv_inst.request.value = g_path_computation_without_OM_PULL_time_acc/g_number_of_planning;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");

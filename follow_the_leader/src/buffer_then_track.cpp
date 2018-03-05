@@ -30,6 +30,7 @@
 #include "follow_the_leader/bounding_box_msg.h"
 #include "bounding_box.h"
 #include "follow_the_leader/cmd_srv.h"
+#include <profile_manager/profiling_data_srv.h>
 #include <bits/stdc++.h>
 using namespace std::chrono;
 int strike;
@@ -51,7 +52,11 @@ int flush_count;
 int flush_count_MAX = 50;
 int FRAME_TO_PROCESS_UPPER_BOUND = 10;
 int frame_to_process_left;
+long long g_tracking_time_acc = 0;
+int g_tracking_ctr = 0;
 State state;
+ros::Time start_hook_t(0);
+ros::Time end_hook_t; 
 
 bool tracking_cb(follow_the_leader::cmd_srv::Request &req, 
     follow_the_leader::cmd_srv::Response &res){
@@ -72,8 +77,16 @@ bool tracking_cb(follow_the_leader::cmd_srv::Request &req,
     //moddify the state 
     if (req.cmd == "start_buffering") {
         state = buffer;
+        if (start_hook_t.toSec() != 0) {  //ignore the first round
+            end_hook_t = ros::Time::now(); 
+            g_tracking_time_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
+            g_tracking_ctr++;
+        }
+        else{
+        }
     }else if (req.cmd == "start_tracking_for_buffered") {
         state = trk_buff_imgs;
+        start_hook_t = ros::Time::now();
     }
 
     return true;
@@ -155,14 +168,37 @@ void buffer_imgs_cb(const sensor_msgs::ImageConstPtr& msg) {
     }
 }
 
+void log_data_before_shutting_down(){
+    std::string ns = ros::this_node::getName();
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
+
+    profiling_data_srv_inst.request.key = "tracking_buffered_time";
+    profiling_data_srv_inst.request.value = (((double)g_tracking_time_acc/g_tracking_ctr)/1e9);
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+}
+
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    exit(0);
+}
+
+
 int main(int argc, char** argv)
 {
     
     tracker_defined = false; 
     //std_msgs::Bool panic_msg;
-    ros::init(argc, argv, "buffer_track_node", ros::init_options::NoSigintHandler);
+    ros::init(argc, argv, "buffer_then_track", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
-    signal(SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandlerPrivate);
     
     
     ros::Publisher bb_publisher = nh.advertise <follow_the_leader::bounding_box_msg>("/buf_img_bb_topic", 4);
@@ -171,23 +207,24 @@ int main(int argc, char** argv)
 
     //file_to_output.open("/home/nvidia/catkin_ws/src/mav-bench/follow_the_leader/src/tracking_output.txt");
 
-    if(!ros::param::get("/buffer_track_node/max_n_track_before_det_count",max_n_track_before_det_count))  {
-      ROS_FATAL_STREAM("Could not start buffer_track_node cause max_n_track_before_det_count not provided");
+    if(!ros::param::get("/buffer_then_track/max_n_track_before_det_count",max_n_track_before_det_count))  {
+      ROS_FATAL_STREAM("Could not start buffer_then_track cause max_n_track_before_det_count not provided");
       return -1;
     }
-    if (!ros::param::get("/buffer_track_node/tracking_threshold", tracking_threshold)) {
+    if (!ros::param::get("/buffer_then_track/tracking_threshold", tracking_threshold)) {
         ROS_FATAL("Could not start tracing_node cause tracking_threshol dmissing! Looking for");
         return -1;
     }
-    if(!ros::param::get("/buffer_track_node/max_strike",max_strike))  {
-      ROS_FATAL_STREAM("Could not start buffer_track_node cause max_strike not provided");
+    if(!ros::param::get("/buffer_then_track/max_strike",max_strike))  {
+      ROS_FATAL_STREAM("Could not start buffer_then_track cause max_strike not provided");
       return -1;
     }
-    if(!ros::param::get("/buffer_track_node/min_allowed_tracking_treshold",min_allowed_tracking_treshold))  {
-      ROS_FATAL_STREAM("Could not start buffer_track_node cause min_allowed_tracking_treshold not provided");
+    if(!ros::param::get("/buffer_then_track/min_allowed_tracking_treshold",min_allowed_tracking_treshold))  {
+      ROS_FATAL_STREAM("Could not start buffer_then_track cause min_allowed_tracking_treshold not provided");
       return -1;
     }
 
+     
     ros::ServiceClient resume_detection_client = 
         nh.serviceClient<follow_the_leader::cmd_srv>("resume_detection");
 

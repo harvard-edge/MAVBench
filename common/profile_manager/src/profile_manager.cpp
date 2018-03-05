@@ -12,7 +12,6 @@
 #include <map>
 using namespace std;
 
-
 #ifdef USE_NVML
 #include "nvml.h"
 #endif  // USE_NVML
@@ -20,9 +19,7 @@ using namespace std;
 #include <chrono>
 #include <ctime>
 
-
-
-
+//globla variables
 string g_ip_addr;
 string g_stats_fname;
 Drone *g_drone;//ip_addr.c_str(), port);
@@ -39,7 +36,6 @@ vector<KeyValuePairStruct> g_highlevel_application_stats;
 std::map <std::string, statsStruct> g_topics_stats;
 bool g_start_profiling_data = false;
 
-
 #define MAX_CPUS    1024
 #define MAX_PACKAGES    16
 #define NUM_RAPL_DOMAINS    4
@@ -48,11 +44,9 @@ static int total_cores=0,total_packages=0;
 static int package_map[MAX_PACKAGES];
 
 
-
 /* TODO: on Skylake, also may support  PSys "platform" domain,    */
 /* the whole SoC not just the package.                */
 /* see dcee75b3b7f025cc6765e6c92ba0a4e59a4d25f4            */
-
 
 static int detect_cpu(void) {
 
@@ -406,13 +400,13 @@ void output_flight_summary(void){
                 stats_ss << "\t\t\"" <<it->first<<'"'<<":{" << endl;
                 stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<< it->second.mean_pub_rate<<","<< endl;
                 stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<< it->second.std_pub_rate << "," << endl;
-                stats_ss << "\t\t\t\""<<"droppage_rate"<<'"'<<":"<<it->second.mean_droppage_rate << endl <<"\t\t}," << endl;
                 stats_ss << "\t\t\t\""<<"msg_avg_age"<<'"'<<":"<< it->second.stamp_age_mean<< ","<< endl;
                 stats_ss << "\t\t\t\""<<"msg_max_age"<<'"'<<":"<< it->second.stamp_age_max<<","<< endl;
+                stats_ss << "\t\t\t\""<<"droppage_rate"<<'"'<<":"<<it->second.mean_droppage_rate << endl <<"\t\t}," << endl;
             }
         }
     }
-
+    ROS_INFO_STREAM("g_stats_fname"<<g_stats_fname);
     update_stats_file(g_stats_fname, stats_ss.str());
 }
 
@@ -458,7 +452,6 @@ bool record_profiling_data_cb(profile_manager::profiling_data_srv::Request &req,
     return true; 
 }
 
-
 void topic_statistics_cb(const rosgraph_msgs::TopicStatistics::ConstPtr& msg) {
     if (g_topics_stats.size() == 0) {//while not populated with the topic, return
         return;
@@ -472,22 +465,14 @@ void topic_statistics_cb(const rosgraph_msgs::TopicStatistics::ConstPtr& msg) {
     long long msg_droppage_rate = msg->dropped_msgs/window_duration;
     
     long long stamp_age_mean = (msg->stamp_age_mean.toSec())*1000000000;
-    double stamp_age_max = (msg->stamp_age_max.toSec())*1000000000;
+    double stamp_age_max = (msg->stamp_age_max.toSec());
 
     int pub_rate  = (int) ((double)1.0/(double)msg->period_mean.toSec());
     int pub_rate_sqr = pub_rate*pub_rate; 
     
     g_topics_stats[msg->topic].acc(pub_rate, msg_droppage_rate, 
                                    stamp_age_mean, stamp_age_max);
-    
-    /* 
-    if(msg->topic == "/airsim_qc/nbvPlanner/octomap_free"){
-        ROS_ERROR_STREAM(pub_rate);
-    }
-    */
-    //ROS_INFO_STREAM(g_topics_stats[msg->topic].accumulate);
 }
-
 
 int main(int argc, char **argv)
 {
@@ -537,9 +522,11 @@ int main(int argc, char **argv)
     
     g_end_stats = g_drone->getFlightStats();
     ROS_ERROR_STREAM("shouldn't be here yet"); 
-    g_highlevel_application_stats.push_back(KeyValuePairStruct("gpu_compute_energy", gpu_compute_energy));
-    g_highlevel_application_stats.push_back(KeyValuePairStruct("cpu_compute_energy", cpu_compute_energy));
-    output_flight_summary();//g_init_stats, g_end_stats, g_highlevel_application_stats, g_topics_stats, g_stats_fname);
+    g_highlevel_application_stats.push_back(
+            KeyValuePairStruct("gpu_compute_energy", gpu_compute_energy));
+    g_highlevel_application_stats.push_back(
+            KeyValuePairStruct("cpu_compute_energy", cpu_compute_energy));
+    output_flight_summary();
     return 0;
 }
 

@@ -36,9 +36,9 @@ string localization_method;
 string g_stats_file_addr;
 string ns;
 std::string g_supervisor_mailbox; //file to write to when completed
-
-//data to be logged in stats manager
 std::string g_mission_status = "failed";
+long long g_planning_time_acc = 0;
+int g_planning_ctr = 0;
 
 enum State { setup, waiting, flying, completed, invalid };
 
@@ -50,21 +50,7 @@ double dist(coord t, geometry_msgs::Point m)
 }
 
 
-void log_data_before_shutting_down(){
-    profile_manager::profiling_data_srv profiling_data_srv_inst;
-    profiling_data_srv_inst.request.key = "mission_status";
-    profiling_data_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
-    
-    if (ros::service::waitForService("/record_profiling_data", 10)){ 
-        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
-            ROS_ERROR_STREAM("could not probe data using stats manager");
-            ros::shutdown();
-        }
-    }
-}
-
-
-void package_delivery_initialize_params() {
+void initialize_params() {
     if(!ros::param::get("/scanning/ip_addr",ip_addr__global)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/ip_addr").c_str());
@@ -107,7 +93,6 @@ void get_goal(int& width, int& length, int& lanes) {
 
 
 trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, int width, int length, int lanes) {
-    // Request the actual trajectory from the motion_planner node
     package_delivery::get_trajectory srv;
     srv.request.start = start;
     srv.request.width = width;
@@ -130,6 +115,29 @@ bool trajectory_done(trajectory_t trajectory) {
 }
 
 
+void log_data_before_shutting_down(){
+    std::string ns = ros::this_node::getName();
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
+
+    profiling_data_srv_inst.request.key = "mission_status";
+    profiling_data_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+    
+    profiling_data_srv_inst.request.key = "planning_time";
+    profiling_data_srv_inst.request.value = ((double)g_planning_time_acc/g_planning_ctr)/1e9;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+}
+
 void sigIntHandlerPrivate(int signo){
     if (signo == SIGINT) {
         log_data_before_shutting_down(); 
@@ -138,15 +146,15 @@ void sigIntHandlerPrivate(int signo){
     exit(0);
 }
 
-
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "scanning", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
     ros::NodeHandle panic_nh;
     string app_name;
-    package_delivery_initialize_params();
+    initialize_params();
     int width, length, lanes; // size of area to scan
+    ros::Time start_hook_t, end_hook_t;  
     geometry_msgs::Point start, goal, original_start;
 	package_delivery::get_trajectory get_trajectory_srv;
     trajectory_t trajectory, reverse_trajectory;
@@ -168,7 +176,6 @@ int main(int argc, char **argv)
                                                       //given the issues associated with
                                                       //flight controler to land exactly
                                                       //on the goal
-
     
     ros::Rate loop_rate(package_delivery_loop_rate);
     for (State state = setup; ros::ok(); ) {
@@ -183,8 +190,13 @@ int main(int argc, char **argv)
         } else if (state == waiting) {
             ROS_INFO("Waiting to receive trajectory...");
             start = get_start(drone);
+            start_hook_t = ros::Time::now(); 
             trajectory = request_trajectory(get_trajectory_client, start, width, length, lanes);
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            end_hook_t = ros::Time::now(); 
+            g_planning_time_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
+            g_planning_ctr++; 
+
+            //std::this_thread::sleep_for(std::chrono::seconds(1));
             next_state = flying;
         } else if (state == flying)
         {

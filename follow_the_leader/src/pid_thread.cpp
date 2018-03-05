@@ -12,7 +12,7 @@
 #include <iterator>
 #include <chrono>
 #include <thread>
-#include "follow_the_leader/shut_down.h"
+//#include "follow_the_leader/shut_down.h"
 //#include "controllers/DroneControllerBase.hpp"
 //#include "common/Common.hpp"
 #include "common.h"
@@ -35,6 +35,8 @@
 #include "follow_the_leader/bounding_box_msg.h"
 #include "bounding_box.h"
 #include "follow_the_leader/cmd_srv.h"
+#include "error.h"
+#include <profile_manager/profiling_data_srv.h>
 
 using namespace std;
 std::string ip_addr__global;
@@ -56,10 +58,33 @@ float vx__D__global; //= .1;
 float vy__D__global; //= .1;
 float vz__D__global; //= .1;
 
+void log_data_before_shutting_down(){
+    std::string ns = ros::this_node::getName();
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
 
+    profiling_data_srv_inst.request.key = "error";
+    profiling_data_srv_inst.request.value = 0;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+}
+
+/*
 bool shutdown_cb(follow_the_leader::shut_down::Request &req, 
     follow_the_leader::shut_down::Response &res){
     ros::shutdown();
+}
+*/
+
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    exit(0);
 }
 
 void bb_cb(const follow_the_leader::bounding_box_msg::ConstPtr& msg) {
@@ -94,7 +119,6 @@ void fly_towards_target(Drone& drone, const bounding_box& bb,
     if (vy >=3 || vy<=-3) {
         ROS_INFO_STREAM("vy:"<<vy);
     }
-
     drone.fly_velocity(vx, vy, vz);
 }
 
@@ -102,12 +126,9 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "pid_node", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
-    signal(SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandlerPrivate);
  
     uint16_t port = 41451;
-
-    ros::ServiceServer shutdown_server  = 
-        nh.advertiseService("shutdown_topic", shutdown_cb);
 
     ros::Subscriber bb_sub = nh.subscribe("/bb_topic", 4, bb_cb);
     
@@ -146,6 +167,8 @@ int main(int argc, char **argv)
         while(!bb_queue.empty()) {
             auto bb = bb_queue.front(); 
             bb_queue.pop(); 
+            calculate_error(bb, 0, 0);
+            
             fly_towards_target(drone, bb, image_h__global, image_w__global, pid_vx, pid_vy, pid_vz, dt); // dt is not currently used
         }
         ros::spinOnce(); 

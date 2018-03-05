@@ -30,6 +30,7 @@
 #include "bounding_box.h"
 #include "follow_the_leader/cmd_srv.h"
 #include "objdetect.h"
+#include <profile_manager/profiling_data_srv.h>
 #include <fstream>
 using namespace std;
 using namespace chrono;

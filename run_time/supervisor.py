@@ -84,7 +84,7 @@ def should_terminate(stat_file):
 def main():
     # for debugging 
      
-    stat_file = "../data/"+"mapping"+"/supervisor_mailbox.txt"
+    stat_file = "../data/"+"follow_the_leader"+"/supervisor_mailbox.txt"
     max_run_time = 90000 
     
 
