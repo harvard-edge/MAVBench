@@ -7,7 +7,7 @@ PID::PID(double Kp, double Ki, double Kd, double max, double min) :
 {
 }
 
-double PID::calculate(double sensor, double target, double dt)
+double PID::calculate(double target, double sensor, double dt)
 {
 	double result, prop, integ, deriv;
 	double error = target - sensor;

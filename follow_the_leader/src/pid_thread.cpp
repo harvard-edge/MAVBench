@@ -44,6 +44,8 @@ std::string localization_method;
 std::queue<bounding_box> bb_queue; //uesd to buffer imags while detection is running
 float height_ratio;
 //const int image_w = 256, image_h = 144; //this must be equal to the img being pulled in from airsim
+long long g_error_accumulate = 0;
+int g_error_ctr = 0;
 int image_w__global;// = 400;
 int  image_h__global; //= 400; //this must be equal to the img being pulled in from airsim
 float vx__P__global; //= (float)2.0/(image_h/2); 
@@ -63,7 +65,7 @@ void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
 
     profiling_data_srv_inst.request.key = "error";
-    profiling_data_srv_inst.request.value = 0;
+    profiling_data_srv_inst.request.value = ((double)g_error_accumulate/g_error_ctr)/1000;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -109,13 +111,23 @@ void fly_towards_target(Drone& drone, const bounding_box& bb,
 		drone.set_yaw(0);
 	}
 	
-    double bb__cntr__x =  bb.x + bb.w/2;
-    double bb__cntr__y =  bb.y + bb.h/2;
-    
     double img__cntr =  img_width / 2;
-    double vy = pid_vy.calculate(bb.h, height_ratio*img_height,  dt); //get closer to the person
-    double vx = pid_vx.calculate(img__cntr, bb__cntr__x, dt); //keep the person in the center of the img 
-    double vz = pid_vz.calculate(drone.pose().position.z, hover_height, dt); //for hovering at the same point
+    double vy = pid_vy.calculate(height_ratio, bb.h/img_height,  dt); 
+    double vx = pid_vx.calculate(bb.x + bb.w/2, img_width/2, dt); 
+    double vz = pid_vz.calculate(bb.y + bb.h/2, img_height/2, dt); 
+    //double vz = pid_vz.calculate(drone.pose().position.z, hover_height, dt); //for hovering at the same point
+    
+    error error_inst(bb, img_height, img_width, height_ratio);
+    ROS_ERROR_STREAM("erros_inst.x"<< error_inst.x<<"  v.x"<<vx); 
+    ROS_ERROR_STREAM("erros_inst.y"<< error_inst.y<<"  v.y"<<vy); 
+    ROS_ERROR_STREAM("erros_inst.z"<< error_inst.z<<"  v.z"<<vz);
+    ROS_ERROR_STREAM("-------------------------------");
+    //<<"bb.y"<<bb.y<<"bb.height"<<bb.h<<"imgheight"<<img_height); 
+    //ROS_ERROR_STREAM("bb.x"<<bb.x<<"bb.height"<<bb.h<<"imgheight"<<img_height); 
+    ROS_ERROR_STREAM("error.full"<<error_inst.full);
+    g_error_accumulate +=  (error_inst.full)*1000;
+    g_error_ctr +=1;
+    
     if (vy >=3 || vy<=-3) {
         ROS_INFO_STREAM("vy:"<<vy);
     }
@@ -167,8 +179,6 @@ int main(int argc, char **argv)
         while(!bb_queue.empty()) {
             auto bb = bb_queue.front(); 
             bb_queue.pop(); 
-            calculate_error(bb, 0, 0);
-            
             fly_towards_target(drone, bb, image_h__global, image_w__global, pid_vx, pid_vy, pid_vz, dt); // dt is not currently used
         }
         ros::spinOnce(); 
