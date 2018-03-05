@@ -57,7 +57,6 @@ float vy__D__global; //= .1;
 float vz__D__global; //= .1;
 
 
-
 bool shutdown_cb(follow_the_leader::shut_down::Request &req, 
     follow_the_leader::shut_down::Response &res){
     ros::shutdown();
@@ -71,10 +70,7 @@ void bb_cb(const follow_the_leader::bounding_box_msg::ConstPtr& msg) {
     bb.h = msg->h;
     bb.conf  = msg->conf;
     bb_queue.push(bb);
-    //ROS_INFO_STREAM("height and width"<<bb.w << " " <<bb.h);
 }
-
-// *** F:DN main function
 
 void fly_towards_target(Drone& drone, const bounding_box& bb,
         int img_height, int img_width, PID& pid_vx, PID& pid_vy, PID& pid_vz,
@@ -92,15 +88,9 @@ void fly_towards_target(Drone& drone, const bounding_box& bb,
     double bb__cntr__y =  bb.y + bb.h/2;
     
     double img__cntr =  img_width / 2;
-    //ROS_INFO_STREAM("bb h is "<<bb.h<< " height ration is"<<height_ratio*img_height);	
     double vy = pid_vy.calculate(bb.h, height_ratio*img_height,  dt); //get closer to the person
-    //ROS_INFO_STREAM("bb.h:"<<bb.h<<" -ideal:"<< height_ratio*img_height<<" -vy:"<<vy);
-    //ROS_INFO_STREAM("result for vx");
     double vx = pid_vx.calculate(img__cntr, bb__cntr__x, dt); //keep the person in the center of the img 
-    //ROS_INFO_STREAM("result for vz");
     double vz = pid_vz.calculate(drone.pose().position.z, hover_height, dt); //for hovering at the same point
-
-    //ROS_INFO_STREAM("velocities"<<vx<< " " << vy<< " " << vz);	
     if (vy >=3 || vy<=-3) {
         ROS_INFO_STREAM("vy:"<<vy);
     }
@@ -108,12 +98,8 @@ void fly_towards_target(Drone& drone, const bounding_box& bb,
     drone.fly_velocity(vx, vy, vz);
 }
 
-
-
 int main(int argc, char **argv)
 {
-    
-    // ROS node initialization
     ros::init(argc, argv, "pid_node", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
     signal(SIGINT, sigIntHandler);
@@ -123,7 +109,8 @@ int main(int argc, char **argv)
     ros::ServiceServer shutdown_server  = 
         nh.advertiseService("shutdown_topic", shutdown_cb);
 
-
+    ros::Subscriber bb_sub = nh.subscribe("/bb_topic", 4, bb_cb);
+    
     if(!ros::param::get("/pid_node/ip_addr__global",ip_addr__global) ||
             !ros::param::get("/pid_node/vx__P__global",vx__P__global)||
             !ros::param::get("/pid_node/vy__P__global",vy__P__global)||
@@ -145,28 +132,22 @@ int main(int argc, char **argv)
         ROS_FATAL("you did not specify all the parameters");
         return -1; 
     }
-            //ROS_ERROR_STREAM("blah"<<ip_addr__global);
+    
     int loop_rate = 30; 
+	ros::Rate pub_rate(loop_rate);
     float dt = ((float)1)/(float)loop_rate;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
-	ros::Rate pub_rate(loop_rate);
-    ros::Subscriber bb_sub = nh.subscribe("/bb_topic", 4, bb_cb);
     PID pid_vx(vx__P__global, vx__I__global, vx__D__global, 3.5, -3.5);
     PID pid_vy(vy__P__global, vy__I__global, vy__D__global, 3.5, -3.5);
 	PID pid_vz(vz__P__global, vz__I__global, vz__D__global, 3.5, -3.5); //at the moment only for keeping drone stable
 
-
     while (ros::ok())
 	{
         while(!bb_queue.empty()) {
-            //ROS_INFO_STREAM("queue size"<<bb_queue.size()); 
             auto bb = bb_queue.front(); 
             bb_queue.pop(); 
             fly_towards_target(drone, bb, image_h__global, image_w__global, pid_vx, pid_vy, pid_vz, dt); // dt is not currently used
         }
         ros::spinOnce(); 
-        //pub_rate.sleep();
     }
-    
-
 }

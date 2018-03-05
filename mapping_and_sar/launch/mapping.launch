@@ -14,10 +14,10 @@
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
   <!-- localization method -->
-  <arg name="localization_method" value="orb_slam2_rgbd" />
+  <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
   <!--arg name="localization_method" value="ground_truth" /-->
   <!--arg name="localization_method" value="gps" /-->
-  <!-- arg name="localization_method" value="vins_mono"/-->
+  <arg name="localization_method" value="vins_mono"/>
 
   <!--- set according to the localization method--> 
   <arg name="system/dyaw_max" default=".25"/>

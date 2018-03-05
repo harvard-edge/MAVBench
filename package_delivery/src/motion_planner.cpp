@@ -18,6 +18,7 @@
 #include "global_planner.h"
 #include "package_delivery/get_trajectory.h"
 #include "timer.h"
+#include <profile_manager/profiling_data_srv.h>
 
 // Misc messages
 #include <geometry_msgs/Point.h>
@@ -74,7 +75,8 @@ double sampling_interval__global;
 double v_max__global, a_max__global;
 int max_roadmap_size__global;
 std::function<piecewise_trajectory (geometry_msgs::Point, geometry_msgs::Point, int, int , int, octomap::OcTree *)> motion_planning_core;
-
+static float g_path_computation_time_acc = 0;
+static int g_number_of_planning = 0 ;
 
 //*** F:DN global variables
 octomap::OcTree * octree = nullptr;
@@ -175,7 +177,15 @@ void postprocess(piecewise_trajectory& path);
 //*** F:DN getting the smoothened trajectory
 bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
 {
-	//----------------------------------------------------------------- 
+    x__low_bound__global = std::min(x__low_bound__global, req.start.x);
+    x__high_bound__global = std::max(x__high_bound__global, req.start.x);
+    y__low_bound__global = std::min(y__low_bound__global, req.start.y);
+    y__high_bound__global = std::max(y__high_bound__global, req.start.y);
+    z__low_bound__global = std::min(z__low_bound__global, req.start.z);
+    z__high_bound__global = std::max(z__high_bound__global, req.start.z);
+
+
+    //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
 	piecewise_trajectory piecewise_path;
@@ -193,8 +203,10 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     clear_octomap_bbx({req.start.x, req.start.y, req.start.z});
 
     // octomap_msgs::binaryMapToMsg(*octree, omp);
-    octree->writeBinary("/home/ubuntu/octomap.bt");
+    //octree->writeBinary("/home/ubuntu/octomap.bt");
 
+
+    auto loop_start_t = ros::Time::now();
     piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length ,req.n_pts_per_dir, octree);
     //piecewise_path = motion_planning_core(req.start, req.goal, octree);
 
@@ -203,13 +215,13 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
         return false;
     }
 
-    ROS_INFO("Path size: %u. Now post-processing...", piecewise_path.size());
+    //ROS_INFO("Path size: %u. Now post-processing...", piecewise_path.size());
 
     if (motion_planning_core_str != "lawn_mower") {
         postprocess(piecewise_path);
     }
 
-    ROS_INFO("Path size: %u. Now smoothening...", piecewise_path.size());
+    //ROS_INFO("Path size: %u. Now smoothening...", piecewise_path.size());
 
     // Smoothen the path and build the multiDOFtrajectory response
     smooth_path = smoothen_the_shortest_path(piecewise_path, octree);
@@ -219,7 +231,11 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     // Publish the trajectory (for debugging purposes)
     traj_topic = res.multiDOFtrajectory;
 
-	return true;
+    auto loop_end_t = ros::Time::now(); 
+    g_path_computation_time_acc += (loop_end_t - loop_start_t).toSec();
+    g_number_of_planning++; 
+    //ROS_INFO_STREAM("planning takes"<<(loop_end_t - loop_start_t).toSec());
+    return true;
 }
 
 
@@ -267,7 +283,46 @@ void motion_planning_initialize_params() {
 
 }
 
+void log_data_before_shutting_down(){
+    std::string ns = ros::this_node::getName();
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
 
+    profiling_data_srv_inst.request.key = "number_of_plannings";
+    profiling_data_srv_inst.request.value = g_number_of_planning;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    profiling_data_srv_inst.request.key = "g_path_computation_time_acc";
+    profiling_data_srv_inst.request.value = g_path_computation_time_acc;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+    
+    profiling_data_srv_inst.request.key = "g_path_computation_time_avg";
+    profiling_data_srv_inst.request.value = g_path_computation_time_acc/g_number_of_planning;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+}
+
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    exit(0);
+}
 
 int main(int argc, char ** argv)
 {
@@ -277,7 +332,8 @@ int main(int argc, char ** argv)
     ros::init(argc, argv, "motion_planner");
     ros::NodeHandle nh;
     motion_planning_initialize_params();
-    signal(SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandlerPrivate);
+
 
     // *** F:DN topics and services
     ros::ServiceServer service = nh.advertiseService("get_trajectory_srv", get_trajectory_fun);

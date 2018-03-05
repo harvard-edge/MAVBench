@@ -93,7 +93,7 @@ trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, doubl
     multiDOFpoint first_p = normal_traj.front();
 
     double initial_velocity = magnitude(first_p.vx, first_p.vy, first_p.vz);
-    initial_velocity = std::max(initial_velocity, 1.0);
+    initial_velocity = std::max(initial_velocity, .001);
     double distance_left = stopping_distance;
 
     for (multiDOFpoint p : normal_traj) {
@@ -243,12 +243,6 @@ float distance(float x, float y, float z) {
   return std::sqrt(x*x + y*y + z*z);
 }
 
-float distance(coord pose_1, coord pose_2){
-  return std::sqrt(pow((pose_1.x - pose_2.x),2) + pow((pose_1.y - pose_2.y),2) + pow((pose_1.z - pose_2.z),2));
-}
-
-
-
 
 void scan_around(Drone &drone, int angle) {
     float init_yaw = drone.get_yaw();
@@ -286,26 +280,22 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
 
     trajectory_t reversed_commands;
 
-    double v_x, v_y, v_z;
-    coord desired_pose;
+    
     while (time > 0 && traj->size() > 0) {
         multiDOFpoint p = traj->front();
-        if (check_position) {//if true, keep moving toward the desired position
-            auto cur_pose = drone.position();
-            desired_pose.x = p.x;
-            desired_pose.y = p.y;
-            desired_pose.z = p.z;
-            v_x = (-cur_pose.x + desired_pose.x)/1;
-            v_y = (-cur_pose.y + desired_pose.y)/1;
-            v_z = (-cur_pose.z + desired_pose.z)/1;
-        } else{
-            // Calculate the velocities we should be flying at
-            v_x = p.vx;
-            v_y = p.vy;
-            v_z = p.vz;
+
+        // Calculate the velocities we should be flying at
+        double v_x = p.vx;
+        double v_y = p.vy;
+        double v_z = p.vz;
+
+        if (check_position) {
+            auto pos = drone.position();
+            v_x += 0.05*(p.x-pos.x);
+            v_y += 0.05*(p.y-pos.y);
+            v_z += 0.2*(p.z-pos.z);
         }
-        
-        
+
         // Calculate the yaw we should be flying with
         float yaw = p.yaw;
         if (yaw_strategy == ignore_yaw)
@@ -337,36 +327,21 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 
-        if (!check_position){
-            // Push completed command onto reverse-command stack
-            multiDOFpoint rev_point = reverse_point(p);
-            rev_point.duration = flight_time;
-            reversed_commands.push_front(rev_point);
+        // Push completed command onto reverse-command stack
+        multiDOFpoint rev_point = reverse_point(p);
+        rev_point.duration = flight_time;
+        reversed_commands.push_front(rev_point);
 
-            // Update trajectory
-            traj->front().duration -= flight_time;
-            if (traj->front().duration <= 0)
-                traj->pop_front();
-            time -= flight_time;
-        }
-    
-        if (check_position) {
-            auto cur_pose = drone.position();
-            if (distance(cur_pose, desired_pose) < .5) {
-                check_position = false;    
-                //ROS_INFO_STREAM("DONE fixing");
-            }else{
-               ; 
-                //ROS_INFO_STREAM("fixing position again");
+        // Update trajectory
+        traj->front().duration -= flight_time;
+        if (traj->front().duration <= 0)
+            traj->pop_front();
 
-            }
-        }
+        time -= flight_time;
     }
 
     if (reverse_traj != nullptr)
         *reverse_traj = append_trajectory(reversed_commands, *reverse_traj);
-
-   //ROS_INFO_STREAM("-------------leaving the trajectory\n");
 }
 
 

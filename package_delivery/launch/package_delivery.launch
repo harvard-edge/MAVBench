@@ -13,7 +13,7 @@
     <param name="/ip_addr" value="$(arg host_ip)" />
 
     <!-- Drone's physical characteristics /-->
-    <arg name="v_max" default="2"/> 
+    <arg name="v_max" default="4.5"/> 
     <arg name="a_max" default="8"/> 
 
     <!-- orb slam location--> 
@@ -69,7 +69,7 @@
 		<param name="frame_id" type="string" value="world" />
 		
 		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="20" />
+		<param name="sensor_model/max_range" value="15" />
 
 		<!-- data source to integrate (PointCloud2) -->
 		<!-- remap from="octomap_server_nodelet/cloud_in" to="/points" /-->
@@ -175,9 +175,9 @@
         <param name="x_dist_to_sample_from__low_bound" value="-35"/>
 		<param name="x_dist_to_sample_from__high_bound" value="35"/>
         <param name="y_dist_to_sample_from__low_bound" value="-5"/>
-        <param name="y_dist_to_sample_from__high_bound" value="70"/>
+        <param name="y_dist_to_sample_from__high_bound" value="100"/>
         <param name="z_dist_to_sample_from__low_bound" value="2"/>
-        <param name="z_dist_to_sample_from__high_bound" value="6"/>
+        <param name="z_dist_to_sample_from__high_bound" value="8"/>
 
         <param name="sampling_interval" value="0.5"/>
 
