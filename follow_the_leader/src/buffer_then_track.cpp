@@ -50,7 +50,7 @@ std::queue<bounding_box> bb_queue; //uesd to buffer imags while detection is run
 //std::ofstream file_to_output;
 int flush_count;
 int flush_count_MAX = 50;
-int FRAME_TO_PROCESS_UPPER_BOUND = 10;
+int frame_to_process_upper_bound; //= 10;
 int frame_to_process_left;
 long long g_tracking_time_acc = 0;
 int g_tracking_ctr = 0;
@@ -145,7 +145,7 @@ void tracking_buffered(ros::ServiceClient &resume_detection_client, ros::Publish
         strike = 0; 
         tracker_defined = false; 
         img_queue = std::queue<cv_bridge::CvImage>();
-        frame_to_process_left = FRAME_TO_PROCESS_UPPER_BOUND;
+        frame_to_process_left = frame_to_process_upper_bound;
         resume_detection_client.call(resume_detection_obj);
         state = waiting_for_main; 
         if(!((bb.conf < min_allowed_tracking_treshold) || (strike > max_strike))) {
@@ -211,6 +211,12 @@ int main(int argc, char** argv)
       ROS_FATAL_STREAM("Could not start buffer_then_track cause max_n_track_before_det_count not provided");
       return -1;
     }
+    
+    if(!ros::param::get("/buffer_then_track/frame_to_process_upper_bound",frame_to_process_upper_bound))  {
+      ROS_FATAL_STREAM("Could not start buffer_then_track cause frame_to_process_upper_bound not provided");
+      return -1;
+    }
+    
     if (!ros::param::get("/buffer_then_track/tracking_threshold", tracking_threshold)) {
         ROS_FATAL("Could not start tracing_node cause tracking_threshol dmissing! Looking for");
         return -1;
@@ -230,7 +236,7 @@ int main(int argc, char** argv)
 
     follow_the_leader::cmd_srv track_srv_obj;
 
-    frame_to_process_left = FRAME_TO_PROCESS_UPPER_BOUND;
+    frame_to_process_left = frame_to_process_upper_bound;
     
     while (ros::ok()) {
         if (state == trk_buff_imgs) { 

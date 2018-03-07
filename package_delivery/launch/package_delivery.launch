@@ -13,9 +13,9 @@
     <param name="/ip_addr" value="$(arg host_ip)" />
 
     <!-- Drone's physical characteristics /-->
-    <arg name="v_max" default="6.5"/> 
+    <arg name="v_max" default="6.0"/> 
     <arg name="a_max" default="8"/> 
-
+    <arg name="fly_trajectory_time_out" default=".1"/> 
     <!-- orb slam location--> 
     <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
     
@@ -29,7 +29,7 @@
     
     <!-- stat file-->
     <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
-   <param name="supervisor_mailbox" value="$(find package_delivery)/../data/mapping/supervisor_mailbox.txt" />
+   <param name="supervisor_mailbox" value="$(find package_delivery)/../data/package_delivery/supervisor_mailbox.txt" />
  
 
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
@@ -57,11 +57,11 @@
          
     <!--comment-->
     <!-- Octomap -->
-	<!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" -->
+	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
 
-    <node pkg="nodelet" type="nodelet" name="standalone_nodelet" args="manager"/>
+    <!--node pkg="nodelet" type="nodelet" name="standalone_nodelet" args="manager"/-->
 
-    <node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager">
+    <!--node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager"/-->
         <param name="resolution" value="0.5" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
@@ -71,7 +71,7 @@
 		<param name="sensor_model/max_range" value="15" />
 
 		<!-- data source to integrate (PointCloud2) -->
-		<!-- remap from="octomap_server_nodelet/cloud_in" to="/points" /-->
+		<remap from="cloud_in" to="/points" />
 
 		<!-- Filter ground for binary occupancy map -->
 		<param name="base_frame_id" value="world" />
@@ -126,9 +126,12 @@
 
 
 	<!-- Nodelet manager for this pipeline -->
-	<node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager">
-		<remap from="/points" to="/cloud_in" />
+    <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager">
+	
     </node>
+    <comment>	
+    <remap from="/points" to="/cloud_in" />
+    </comment>
 
 	<!-- Convert to point cloud -->
 	<node pkg="nodelet" type="nodelet" name="cloudify"
@@ -140,11 +143,10 @@
 		<remap from="image_rect" to="/Airsim/depth"/>
 
     </node>
-	
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
 		<param name="panic_distance" value="0.5"/>
     </node>
-
+    
     <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
     </node>
     
@@ -194,7 +196,8 @@
         <param name="ip_addr" value="$(arg host_ip)"/>
         <!-- param name="issue_cmd__time_step" value=".05"/-->
 		<!-- param name="points_to_replan_after" value="1000000000"/-->
-
+        <param name="v_max" value="$(arg v_max)"/>
+        <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>
         <!-- Localization of the depth images -->
         <param name="localization_method" value="$(arg localization_method)" />
     </node>

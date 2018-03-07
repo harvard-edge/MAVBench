@@ -11,6 +11,7 @@
 #include <signal.h>
 
 #include <profile_manager/profiling_data_srv.h>
+#include <profile_manager/start_profiling_srv.h>
 #include "control_drone.h"
 #include "common/Common.hpp"
 #include "Drone.h"
@@ -33,11 +34,16 @@ bool col_imminent = false;
 bool col_coming = false;
 bool slam_lost = false;
 
+long long g_accumulate_loop_time = 0; //it is in ms
 long long g_panic_rlzd_t_accumulate = 0;
+int g_main_loop_ctr = 0;
 int g_panic_ctr = 0;
+bool g_start_profiling = false; 
 
+double v_max__global, a_max__global, g_fly_trajectory_time_out;
 long long g_planning_time_including_ros_overhead_acc  = 0;
 int  g_planning_ctr = 0; 
+bool clct_data = true;
 
 geometry_msgs::Vector3 panic_direction;
 string ip_addr__global;
@@ -62,6 +68,14 @@ void log_data_before_shutting_down(){
         }
     }
     
+    profiling_data_srv_inst.request.key = "package_delivery_main_loop";
+    profiling_data_srv_inst.request.value = (((double)g_accumulate_loop_time)/1e9)/g_main_loop_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+        }
+    }
+
     profiling_data_srv_inst.request.key = "panic_ctr";
     profiling_data_srv_inst.request.value = g_panic_ctr;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
@@ -71,7 +85,7 @@ void log_data_before_shutting_down(){
         }
     }
     
-    profiling_data_srv_inst.request.key = "panic_response_time_in_follow_the_leader";
+    profiling_data_srv_inst.request.key = "panic_response_time_in_package_delivery";
     profiling_data_srv_inst.request.value = (g_panic_rlzd_t_accumulate/ (double)g_panic_ctr)*1e-9;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
@@ -80,7 +94,7 @@ void log_data_before_shutting_down(){
         }
     }
 
-    profiling_data_srv_inst.request.key = "planning_including_ros_overhead";
+    profiling_data_srv_inst.request.key = "planning_including_ros_overhead_avg";
     profiling_data_srv_inst.request.value = ((double)g_planning_time_including_ros_overhead_acc/g_planning_ctr)/1e9;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
@@ -146,6 +160,19 @@ void package_delivery_initialize_params() {
                 (ns + "/stats_file_addr").c_str());
      return; 
     }
+
+    if(!ros::param::get("/package_delivery/v_max", v_max__global)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/stats_file_addr").c_str());
+     return; 
+    }
+
+    if(!ros::param::get("/package_delivery/fly_trajectory_time_out", g_fly_trajectory_time_out)){
+        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+                (ns + "/stats_file_addr").c_str());
+     return; 
+    }
+
 }
 
 geometry_msgs::Point get_start(Drone& drone) {
@@ -176,14 +203,24 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
     package_delivery::get_trajectory srv;
     srv.request.start = start;
     srv.request.goal = goal;
+    int fail_ctr = 0;
+    while(!client.call(srv) && fail_ctr<=5){
+        fail_ctr++;
+    }
+     
+    if (fail_ctr ==5) {
+        ROS_ERROR("Failed to call service.");
+        return trajectory_t();
 
+    }
+    /* 
     if (client.call(srv)) {
         ROS_INFO("Received trajectory.");
     } else {
         ROS_ERROR("Failed to call service.");
         return trajectory_t();
     }
-
+    */
     return create_trajectory(srv.response.multiDOFtrajectory, true);
 }
 
@@ -223,7 +260,7 @@ int main(int argc, char **argv)
     ros::Time start_hook_t, end_hook_t;                                          
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
-        nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
+        nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv", true);
 	ros::ServiceClient record_profiling_data_client = 
         nh.serviceClient<profile_manager::profiling_data_srv>("record_profiling_data");
     ros::Subscriber panic_sub = 
@@ -236,6 +273,12 @@ int main(int argc, char **argv)
 		nh.subscribe<std_msgs::Bool>("col_coming", 1, col_coming_callback);
 	ros::Subscriber slam_lost_sub = 
 		nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+
+    ros::ServiceClient start_profiling_client = 
+      nh.serviceClient<profile_manager::start_profiling_srv>("/start_profiling");
+
+    profile_manager::start_profiling_srv start_profiling_srv_inst;
+    start_profiling_srv_inst.request.key = "";
 
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
@@ -261,10 +304,15 @@ int main(int argc, char **argv)
     //update_stats_file(stats_file_addr,"###\n");
     profile_manager::profiling_data_srv profiling_data_srv_inst;
     
+    ros::Time loop_start_t(0,0); 
+    ros::Time loop_end_t(0,0); //if zero, it's not valid
+
+
     for (State state = setup; ros::ok(); ) {
+          
         ros::spinOnce();
         State next_state = invalid;
-
+        loop_start_t = ros::Time::now();
         if (state == setup)
         {
             control_drone(drone);
@@ -377,7 +425,7 @@ int main(int argc, char **argv)
                 g_panic_ctr++;
             }
             
-            follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position);
+            follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position,v_max__global, g_fly_trajectory_time_out);
 
             // Choose next state (failure, completion, or more flying)
             if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)) {
@@ -433,10 +481,29 @@ int main(int argc, char **argv)
         }
 
         state = next_state;
-    }
+        
+        if (clct_data){
+            if(!g_start_profiling) { 
+                if (ros::service::waitForService("/start_profiling", 10)){ 
+                    if(!start_profiling_client.call(start_profiling_srv_inst)){
+                        ROS_ERROR_STREAM("could not probe data using stats manager");
+                        ros::shutdown();
+                    }
+                    //ROS_INFO_STREAM("now it is true");
+                    g_start_profiling = start_profiling_srv_inst.response.start; 
+                }
+            }
+            else{
+                //ROS_INFO_STREAM("blah");
+                loop_end_t = ros::Time::now(); 
+                g_accumulate_loop_time += (((loop_end_t - loop_start_t).toSec())*1e9);
+                g_main_loop_ctr++;
+            }
+        }
     
+    }
     //collect data before shutting down
-        //end_stats = drone.getFlightStats();
+    //end_stats = drone.getFlightStats();
     //output_flight_summary(init_stats, end_stats, mission_status, stats_file_addr);
     return 0;
 }

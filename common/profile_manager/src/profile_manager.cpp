@@ -461,17 +461,19 @@ void topic_statistics_cb(const rosgraph_msgs::TopicStatistics::ConstPtr& msg) {
     long long window_start_nsec =  msg->window_start.nsec;
     long long window_stop_nsec =  msg->window_stop.nsec;
     double window_duration = (window_stop_sec - window_start_sec)+
-        (window_stop_nsec - window_start_nsec)/1000000000;
-    long long msg_droppage_rate = msg->dropped_msgs/window_duration;
-    
-    long long stamp_age_mean = (msg->stamp_age_mean.toSec())*1000000000;
+        (window_stop_nsec - window_start_nsec)/1e9; //the reason to have this in nano second 
+                                                    //is for division to be greater than zero
+    long long msg_droppage_rate = (msg->dropped_msgs*100)/window_duration;
+    long long stamp_age_mean = (msg->stamp_age_mean.toSec())*1e9;
     double stamp_age_max = (msg->stamp_age_max.toSec());
 
     int pub_rate  = (int) ((double)1.0/(double)msg->period_mean.toSec());
     int pub_rate_sqr = pub_rate*pub_rate; 
     
+    if (g_start_profiling_data){
     g_topics_stats[msg->topic].acc(pub_rate, msg_droppage_rate, 
                                    stamp_age_mean, stamp_age_max);
+    }
 }
 
 int main(int argc, char **argv)
