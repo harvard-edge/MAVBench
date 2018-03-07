@@ -13,7 +13,7 @@
     <param name="/ip_addr" value="$(arg host_ip)" />
 
     <!-- Drone's physical characteristics /-->
-    <arg name="v_max" default="4.5"/> 
+    <arg name="v_max" default="6.5"/> 
     <arg name="a_max" default="8"/> 
 
     <!-- orb slam location--> 

@@ -94,9 +94,19 @@ bool in_safe_zone(const T& start, const T& pos) {
     return (std::sqrt(dx*dx + dy*dy) < radius && std::abs(dz) < height);
 }
 
+int g__ctr = 0;
+bool started = false;
+ros::Time start_t;
 
 void pull_octomap(const octomap_msgs::Octomap& msg)
 {
+    /* 
+    if (!started){
+        start_t = ros::Time::now();
+        started = true;
+    }
+    g__ctr++; 
+    */
     RESET_TIMER();
     if (octree != nullptr) {
         delete octree;
@@ -108,7 +118,13 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
     if (octree == nullptr) {
         ROS_ERROR("Octree could not be pulled.");
     }
-
+    /*
+    if (g__ctr > 10) {
+        ROS_ERROR_STREAM("call back hz "<<(double)g__ctr/(ros::Time::now() - start_t).toSec());
+        g__ctr = 0;
+        started = false;
+    }
+    */
     LOG_ELAPSED(future_collision_pull);
 }
 

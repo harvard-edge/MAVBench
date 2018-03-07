@@ -11,7 +11,7 @@
 #include <functional>
 #include <limits>
 #include <signal.h>
-
+#include "std_msgs/Bool.h"
 // My headers
 #include "common.h"
 #include "graph.h"
@@ -177,6 +177,7 @@ void postprocess(piecewise_trajectory& path);
 //*** F:DN getting the smoothened trajectory
 bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
 {
+    auto loop_start_t = ros::Time::now();
     x__low_bound__global = std::min(x__low_bound__global, req.start.x);
     x__high_bound__global = std::max(x__high_bound__global, req.start.x);
     y__low_bound__global = std::min(y__low_bound__global, req.start.y);
@@ -195,7 +196,8 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     // *** F:DN Body 
     //----------------------------------------------------------------- 
 
-    request_octomap();
+    //request_octomap();
+    auto loop_end_t_2 = ros::Time::now(); 
     if (octree == nullptr) {
     	ROS_ERROR("Octomap is not available.");
     	return false;
@@ -206,7 +208,6 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     //octree->writeBinary("/home/ubuntu/octomap.bt");
 
 
-    auto loop_start_t = ros::Time::now();
     piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length ,req.n_pts_per_dir, octree);
     //piecewise_path = motion_planning_core(req.start, req.goal, octree);
 
@@ -234,7 +235,8 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     auto loop_end_t = ros::Time::now(); 
     g_path_computation_without_OM_PULL_time_acc += (((loop_end_t - loop_start_t).toSec())*1e9);
     g_number_of_planning++; 
-    //ROS_INFO_STREAM("planning takes"<<(loop_end_t - loop_start_t).toSec());
+    ROS_INFO_STREAM("om pulling and copying"<<(loop_end_t_2 - loop_start_t).toSec());
+    ROS_INFO_STREAM("planning "<<(loop_end_t - loop_start_t).toSec());
     return true;
 }
 
@@ -343,7 +345,7 @@ int main(int argc, char ** argv)
     ros::Publisher octo_pub = nh.advertise<octomap_msgs::Octomap>("omap", 1);
     ros::Publisher pcl_pub = nh.advertise<PointCloud> ("graph", 1);
     graph_conn_pub = nh.advertise<visualization_msgs::Marker>("graph_conns", 100);
-    // ros::Subscriber octomap_sub = nh.subscribe("octomap_full", 1, generate_octomap);
+     ros::Subscriber octomap_sub = nh.subscribe("octomap_binary", 1, generate_octomap);
     octo_client = nh.serviceClient<octomap_msgs::GetOctomap>("octomap_binary");
 	
     pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "world";
@@ -359,7 +361,10 @@ int main(int argc, char ** argv)
     float  
     */
 
-    
+    ros::Publisher dummy_pub;
+    dummy_pub= nh.advertise<std_msgs::Bool>("dummy_topic", 1);
+    std_msgs::Bool dummy_msg;
+    dummy_msg.data = false;
 
     //----------------------------------------------------------------- 
     // *** F:DN BODY
@@ -375,9 +380,10 @@ int main(int argc, char ** argv)
             pcl_pub.publish(pcl_ptr);
         }
         traj_pub.publish(traj_topic);
-		ros::spinOnce();
+	    //dummy_pub.publish(dummy_msg);	
+        ros::spinOnce();
 		pub_rate.sleep();
-	}
+    }
 
     return 0;
 }
@@ -522,9 +528,10 @@ std::vector<graph::node_id> nodes_in_radius(/*const*/ graph& g, graph::node_id n
 void request_octomap()
 {
     octomap_msgs::GetOctomap srv;
-    
-    if (octo_client.call(srv))
+    auto loop_start_t = ros::Time::now();
+    if (octo_client.call(srv)){
         generate_octomap(srv.response.map);
+    }
     else
         ROS_ERROR("Octomap service request failed");
 }
@@ -560,7 +567,8 @@ void generate_octomap(const octomap_msgs::Octomap& msg)
         delete octree;
     }
 
-    ROS_INFO("Requesting octomap...");
+    auto hook_end_t = ros::Time::now();
+    //ROS_INFO("Requesting octomap...");
 
 #ifdef INFLATE
     // Inflate Octomap

@@ -106,10 +106,10 @@ void tracking(ros::Publisher &bb_publisher){
     g_tracking_time_acc += (((end_hook_t - start_hook_t).toSec())*1e9);
     g_tracking_ctr++; 
 
-    cv::Mat img_cpy_2 = img_cpy; 
-    cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(255,255,0)); //yellow
-    cv::imshow(OPENCV_WINDOW, img_cpy_2);
-    cv::waitKey(2);
+    //cv::Mat img_cpy_2 = img_cpy; 
+    //cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(255,255,0)); //yellow
+    //cv::imshow(OPENCV_WINDOW, img_cpy_2);
+    //cv::waitKey(2);
     
     follow_the_leader::bounding_box_msg bb_msg;
     bb_msg.x =  bb.x;
