@@ -11,6 +11,8 @@
   <arg name="planning_resolution" default=".8"/>
   <arg name="mapping_resolution" default=".1" />
 
+  <arg name="fly_trajectory_time_out" default=".1"/> 
+
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
   <!-- localization method -->
@@ -26,6 +28,9 @@
   <param name="v_max" value="$(arg system/v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
+  <!--- note that time is pretty important since it determines the hz of the thread it runs in --> 
+  <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>
+
 
   <!-- termination criteria-->
   <arg name="coverage_threshold" default="50"/>

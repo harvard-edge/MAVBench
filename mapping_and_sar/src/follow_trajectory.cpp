@@ -20,6 +20,9 @@ bool slam_lost = false;
 float g_localization_status = 1.0;
 std::string g_supervisor_mailbox; //file to write to when completed
 float g_v_max;
+double g_fly_trajectory_time_out;
+long long g_planning_time_including_ros_overhead_acc  = 0;
+
 float g_max_yaw_rate;
 float g_max_yaw_rate_during_flight;
 //bool g_dummy = false;
@@ -163,6 +166,11 @@ int main(int argc, char **argv){
         return -1;
     }
 
+    if(!ros::param::get("/fly_trajectory_time_out", g_fly_trajectory_time_out)){
+        ROS_FATAL("Could not start follow_thrajectory. Parameter missing! fly_trajectory_time_out is not provided"); 
+     return -1; 
+    }
+
     /*
        if(!ros::param::get("/wiggle_speed",wiggle_speed))  {
 
@@ -258,7 +266,8 @@ int main(int argc, char **argv){
         } 
 
 //        ROS_INFO_STREAM("g_v_max"<<g_v_max); 
-        follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position, g_v_max);
+        follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
+                check_position, g_v_max, g_fly_trajectory_time_out);
 
         // Choose next state (failure, completion, or more flying)
         if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){
