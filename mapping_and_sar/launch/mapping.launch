@@ -6,7 +6,7 @@
   
   <!-- important params affecting performance -->
   <arg name="nbvp/gain/range" default="1"/>
-  <arg name="system/v_max" default=".5"/>
+  <arg name="system/v_max" default="1.5"/>
   <arg name="nbvp/tree/extension_range" default="3.5"/>
   <arg name="planning_resolution" default=".8"/>
   <arg name="mapping_resolution" default=".1" />
@@ -17,14 +17,14 @@
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
   <!-- localization method -->
   <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
-  <!--arg name="localization_method" value="ground_truth" /-->
+  <arg name="localization_method" value="ground_truth" />
   <!--arg name="localization_method" value="gps" /-->
-  <arg name="localization_method" value="vins_mono"/>
+  <!--arg name="localization_method" value="vins_mono"/-->
 
   <!--- set according to the localization method--> 
-  <arg name="system/dyaw_max" default=".25"/>
-  <arg name="max_yaw_rate" default="15"/>
-  <arg name="max_yaw_rate_during_flight" default="15"/>
+  <arg name="system/dyaw_max" default="1.57"/>
+  <arg name="max_yaw_rate" default="90"/>
+  <arg name="max_yaw_rate_during_flight" default="90"/>
   <param name="v_max" value="$(arg system/v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>

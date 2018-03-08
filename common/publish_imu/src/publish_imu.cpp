@@ -63,6 +63,8 @@ int main(int argc, char **argv)
     //float roll, yaw, pitch;
     //msr::airlib::VectorMath::toEulerianAngle(IMU_stats.orientation, pitch, roll, yaw);
     //ROS_INFO_STREAM(yaw*180/M_PI);
+    
+    ROS_WARN("Hey!");
 
     while (ros::ok())
 	{
@@ -163,6 +165,10 @@ int main(int argc, char **argv)
 
         IMU_msg.header.stamp = ros::Time(uint32_t(IMU_stats.time_stamp / 1000000000 ), uint32_t(IMU_stats.time_stamp % 1000000000));
 	// IMU_msg.header.stamp = ros::Time::now();
+    
+    /*if (IMU_stats.time_stamp != IMU_stats.after_time_stamp) {
+        ROS_ERROR("Uh oh!");
+    }*/
 
 	samples++;
     if (last_t < IMU_stats.time_stamp) {
