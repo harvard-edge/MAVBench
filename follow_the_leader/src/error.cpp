@@ -19,17 +19,27 @@
 #include <fstream>
 #include <cmath>
 #include "error.h"
+
 using namespace std;
 
-/*
-double target_y(double center, double target)
-{
-	return (target-center) + center;
-    //cos(roll * M_PI / 180) + center;
+error::error() {
+    this->x = -1;
+    this->y = -1;
+    this->z = -1;
+    this->full = -1;
 }
-*/
-error calculate_error(bounding_box bb, int img_cols, double height_ratio){
-    error my_error = {-1, -1, -1, -1};
+
+error::error(bounding_box bb, int img_height, int img_width, double height_ratio){
+    
+    double bb__cntr__x =  bb.x + bb.w/2;
+    double bb__cntr__z =  bb.y + bb.h/2;
+    //double bb__cntr__z =  bb.y; 
+    this->x = (bb__cntr__x - img_width/2)/(img_width/2);
+    this->z = (bb__cntr__z - img_height/2)/(img_height/2);
+    this->y = (bb.h/img_height - height_ratio);
+    this->full = pow(pow(this->x,2) + pow(this->y,2) + pow(this->z,2),.5)/3;
+    
+       
     /*    
     double bb_cntr =  target_y(img_cols/2, bb.x + bb.w/2);
     double img_col_cntr =  img_cols / 2;
@@ -39,7 +49,7 @@ error calculate_error(bounding_box bb, int img_cols, double height_ratio){
 
     my_error.z = abs(0);
     */ 
-    return my_error;
+    //return my_error;
 
 }
 

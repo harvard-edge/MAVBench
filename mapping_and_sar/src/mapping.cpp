@@ -50,7 +50,7 @@ float g_path_computation_time = 0;
 float g_path_computation_time_avg = 0;
 float g_path_computation_time_acc = 0;
 int g_iteration = 0;
-long long g_accumulate_loop_time_ms = 0; //it is in ms
+long long g_accumulate_loop_time = 0; //it is in ms
 int g_loop_ctr = 0; 
 bool g_start_profiling = false; 
 std::string g_supervisor_mailbox; //file to write to when completed
@@ -64,7 +64,7 @@ void log_data_before_shutting_down(){
 
     std::string ns = ros::this_node::getName();
     profiling_data_srv_inst.request.key = ns+"_mean_loop_time";
-    profiling_data_srv_inst.request.value = ((g_accumulate_loop_time_ms)/1000)/g_loop_ctr;
+    profiling_data_srv_inst.request.value = ((g_accumulate_loop_time)/1e9)/g_loop_ctr;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -438,20 +438,22 @@ int main(int argc, char** argv)
     }
 
     loop_end_t = ros::Time::now(); 
-    if (clct_data) { 
-        if (ros::service::waitForService("/start_profiling", 10)){ 
-            if(!start_profiling_client.call(start_profiling_srv_inst)){
-                ROS_ERROR_STREAM("could not probe data using stats manager");
-                ros::shutdown();
+    if (clct_data) {
+        if(!g_start_profiling) { 
+            if (ros::service::waitForService("/start_profiling", 10)){ 
+                if(!start_profiling_client.call(start_profiling_srv_inst)){
+                    ROS_ERROR_STREAM("could not probe data using stats manager");
+                    ros::shutdown();
+                }
+                //ROS_INFO_STREAM("now it is true");
+                g_start_profiling = start_profiling_srv_inst.response.start; 
             }
-            //ROS_INFO_STREAM("now it is true");
-            g_start_profiling = start_profiling_srv_inst.response.start; 
-        }
-    } 
-    if (g_start_profiling){ 
-        if (loop_end_t.isValid()) {
-            g_accumulate_loop_time_ms += ((loop_end_t - loop_start_t).toSec())*1000;
-            g_loop_ctr++; 
+        } 
+        else{
+            if (loop_end_t.isValid()) {
+                g_accumulate_loop_time += (((loop_end_t - loop_start_t).toSec())*1e9);
+                g_loop_ctr++; 
+            }
         }
     }
   }

@@ -92,7 +92,7 @@ trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, doubl
     multiDOFpoint first_p = normal_traj.front();
 
     double initial_velocity = magnitude(first_p.vx, first_p.vy, first_p.vz);
-    initial_velocity = std::max(initial_velocity, .001);
+    initial_velocity = std::max(initial_velocity, 1.0);
     double distance_left = stopping_distance;
 
     for (multiDOFpoint p : normal_traj) {

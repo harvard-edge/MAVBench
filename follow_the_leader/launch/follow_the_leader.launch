@@ -7,7 +7,7 @@
     <!-- Hasans's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.208" /--> 
     <arg name="img_width" value="512"/>
-    <arg name="img_height" value="512"/>
+    <arg name="img_height" value="288"/>
     <arg name="CLCT_DATA" value="true" />
 
     <!-- orb slam location--> 
@@ -22,6 +22,11 @@
     <param name="supervisor_mailbox" value="$(find package_delivery)/../data/follow_the_leader/supervisor_mailbox.txt" />
     <param name="stats_file_addr" value="$(find package_delivery)/../data/follow_the_leader/stats.json" />
 
+    
+    <param name="image_w__global" value="$(arg img_width)"/>
+    <param name="image_h__global" value="$(arg img_height)"/>
+    <param name="height_ratio" value=".25"/> 
+    
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)--> 
     <arg name="DEBUG" value="true" /> 
@@ -86,11 +91,10 @@
 	</group>
 
     <node pkg="follow_the_leader" type="pid_node" name="pid_node" output="screen">
-        <param name="height_ratio" value=".2"/> 
-        <param name="vx__P__global" value=".01"/>
-        <param name="vy__P__global" value=".01"/>
+        <param name="vx__P__global" value=".08"/>
+        <param name="vy__P__global" value="5"/>
 
-        <param name="vz__P__global" value=".01"/>
+        <param name="vz__P__global" value=".03"/>
 
         <param name="vx__I__global" value=".00"/>
         <param name="vy__I__global" value=".00"/>
@@ -100,9 +104,6 @@
         <param name="vy__D__global" value=".00"/>
         <param name="vz__D__global" value=".00"/>
 
-        <param name="image_w__global" value="$(arg img_width)"/>
-        <param name="image_h__global" value="$(arg img_height)"/>
-        
         <param name="ip_addr__global" value="$(arg host_ip)"/>
     </node>
 

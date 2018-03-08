@@ -67,8 +67,8 @@ typedef struct stats{
         double var = -1*pow((double)this->pub_rate_accumulate/this->ctr, 2);
         var +=  (double)this->pub_rate_accumulate_sqr/this->ctr;
         this->std_pub_rate = pow(var,.5);
-        this->mean_droppage_rate = ((double)this->droppage_rate_accumulate/this->ctr)*1000000000;
-        this->stamp_age_mean = ((double)this->stamp_age_mean_accumulate/this->ctr)/1000000000; 
+        this->mean_droppage_rate = ((double)this->droppage_rate_accumulate/this->ctr)/100;
+        this->stamp_age_mean = ((double)this->stamp_age_mean_accumulate/this->ctr)/1e9; 
     }
 } statsStruct;
 
