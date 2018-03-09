@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include <string>
 #include <limits>
-#include <opencv2/opencv.hpp>
 #include "vehicles/multirotor/api/MultirotorRpcLibClient.hpp"
 #include <geometry_msgs/Pose.h>
 #include "coord.h"
@@ -54,7 +53,7 @@ public:
     float get_pitch();
     float get_yaw();
     float get_roll();
-    //coord gps();
+    coord gps(uint64_t& timestamp);
 
     // *** F:DN Stats functions
     msr::airlib::FlightStats getFlightStats();

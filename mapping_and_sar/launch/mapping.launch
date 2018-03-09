@@ -8,7 +8,7 @@
   <arg name="nbvp/gain/range" default="7"/>
   <arg name="system/v_max" default="4.5"/>
   <arg name="nbvp/tree/extension_range" default="7.5"/>
-  <arg name="planning_resolution" default=".8"/>
+    <arg name="planning_resolution" default=".8"/>
   <arg name="mapping_resolution" default=".1" />
 
   <arg name="fly_trajectory_time_out" default=".1"/> 

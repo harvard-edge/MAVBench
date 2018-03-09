@@ -13,7 +13,7 @@
     <param name="/ip_addr" value="$(arg host_ip)" />
 
     <!-- Drone's physical characteristics /-->
-    <arg name="v_max" default="6.0"/> 
+    <arg name="v_max" default="2"/> 
     <arg name="a_max" default="8"/> 
     
     <!--- note that time out is very important since it determines the hz of the thread it runs in -->
@@ -24,9 +24,10 @@
     
         
     <!-- Set the localization method /-->
-    <!-- arg name="localization_method" default="orb_slam2_rgbd" /-->
+    <!--arg name="localization_method" default="orb_slam2_rgbd" /-->
     <!--arg name="localization_method" default="vins_mono" /-->
-    <arg name="localization_method" default="gps" />
+    <!--arg name="localization_method" default="gps" /-->
+    <arg name="localization_method" default="ground_truth" />
     
     
     <!-- stat file-->
@@ -102,7 +103,7 @@
 
 
 	<!-- Point-cloud publisher -->
- 	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
+ 	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
 		<!-- IP of the Airsim computer -->
 		<param name="Airsim_ip" value="$(arg host_ip)" />
 
@@ -213,6 +214,6 @@
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
     </group>
 
-  <node pkg="publish_imu" type="publish_imu" name="publish_imu"/> 
+  <node pkg="publish_imu" type="publish_imu" name="publish_imu" output="screen"/> 
 </launch>
 
