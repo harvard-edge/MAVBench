@@ -34,6 +34,7 @@ uint16_t g_port;
 //profiling variable
 vector<KeyValuePairStruct> g_highlevel_application_stats;
 std::map <std::string, statsStruct> g_topics_stats;
+std::map <std::string, statsStruct> g_topics_stats_filterd;
 bool g_start_profiling_data = false;
 
 #define MAX_CPUS    1024
@@ -383,30 +384,33 @@ void output_flight_summary(void){
     stats_ss << "\t\"" <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
     // topic rates
     stats_ss << "\t\""  <<"topic_statistics"<<'"'<<":{" << endl;
+    
+    
+    //filter out all the empty ones
     for (auto it = std::begin(g_topics_stats); it !=std::end(g_topics_stats); ++it) {
+
         if (it->second.ctr != 0){
-            it->second.calc_stats(); 
-            if (next(it) ==  g_topics_stats.end()){
-                stats_ss << "\t\t\"" <<it->first<<'"'<<":{" << endl;
-                stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<< it->second.mean_pub_rate <<","<< endl;
-                stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<< it->second.std_pub_rate << ","<< endl;
-                stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<< it->second.std_pub_rate << ","<< endl;
-                stats_ss << "\t\t\t\""<<"msg_avg_age"<<'"'<<":"<< it->second.stamp_age_mean<< ","<< endl;
-                stats_ss << "\t\t\t\""<<"msg_max_age"<<'"'<<":"<< it->second.stamp_age_max<< ","<< endl;
-                stats_ss << "\t\t\t\""<<"droppage_rate"<<'"'<<":"<< it->second.mean_droppage_rate << endl <<"\t\t}" << endl;
-                stats_ss <<"\t}" << ","<<endl;
-            }
-            else{
-                stats_ss << "\t\t\"" <<it->first<<'"'<<":{" << endl;
-                stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<< it->second.mean_pub_rate<<","<< endl;
-                stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<< it->second.std_pub_rate << "," << endl;
-                stats_ss << "\t\t\t\""<<"msg_avg_age"<<'"'<<":"<< it->second.stamp_age_mean<< ","<< endl;
-                stats_ss << "\t\t\t\""<<"msg_max_age"<<'"'<<":"<< it->second.stamp_age_max<<","<< endl;
-                stats_ss << "\t\t\t\""<<"droppage_rate"<<'"'<<":"<<it->second.mean_droppage_rate << endl <<"\t\t}," << endl;
-            }
+            g_topics_stats_filterd[it->first] = it->second;
         }
     }
-    ROS_INFO_STREAM("g_stats_fname"<<g_stats_fname);
+    
+    for (auto it = std::begin(g_topics_stats_filterd); it !=std::end(g_topics_stats_filterd); ++it) {
+        it->second.calc_stats(); 
+        stats_ss << "\t\t\"" <<it->first<<'"'<<":{" << endl;
+        stats_ss << "\t\t\t\""<<"mean"<<'"'<<":"<< it->second.mean_pub_rate <<","<< endl;
+        stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<< it->second.std_pub_rate << ","<< endl;
+        stats_ss << "\t\t\t\""<<"std"<<'"'<<":"<< it->second.std_pub_rate << ","<< endl;
+        stats_ss << "\t\t\t\""<<"msg_avg_age"<<'"'<<":"<< it->second.stamp_age_mean<< ","<< endl;
+        stats_ss << "\t\t\t\""<<"msg_max_age"<<'"'<<":"<< it->second.stamp_age_max<< ","<< endl;
+        stats_ss << "\t\t\t\""<<"droppage_rate"<<'"'<<":"<< it->second.mean_droppage_rate << endl <<"\t\t}";
+
+        if (next(it) !=  g_topics_stats_filterd.end()){
+                stats_ss << ","<<endl;
+        }else{
+            stats_ss << endl<<"},"<<endl;
+        }
+    }
+    
     update_stats_file(g_stats_fname, stats_ss.str());
 }
 

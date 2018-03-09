@@ -31,13 +31,12 @@
     <!-- also planning to prevent stdio stuff(if they really matter)--> 
     <arg name="DEBUG" value="true" /> 
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
-
+    <param name="frame_to_process_upper_bound" type="int" value="2"/> 
     
     <!--img publisher node--> 
     <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
     <!-- IP of the Airsim computer -->
     <param name="Airsim_ip" value="$(arg host_ip)" />
-
     
     <!-- Port of the Airsim computer (this is default, do not change!) -->
     <param name="Airsim_port" value="41451"/>

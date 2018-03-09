@@ -85,7 +85,7 @@ void obj_detect_call_back(const sensor_msgs::ImageConstPtr& msg)
         cv::Size size(512, 512);
         resize(img_cpy, img_to_show, size);
         for (int i = 0; i < 10000; i++){ 
-            //system(("rosnode kill " + mav_name__global + "/SAR").c_str());
+            //system(("rosnode kill " + mav_name__global + "/sar").c_str());
             cv::imshow(OPENCV_WINDOW, img_to_show);
             cv::waitKey(3);
         }
@@ -116,7 +116,7 @@ int main(int argc, char** argv){
   }
 
   if(!ros::param::get("/stats_file_addr",stats_file_addr)){
-      ROS_FATAL("Could not start SAR. Parameter missing! Looking for %s", 
+      ROS_FATAL("Could not start sar. Parameter missing! Looking for %s", 
               (ns + "/stats_file_addr").c_str());
   }
 
@@ -129,7 +129,7 @@ int main(int argc, char** argv){
   
   //std::string ns = ros::this_node::getName();
   if (!ros::param::get("/ip_addr", ip_addr__global)) {
-    ROS_FATAL_STREAM("Could not start SAR. Parameter missing! Looking for /ip_addr");
+    ROS_FATAL_STREAM("Could not start sar. Parameter missing! Looking for /ip_addr");
     return -1;
   }
   result.found = false;

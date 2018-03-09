@@ -41,6 +41,21 @@ typedef struct stats{
          this->stamp_age_max =  0;
          this->ctr = 0;
     }
+    /*    
+    stats(const statsStruct &other){
+         this->pub_rate_accumulate = other.pub_rate_accumulate;
+         this->pub_rate_accumulate_sqr = other.pub_rate_accumulate_sqr;
+         this->droppage_rate_accumulate = 0;
+         this->mean_pub_rate = 0; 
+         this->std_pub_rate = 0;
+         this->mean_droppage_rate = 0;
+         this->stamp_age_mean_accumulate = 0;
+         this->stamp_age_mean =  0;
+         this->stamp_age_max =  0;
+         this->ctr = 0;
+    }
+    */
+    
     /*
     stats(long long pub_rate_accumulate, double droppage_rate_accumulate, int ctr): 
                  pub_rate_accumulate(pub_rate_accumulate), 

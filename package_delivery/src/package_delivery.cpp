@@ -319,6 +319,7 @@ int main(int argc, char **argv)
 
             goal = get_goal();
             start = get_start(drone);
+            
             profiling_data_srv_inst.request.key = "start_profiling";
             if (ros::service::waitForService("/record_profiling_data", 10)){ 
                 if(!record_profiling_data_client.call(profiling_data_srv_inst)){
@@ -326,6 +327,7 @@ int main(int argc, char **argv)
                     ros::shutdown();
                 }
             }
+            
             spin_around(drone);
             next_state = waiting;
         }
@@ -388,7 +390,7 @@ int main(int argc, char **argv)
                 ROS_WARN("Future collision appeared on trajectory!");
 
                 if (!created_future_col_traj)
-                    future_col_traj = create_future_col_trajectory(normal_traj, 0.01);
+                    future_col_traj = create_future_col_trajectory(normal_traj, 0.5);
 
                 created_future_col_traj = true;
 

@@ -259,7 +259,7 @@ int main(int argc, char **argv){
                 //v_z = -v_x;
                 //v_x = -v_x;
                 v_z *=-1; 
-                drone.fly_velocity(0*v_x, 0*v_y, v_z, drone.get_yaw()+30, 0.3); 
+                drone.fly_velocity(0*v_x, 0*v_y, 0*v_z, drone.get_yaw()+30, 0.3); 
                 //drone.fly_velocity(0*v_x, 0*v_y, v_z, drone.get_yaw()+30, 0.3); 
                 last_time = ros::Time::now();
             }

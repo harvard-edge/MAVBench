@@ -39,6 +39,10 @@ int g_tracking_ctr = 0;
 std::string g_mission_status = "completed";
 long long g_error_accumulate = 0;
 int g_error_ctr = 0;
+int g_tracked_time=0;
+ros::Time following_start_t; 
+ros::Time following_end_t; 
+
 int image_w__global;// = 400;
 int  image_h__global; //= 400; //this must be equal to the img being pulled in from airsim
 float height_ratio;
@@ -60,6 +64,15 @@ void log_data_before_shutting_down(){
         }
     }
 
+    profiling_data_srv_inst.request.key = "following_time";
+    profiling_data_srv_inst.request.value = (following_end_t - following_start_t).toSec();
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+    
     profiling_data_srv_inst.request.key = "mission_status";
     profiling_data_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
@@ -68,7 +81,6 @@ void log_data_before_shutting_down(){
             ros::shutdown();
         }
     }
-
 
     profiling_data_srv_inst.request.key = "error";
     profiling_data_srv_inst.request.value = ((double)g_error_accumulate/g_error_ctr)/1000;
@@ -164,7 +176,9 @@ int main(int argc, char** argv)
             ros::shutdown();
         }
     }
-    
+
+    following_start_t =  ros::Time::now(); 
+
     while (ros::ok() && (detec_fail_ctr < g_detec_fail_ctr_threshold)) {
         if (state != "resume_detection") {
             ros::spinOnce();
@@ -219,6 +233,8 @@ int main(int argc, char** argv)
 
     if (detec_fail_ctr >= g_detec_fail_ctr_threshold) {
         g_mission_status = "failed";
+        following_end_t =  ros::Time::now(); 
+    
     }
     log_data_before_shutting_down();
     signal_supervisor(g_supervisor_mailbox, "kill"); 

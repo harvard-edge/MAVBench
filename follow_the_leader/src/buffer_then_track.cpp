@@ -212,10 +212,7 @@ int main(int argc, char** argv)
       return -1;
     }
     
-    if(!ros::param::get("/buffer_then_track/frame_to_process_upper_bound",frame_to_process_upper_bound))  {
-      ROS_FATAL_STREAM("Could not start buffer_then_track cause frame_to_process_upper_bound not provided");
-      return -1;
-    }
+    
     
     if (!ros::param::get("/buffer_then_track/tracking_threshold", tracking_threshold)) {
         ROS_FATAL("Could not start tracing_node cause tracking_threshol dmissing! Looking for");
@@ -230,7 +227,10 @@ int main(int argc, char** argv)
       return -1;
     }
 
-     
+     if(!ros::param::get("/frame_to_process_upper_bound",frame_to_process_upper_bound))  {
+      ROS_FATAL_STREAM("Could not start buffer_then_track cause frame_to_process_upper_bound not provided");
+      return -1;
+    }
     ros::ServiceClient resume_detection_client = 
         nh.serviceClient<follow_the_leader::cmd_srv>("resume_detection");
 

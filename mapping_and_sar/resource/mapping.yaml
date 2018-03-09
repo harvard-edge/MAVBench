@@ -21,7 +21,7 @@ nbvp/gain/zero: 0.0
 nbvp/status_monitor_rate: 100
 
 
-nbvp/gain/degressive_coeff: 0.25
+nbvp/gain/degressive_coeff: 0.05
 
 #nbvp/tree/extension_range: 4 
 nbvp/tree/exact_root: true
@@ -38,12 +38,12 @@ nbvp/log/on: true
 
 # bounding box: necessary to limit the simulation 
 # scenario (smaller than actual gazebo scenario)
-bbx/minX: -15.0
-bbx/minY: -30.0
-bbx/minZ: 1.0
-bbx/maxX: 15.0
-bbx/maxY: 30.0
-bbx/maxZ: 8.0
+bbx/minX: -19.0
+bbx/minY: -28.0
+bbx/minZ: 3.0
+bbx/maxX: 19.0
+bbx/maxY: 28.0
+bbx/maxZ: 5.0
 bbx/softBounds: false
 
 #bbx/minX: -2.0

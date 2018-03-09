@@ -15,6 +15,9 @@
     <param name="stats_file_addr" value="$(find package_delivery)/../data/scanning/stats.json" />
     <param name="supervisor_mailbox" value="$(find package_delivery)/../data/scanning/supervisor_mailbox.txt" />
 
+    <arg name="v_max" default="6.0"/> 
+    <arg name="a_max" default="8"/> 
+    
     <!-- Set the localization method -->
     <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
     <!-- arg name="localization_method" value="ground_truth" /-->
@@ -30,6 +33,9 @@
     <arg name="my_launch_prefix" value="" /> 
     <!-- arg name="my_launch_prefix" value="/home/nvidia/install/perf/perf record -g fp"/ -->
     
+    
+    <!--- note that time out is very important since it determines the hz of the thread it runs in -->
+    <arg name="fly_trajectory_time_out" default=".1"/> 
     
     <group if="$(arg CLCT_DATA)">
     <param name="enable_statistics" value="true"/>
@@ -130,9 +136,9 @@
 	<node pkg="package_delivery" type="motion_planner" name="motion_planner" output="screen" launch-prefix="$(arg my_launch_prefix)">
 		<param name="nodes_to_add_to_roadmap" value="300"/>
 		<param name="max_dist_to_connect_at" value="10"/>
+        <param name="v_max" value="$(arg v_max)"/>
+		<param name="a_max" value="$(arg a_max)"/>
 
-		<param name="v_max" value="4.0"/>
-		<param name="a_max" value="10.0"/>
         <param name="drone_radius" value="2.0"/>
         <param name="drone_height" value="0.6"/>
 
@@ -161,7 +167,8 @@
         <param name="ip_addr" value="$(arg host_ip)"/>
         <!-- param name="issue_cmd__time_step" value=".05"/-->
 		<!-- param name="points_to_replan_after" value="1000000000"/-->
-    
+        <param name="v_max" value="$(arg v_max)"/>
+        <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>
         <!-- Localization-->
         <param name="localization_method" value="$(arg localization_method)" />
     </node>
