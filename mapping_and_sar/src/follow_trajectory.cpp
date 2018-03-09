@@ -138,6 +138,8 @@ int main(int argc, char **argv){
     std::string localization_method; 
     std::string mav_name;
     std::string ip_addr;
+    ros::Time cur_t, last_t;
+    float cur_z, last_z = -9999;
 
     ros::param::get("/follow_trajectory/ip_addr",ip_addr);
     ros::param::get("/follow_trajectory/mav_name",mav_name);
@@ -251,21 +253,20 @@ int main(int argc, char **argv){
 
         }       
         */
-        
+        cur_z = drone.pose().position.z; // Get drone's current position
         if (forward_traj->size() == 0 && started_planning) {//if no trajectory recieved,
-            double dt = (ros::Time::now() - last_time).toSec(); 
+            double dt = (ros ::Time::now() - last_time).toSec(); 
             if (dt > .6) { 
-                //v_y = -v_x;
-                //v_z = -v_x;
-                //v_x = -v_x;
-                v_z *=-1; 
-                drone.fly_velocity(0*v_x, 0*v_y, 0*v_z, drone.get_yaw()+30, 0.3); 
+                if (last_z != -9999){
+                    drone.fly_velocity(0*v_x, 0*v_y, (last_z-cur_z)/dt,
+                            drone.get_yaw()+30, dt); 
+                }
                 //drone.fly_velocity(0*v_x, 0*v_y, v_z, drone.get_yaw()+30, 0.3); 
+                last_z = drone.pose().position.z; // Get drone's current position
                 last_time = ros::Time::now();
             }
         } 
 
-//        ROS_INFO_STREAM("g_v_max"<<g_v_max); 
         follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
                 check_position, g_v_max, g_fly_trajectory_time_out);
 
@@ -277,11 +278,11 @@ int main(int argc, char **argv){
             g_localization_status = 0; 
             signal_supervisor(g_supervisor_mailbox, "kill"); 
             ros::shutdown();
-        }
-        //reset_slam(drone, "/slam_lost");
-        else if (trajectory_done(*forward_traj))
+        }else if (trajectory_done(*forward_traj)){
             loop_rate.sleep();
-    }
+        }
+        
+      }
 
     return 0;
 }

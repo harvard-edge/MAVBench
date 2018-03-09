@@ -125,7 +125,9 @@ void OD_callback(const mapping_and_sar::OD::ConstPtr& msg){
     if(msg->found){
        g_mission_status = "completed";
        log_data_before_shutting_down();
-       exit(0); 
+       signal_supervisor(g_supervisor_mailbox, "kill"); 
+       ros::shutdown();
+       //exit(0); 
     }
 }
 

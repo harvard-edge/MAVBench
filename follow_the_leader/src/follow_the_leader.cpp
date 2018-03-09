@@ -55,7 +55,7 @@ void log_data_before_shutting_down(){
     std::string ns = ros::this_node::getName();
     profile_manager::profiling_data_srv profiling_data_srv_inst;
 
-    profiling_data_srv_inst.request.key = "object_detection_time";
+    profiling_data_srv_inst.request.key = "object_detection_srv_call_time";
     profiling_data_srv_inst.request.value = ((double)g_obj_detection_time_including_ros_over_head_acc/g_obj_detection_ctr)/1e9;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){

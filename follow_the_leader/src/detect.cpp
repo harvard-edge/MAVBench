@@ -43,6 +43,35 @@ cv_bridge::CvImage cv_img;
 int img_id;
 detector_t detector;
 
+
+//--- profiling related variables
+ros::Time start_hook_t; 
+ros::Time end_hook_t; 
+int g_obj_detection_ctr = 0;
+long long g_obj_detection_time_acc=0;
+
+void log_data_before_shutting_down(){
+    std::string ns = ros::this_node::getName();
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
+
+    profiling_data_srv_inst.request.key = "obj_detection_kernel_t";
+    profiling_data_srv_inst.request.value = ((double)g_obj_detection_time_acc/g_obj_detection_ctr)/1e9;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+}
+
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    exit(0);
+}
+
 void buufer_imgs_cb(const sensor_msgs::ImageConstPtr& msg) {
       cv_img = *cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
       img_id = cv_img.header.seq;
@@ -54,8 +83,13 @@ bool detection_cb(follow_the_leader::cmd_srv::Request &req,
     cv::Mat depth;
     bounding_box bb = {-3, -3, -3, -3, -3};
     cv::Mat img_cpy = cv_img.image; 
+     
+    start_hook_t =  ros::Time::now(); 
     bb = detector.detect_person(img_cpy);
-    
+    end_hook_t =  ros::Time::now(); 
+    g_obj_detection_ctr++;
+    g_obj_detection_time_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
+
     cv::Mat img_cpy_2 = img_cpy; 
     cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(255,255,0)); //yellow
     
@@ -80,7 +114,7 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "detection_node", ros::init_options::NoSigintHandler);
     ros::NodeHandle nh;
-    signal(SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntHandlerPrivate);
     uint16_t port = 41451;
     std::string ip_addr__global;
     if (!ros::param::get("/ip_addr", ip_addr__global)) {

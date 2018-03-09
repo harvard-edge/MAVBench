@@ -83,7 +83,7 @@ def should_terminate(stat_file):
 
 def main():
     
-    stat_file = "../data/"+"sar"+"/supervisor_mailbox.txt"
+    stat_file = "../data/"+"follow_the_leader"+"/supervisor_mailbox.txt"
     max_run_time = 90000 
     
     polling_freq = 5  #polling 

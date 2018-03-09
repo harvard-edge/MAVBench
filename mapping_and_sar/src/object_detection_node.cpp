@@ -79,17 +79,18 @@ void obj_detect_call_back(const sensor_msgs::ImageConstPtr& msg)
     if(bb.conf >= detect_thresh) {
         ROS_INFO_STREAM("found the object"<< bb.conf);
         //update_stats_file(stats_file_addr,"mission_status completed");
-        cv::Mat img_to_show;
-        cv::Mat img_cpy = cv_ptr->image; 
-        cv::rectangle(img_cpy, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(0,255,255)); //yellow
-        cv::Size size(512, 512);
-        resize(img_cpy, img_to_show, size);
+        //cv::Mat img_to_show;
+        //cv::Mat img_cpy = cv_ptr->image; 
+        //cv::rectangle(img_cpy, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(0,255,255)); //yellow
+        //cv::Size size(512, 512);
+        //resize(img_cpy, img_to_show, size);
+        /* 
         for (int i = 0; i < 10000; i++){ 
             //system(("rosnode kill " + mav_name__global + "/sar").c_str());
-            cv::imshow(OPENCV_WINDOW, img_to_show);
+            //cv::imshow(OPENCV_WINDOW, img_to_show);
             cv::waitKey(3);
         }
-
+        */
         result.found = true;
         result.point.x = bb.x;
         result.point.y = bb.y;
@@ -140,8 +141,8 @@ int main(int argc, char** argv){
           ros::shutdown(); 
       }
       */
-      ros::spinOnce(); 
       obj_det_pub.publish(result);
+      ros::spinOnce(); 
       r.sleep();
   }
 }
