@@ -394,11 +394,7 @@ int main(int argc, char **argv)
                 ROS_WARN("Future collision appeared on trajectory!");
 
                 if (!created_future_col_traj)
-<<<<<<< HEAD
                     future_col_traj = create_future_col_trajectory(normal_traj, 0.5);
-=======
-                    future_col_traj = create_future_col_trajectory(normal_traj, 1);
->>>>>>> dbf9ff10099e9ea732b851ccacf4358b6c96e578
 
                 created_future_col_traj = true;
 
