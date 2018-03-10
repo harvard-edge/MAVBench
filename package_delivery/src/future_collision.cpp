@@ -4,6 +4,7 @@
 #include <chrono>
 #include <string>
 #include <cmath>
+#include <signal.h>
 
 // ROS message headers
 #include "std_msgs/Bool.h"
@@ -18,12 +19,23 @@
 // MAVBench headers
 #include "Drone.h"
 #include "timer.h"
+#include <profile_manager/profiling_data_srv.h>
+#include <profile_manager/start_profiling_srv.h>
+
+
+
 
 // Typedefs
 typedef trajectory_msgs::MultiDOFJointTrajectory traj_msg_t;
 typedef std::chrono::system_clock sys_clock;
 typedef std::chrono::time_point<sys_clock> sys_clock_time_point;
 static const sys_clock_time_point never = sys_clock_time_point::min();
+ros::Time start_hook_t, end_hook_t;                                          
+long long g_checking_collision_kernel_acc = 0;
+long long g_future_collision_main_loop = 0;
+int g_check_collision_ctr = 0;
+
+
 
 // Global variables
 octomap::OcTree * octree = nullptr;
@@ -142,6 +154,9 @@ int seconds (sys_clock_time_point t) {
 
 bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
 {
+
+    start_hook_t = ros::Time::now();
+
     RESET_TIMER();
 
     const double min_dist_from_collision = 5.0;
@@ -187,6 +202,10 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
         time_to_warn = never;
 
     LOG_ELAPSED(future_collision);
+    
+    end_hook_t = ros::Time::now(); 
+    g_checking_collision_kernel_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
+    g_check_collision_ctr++;
     return col;
 }
 
@@ -207,12 +226,43 @@ void future_collision_initialize_params()
     }
 }
 
+void log_data_before_shutting_down(){
+
+    std::string ns = ros::this_node::getName();
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
+    
+    profiling_data_srv_inst.request.key = "future_collision_kernel";
+    profiling_data_srv_inst.request.value = (((double)g_checking_collision_kernel_acc)/1e9)/g_check_collision_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    profiling_data_srv_inst.request.key = "future_collision_main_loop";
+    profiling_data_srv_inst.request.value = (((double)g_future_collision_main_loop)/1e9)/g_check_collision_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+}
+
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    exit(0);
+}
 
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "future_collision");
     ros::NodeHandle nh;
-
+    signal(SIGINT, sigIntHandlerPrivate);
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
@@ -233,13 +283,19 @@ int main(int argc, char** argv)
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
 
+
+    //profiling variables
+    ros::Time main_loop_start_hook_t, main_loop_end_hook_t;
     
     //----------------------------------------------------------------- 
     // *** F:DN BODY
     //----------------------------------------------------------------- 
 
-    ros::Rate loop_rate(10);
+    ros::Rate loop_rate(20);
     while (ros::ok()) {
+        
+        main_loop_start_hook_t = ros::Time::now();
+        
         ros::spinOnce();
         collision_coming = check_for_collisions(drone, time_to_warn);
 
@@ -260,6 +316,8 @@ int main(int argc, char** argv)
             col_imminent_pub.publish(col_imminent_msg);
         }
 
+        main_loop_end_hook_t = ros::Time::now();
+        g_future_collision_main_loop += (main_loop_end_hook_t - main_loop_start_hook_t).toSec()*1e9; 
         loop_rate.sleep();
     }
 }

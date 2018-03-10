@@ -48,33 +48,6 @@
     </node>
 
 
-    <!-- Octomap -->
-	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
-        <param name="resolution" value="0.5" />
-		
-		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="world" />
-		
-		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="20" />
-
-		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points" />
-
-		<!-- Filter ground for binary occupancy map -->
-		<param name="base_frame_id" value="world" />
-		<!-- <param name="filter_ground" value="true" />
-		<param name="ground_filter_plane_distance" value="1.00" />
-		<param name="ground_filter/distance" value="0.50" /> -->
-	    <param name="pointcloud_min_z" type="double" value="-2.0" />
-	    <param name="pointcloud_max_z" type="double" value="10.0" />
-	    <param name="occupancy_min_z" type="double" value="-2.00" />
-	    <param name="occupancy_max_z" type="double" value="10.0" />
-		<!-- <param name="ground_filter_plane_distance" value="0.07" />
-		<param name="ground_filter/distance" value="0.04" />
-		<param name="ground_filter/angle" value="0.4" /> -->
-	</node>
-
 	<!-- Point-cloud publisher -->
  	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
 		<!-- IP of the Airsim computer -->
@@ -103,26 +76,6 @@
 
     </node>
 
-	<!-- Nodelet manager for this pipeline -->
-	<node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager"/>
-
-	<!-- Convert to point cloud -->
-	<node pkg="nodelet" type="nodelet" name="cloudify"
-	args="load depth_image_proc/point_cloud_xyz depth_transforms_manager --no-bond">
-
-		<!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
-		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
-		<!-- Input: Rectified depth image -->
-		<remap from="image_rect" to="/Airsim/depth"/>
-
-    </node>
-	
-    
-    <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
-		<param name="panic_distance" value="1.75"/>
-    </node>
- 
-    <!--node pkg="package_delivery" type="future_collision" name="future_collision" output="screen"/-->
     
     <?ignore 
     <!-- Convert to point cloud -->

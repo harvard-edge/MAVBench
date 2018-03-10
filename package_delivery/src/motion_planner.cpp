@@ -198,18 +198,17 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 
     //request_octomap();
     auto hook_end_t_2 = ros::Time::now(); 
-    if (octree == nullptr) {
-    	ROS_ERROR("Octomap is not available.");
-    	return false;
+    if (motion_planning_core_str != "lawn_mower"){
+        if (octree == nullptr) {
+            ROS_ERROR("Octomap is not available.");
+            return false;
+        }
+        clear_octomap_bbx({req.start.x, req.start.y, req.start.z});
     }
-    clear_octomap_bbx({req.start.x, req.start.y, req.start.z});
-
     // octomap_msgs::binaryMapToMsg(*octree, omp);
     //octree->writeBinary("/home/ubuntu/octomap.bt");
 
-
     piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length ,req.n_pts_per_dir, octree);
-    //piecewise_path = motion_planning_core(req.start, req.goal, octree);
 
     if (piecewise_path.size() == 0) {
         ROS_ERROR("Empty path returned");
@@ -298,7 +297,7 @@ void log_data_before_shutting_down(){
         }
     }
 
-    profiling_data_srv_inst.request.key = "planning_without_OM_PULL_time_acc";
+    profiling_data_srv_inst.request.key = "motion_planning_acc";
     profiling_data_srv_inst.request.value = (double)g_planning_without_OM_PULL_time_acc/1e9;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
@@ -307,7 +306,7 @@ void log_data_before_shutting_down(){
         }
     }
     
-    profiling_data_srv_inst.request.key = "g_planning_time_avg";
+    profiling_data_srv_inst.request.key = "motion_planning_kernel";
     profiling_data_srv_inst.request.value = ((double)g_planning_without_OM_PULL_time_acc/1e9)/g_number_of_planning;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
@@ -662,13 +661,12 @@ graph create_lawnMower_path(geometry_msgs::Point start, int width, int length, i
     roadmap.connect(cur_node_id, prev_node_id, 
             dist(roadmap.get_node(cur_node_id), 
                 roadmap.get_node(prev_node_id)));
-        
-    cout <<"road map"<<endl;
-    cout<<roadmap;
+    /*   
 	if (occupied(octree, start.x, start.y, start.z)) {
 		ROS_ERROR("Start is already occupied!");
 		success = false;
 	}
+    */ 
     return roadmap;
 }
 

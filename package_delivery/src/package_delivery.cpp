@@ -85,7 +85,7 @@ void log_data_before_shutting_down(){
         }
     }
     
-    profiling_data_srv_inst.request.key = "panic_response_time_in_package_delivery";
+    profiling_data_srv_inst.request.key = "panic_time_in_package_delivery_node";
     profiling_data_srv_inst.request.value = (g_panic_rlzd_t_accumulate/ (double)g_panic_ctr)*1e-9;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
@@ -94,7 +94,7 @@ void log_data_before_shutting_down(){
         }
     }
 
-    profiling_data_srv_inst.request.key = "planning_including_ros_overhead_avg";
+    profiling_data_srv_inst.request.key = "motion_planning_plus_srv_call";
     profiling_data_srv_inst.request.value = ((double)g_planning_time_including_ros_overhead_acc/g_planning_ctr)/1e9;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
@@ -237,7 +237,7 @@ int main(int argc, char **argv)
     signal(SIGINT, sigIntHandlerPrivate);
     ns = ros::this_node::getName();
 
-    ROS_INFO("HEy!!");
+    //ROS_INFO("HEy!!");
     
     //----------------------------------------------------------------- 
 	// *** F:DN variables	

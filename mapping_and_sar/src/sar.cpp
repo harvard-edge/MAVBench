@@ -44,7 +44,8 @@
 visualization_msgs::Marker path_to_follow_marker;
 std::string g_stats_file_addr;
 bool g_slam_lost = false;
-//data to be logged in stats manager
+
+//profiling variables
 std::string g_mission_status = "failed";
 float g_coverage = 0 ;
 float g_path_computation_time = 0;
@@ -54,6 +55,8 @@ int g_iteration = 0;
 long long g_accumulate_loop_time = 0; //it is in ms
 int g_loop_ctr = 0; 
 bool g_start_profiling = false; 
+long long g_motion_planning_plus_srv_call_acc = 0;
+
 std::string g_supervisor_mailbox; //file to write to when completed
 float g_max_yaw_rate;
 float g_max_yaw_rate_during_flight;
@@ -62,8 +65,17 @@ void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
 
     std::string ns = ros::this_node::getName();
-    profiling_data_srv_inst.request.key = ns+"_mean_loop_time";
+    profiling_data_srv_inst.request.key = "sar_main_loop";
     profiling_data_srv_inst.request.value = (((double)g_accumulate_loop_time)/1e9)/g_loop_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    profiling_data_srv_inst.request.key = "motion_planning_plus_srv_call";
+    profiling_data_srv_inst.request.value = (((double)g_motion_planning_plus_srv_call_acc)/1e9)/g_iteration;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -89,7 +101,7 @@ void log_data_before_shutting_down(){
         }
     }
 
-    profiling_data_srv_inst.request.key = "g_path_computation_time_avg";
+    profiling_data_srv_inst.request.key = "motion_planning_kernel";
     profiling_data_srv_inst.request.value = g_path_computation_time_acc/g_iteration;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
@@ -98,7 +110,7 @@ void log_data_before_shutting_down(){
         }
     }
 
-    profiling_data_srv_inst.request.key = "g_path_computation_time_acc";
+    profiling_data_srv_inst.request.key = "motion_planning_kernel_acc";
     profiling_data_srv_inst.request.value = g_path_computation_time_acc;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
@@ -343,12 +355,18 @@ int main(int argc, char** argv)
   int time_out_ctr_threshold = 20; 
   const float goal_s_error_margin = 3.0; //ok distance to be away from the goal.
   int time_out_ctr = 0;
+  bool srv_call_status = false;
+  int srv_call_status_ctr = 0;
+  ros::Time start_hook_t, end_hook_t;
 
   while (ros::ok()) {
     loop_start_t = ros::Time::now();
+    ros::spinOnce(); 
+    
     if (g_slam_lost) { //skip the iteration
         continue;
     }
+    
     ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
@@ -356,96 +374,101 @@ int main(int argc, char** argv)
     planSrv.request.header.frame_id = "world";
   
     while ( (distance(drone.pose().position.x - last_trajectory_point.position_W.x(),
-                    drone.pose().position.y - last_trajectory_point.position_W.y(),
-                    0) > goal_s_error_margin) && time_out_ctr < time_out_ctr_threshold ){
-        /* 
-           ROS_INFO_STREAM("drone pos"<<drone.pose().position.x << " " << last_trajectory_point.position_W.x()); 
-           ROS_INFO_STREAM("drone pos"<<drone.pose().position.y << " " << last_trajectory_point.position_W.y()); 
-           ROS_INFO_STREAM("drone pos"<<drone.pose().position.z << " " << last_trajectory_point.position_W.z()); 
-           */ 
+                drone.pose().position.y - last_trajectory_point.position_W.y(),
+                0) > goal_s_error_margin) && time_out_ctr < time_out_ctr_threshold ){
         time_out_ctr +=1; 
         ros::Duration(.3).sleep();
     }
     time_out_ctr = 0;
 
-    if(nbvplanner_client.call(planSrv)){ 
-      n_seq++;
-      if (planSrv.response.path.size() == 0) {
-          ROS_ERROR("path size is zero");
-          ros::Duration(1.0).sleep();
-      }
-      for (int i = 0; i < planSrv.response.path.size(); i++) {
-          if(i ==  planSrv.response.path.size() - 1) { 
-              last_trajectory_point.position_W.x() = planSrv.response.path[i].position.x;
-              last_trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
-              last_trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
-          }
-          samples_array.header.seq = n_seq;
-          samples_array.header.stamp = ros::Time::now();
-          samples_array.header.frame_id = "world";
-          samples_array.points.clear();
-          tf::Pose pose;
-          tf::poseMsgToTF(planSrv.response.path[i], pose);
-          double yaw = tf::getYaw(pose.getRotation());
-          trajectory_point.position_W.x() = planSrv.response.path[i].position.x;
-          trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
-          // Add offset to account for constant tracking error of controller
-          trajectory_point.position_W.z() = planSrv.response.path[i].position.z + 0.25;
-          tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), yaw);
-          trajectory_point.setFromYaw(tf::getYaw(quat));
-          mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+    do{
+        start_hook_t = ros::Time::now();
+        srv_call_status = nbvplanner_client.call(planSrv);
+        end_hook_t = ros::Time::now();
+        if (!srv_call_status) { 
+            ROS_WARN_THROTTLE(1, "Planner not reachable");
+            ros::Duration(.5).sleep();           
+            //ros::Duration(t_offset + segment_dedicated_time).sleep(); //changed, make sure segmentation time is smaller
+        }
+        srv_call_status_ctr++; 
+    }while (!srv_call_status && srv_call_status_ctr <= 5);
+    srv_call_status_ctr = 0;
 
-          //behzad change for visualization purposes 
-          p_marker.x = planSrv.response.path[i].position.x;
-          p_marker.y = planSrv.response.path[i].position.y;
-          p_marker.z = planSrv.response.path[i].position.z;
-          path_to_follow_marker.points.push_back(p_marker);
-          //ROS_INFO_STREAM("TRAJECTORY PTS:"<< i<< " " << p_marker.x << " " << p_marker.y  << " " << p_marker.z);
-
-          std_msgs::ColorRGBA c;
-          c.g = 0; c.r = 1; c.b = 1;c.a = 1;
-          path_to_follow_marker.colors.push_back(c);
-          path_to_follow_marker_pub.publish(path_to_follow_marker);
-
-          samples_array.points.push_back(trajectory_point_msg);
-          trajectory_pub.publish(samples_array);
-      }
-    } else {
-      ROS_WARN_THROTTLE(1, "Planner not reachable");
-      ros::Duration(t_offset + segment_dedicated_time).sleep(); //changed, make sure segmentation time is smaller
-      //than 1.5*dt, this way we can finish up the command 
-      //before sending out another one
-    }
-    g_iteration++;
-    g_coverage =  planSrv.response.coverage;
-    g_path_computation_time = planSrv.response.path_computation_time; 
-    g_path_computation_time_acc += g_path_computation_time;    
-    /* 
-    if(g_coverage > coverage_threshold){
-        g_mission_status = "completed";
+    if (!srv_call_status) {
         log_data_before_shutting_down();
-        ros::shutdown(); 
+        ros::shutdown();
     }
-    */
-    loop_end_t = ros::Time::now(); 
-    if (clct_data) {
-        if(!g_start_profiling) { 
-            if (ros::service::waitForService("/start_profiling", 10)){ 
-                if(!start_profiling_client.call(start_profiling_srv_inst)){
-                    ROS_ERROR_STREAM("could not probe data using stats manager");
-                    ros::shutdown();
-                }
-                //ROS_INFO_STREAM("now it is true");
-                g_start_profiling = start_profiling_srv_inst.response.start; 
+    else{
+        g_motion_planning_plus_srv_call_acc += (end_hook_t -start_hook_t).toSec()*1e9;
+
+        n_seq++;
+        if (planSrv.response.path.size() == 0) {
+            ROS_ERROR("path size is zero");
+            ros::Duration(1.0).sleep();
+        }
+        for (int i = 0; i < planSrv.response.path.size(); i++) {
+            if(i ==  planSrv.response.path.size() - 1) { 
+                last_trajectory_point.position_W.x() = planSrv.response.path[i].position.x;
+                last_trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
+                last_trajectory_point.position_W.z() = planSrv.response.path[i].position.z;
             }
-        } 
-        else{
-            if (loop_end_t.isValid()) {
-                g_accumulate_loop_time += (((loop_end_t - loop_start_t).toSec())*1e9);
-                g_loop_ctr++; 
+
+            samples_array.header.seq = n_seq;
+            samples_array.header.stamp = ros::Time::now();
+            samples_array.header.frame_id = "world";
+            samples_array.points.clear();
+            tf::Pose pose;
+            tf::poseMsgToTF(planSrv.response.path[i], pose);
+            double yaw = tf::getYaw(pose.getRotation());
+            trajectory_point.position_W.x() = planSrv.response.path[i].position.x;
+            trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
+            // Add offset to account for constant tracking error of controller
+            trajectory_point.position_W.z() = planSrv.response.path[i].position.z + 0.25;
+            tf::Quaternion quat = tf::Quaternion(tf::Vector3(0.0, 0.0, 1.0), yaw);
+            trajectory_point.setFromYaw(tf::getYaw(quat));
+            mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+
+            //behzad change for visualization purposes 
+            p_marker.x = planSrv.response.path[i].position.x;
+            p_marker.y = planSrv.response.path[i].position.y;
+            p_marker.z = planSrv.response.path[i].position.z;
+            path_to_follow_marker.points.push_back(p_marker);
+            //ROS_INFO_STREAM("TRAJECTORY PTS:"<< i<< " " << p_marker.x << " " << p_marker.y  << " " << p_marker.z);
+
+            std_msgs::ColorRGBA c;
+            c.g = 0; c.r = 1; c.b = 1;c.a = 1;
+            path_to_follow_marker.colors.push_back(c);
+            path_to_follow_marker_pub.publish(path_to_follow_marker);
+
+            samples_array.points.push_back(trajectory_point_msg);
+            trajectory_pub.publish(samples_array);
+        }
+
+        //profiling_probes 
+        loop_end_t = ros::Time::now(); 
+        if (clct_data) {
+            if(!g_start_profiling) { 
+                if (ros::service::waitForService("/start_profiling", 10)){ 
+                    if(!start_profiling_client.call(start_profiling_srv_inst)){
+                        ROS_ERROR_STREAM("could not probe data using stats manager");
+                        ros::shutdown();
+                    }
+                    //ROS_INFO_STREAM("now it is true");
+                    g_start_profiling = start_profiling_srv_inst.response.start; 
+                }
+            } 
+            else{
+                if (loop_end_t.isValid()) {
+                    g_accumulate_loop_time += (((loop_end_t - loop_start_t).toSec())*1e9);
+                    g_loop_ctr++; 
+                }
             }
         }
-    }
-    ros::spinOnce(); 
+
+        g_iteration++;
+        g_coverage =  planSrv.response.coverage;
+        g_path_computation_time = planSrv.response.path_computation_time; 
+        g_path_computation_time_acc += g_path_computation_time;    
+    } 
   }
 }

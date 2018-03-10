@@ -5,7 +5,7 @@
 #include <profile_manager/profiling_data_srv.h>
 #include <profile_manager/start_profiling_srv.h>
 
-long long g_accumulate_loop_time_ms = 0; //it is in ms
+long long g_accumulate_loop_time = 0; //it is in ms
 int g_loop_ctr = 0; 
 bool g_start_profiling = false; 
 
@@ -13,8 +13,8 @@ void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
 
     std::string ns = ros::this_node::getName();
-    profiling_data_srv_inst.request.key = ns+"_mean_loop_time";
-    profiling_data_srv_inst.request.value = ((g_accumulate_loop_time_ms)/1000)/g_loop_ctr;
+    profiling_data_srv_inst.request.key = "motion_planning_main_loop";
+    profiling_data_srv_inst.request.value = ((g_accumulate_loop_time)/1e9)/g_loop_ctr;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -37,6 +37,7 @@ int main(int argc, char** argv)
  //visualization_msgs::Marker origin_destList;
  ros::init(argc, argv, "nbvPlanner");
  ros::NodeHandle nh;
+ 
  ros::NodeHandle nh_private("~");
  signal(SIGINT, sigIntHandlerPrivate);
  bool clct_data = true;
@@ -68,7 +69,7 @@ int main(int argc, char** argv)
      } 
      if (g_start_profiling){ 
          if (loop_end_t.isValid()) {
-             g_accumulate_loop_time_ms += ((loop_end_t - loop_start_t).toSec())*1000;
+             g_accumulate_loop_time += ((loop_end_t - loop_start_t).toSec())*1e9;
              g_loop_ctr++; 
          }
      }

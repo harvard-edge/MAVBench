@@ -5,10 +5,10 @@
   <arg name="log_file" default="$(arg mav_name)" />
   
   <!-- important params affecting performance -->
-  <arg name="nbvp/gain/range" default="7"/>
-  <arg name="system/v_max" default="4.5"/>
-  <arg name="nbvp/tree/extension_range" default="7.5"/>
-    <arg name="planning_resolution" default=".8"/>
+  <arg name="nbvp/gain/range" default="10"/>
+  <arg name="system/v_max" default="3.5"/>
+  <arg name="nbvp/tree/extension_range" default="10.5"/>
+    <arg name="planning_resolution" default=".4"/>
   <arg name="mapping_resolution" default=".1" />
 
   <arg name="fly_trajectory_time_out" default=".1"/> 
@@ -34,10 +34,10 @@
   <arg name="sensor_max_range" value="15.0" />
 
   <!-- termination criteria-->
-  <arg name="coverage_threshold" default="100"/>
+  <arg name="coverage_threshold" default="80"/>
 
   <!-- DEBUGING-data collection params--> 
-  <arg name="DEBUG" value="true" />
+  <arg name="DEBUG" value="false" />
   <arg name="CLCT_DATA" value="true" />
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />
@@ -132,7 +132,6 @@
 		<param name="ground_filter/angle" value="0.4" /> -->
 	</node>
 
-    <comment>
     <!--- octomap for planning-->
     <node pkg="octomap_server" type="octomap_server_node" name="octomap_server_2">
         <param name="resolution" value="$(arg mapping_resolution)" />
@@ -160,8 +159,6 @@
 		<param name="ground_filter/distance" value="0.04" />
 		<param name="ground_filter/angle" value="0.4" /> -->
 	</node>
-
-   </comment>
 
   <arg name="param_file" value="$(find mapping_and_sar)/resource/mapping.yaml" />
   <!-- following the tejactory --> 

@@ -5,10 +5,10 @@
   <arg name="log_file" default="$(arg mav_name)" />
   
   <!-- important params affecting performance -->
-  <arg name="nbvp/gain/range" default="7"/>
-  <arg name="system/v_max" default="4.5"/>
-  <arg name="nbvp/tree/extension_range" default="7.5"/>
-  <arg name="planning_resolution" default=".8"/>
+  <arg name="nbvp/gain/range" default="10"/>
+  <arg name="system/v_max" default="3.5"/>
+  <arg name="nbvp/tree/extension_range" default="10.5"/>
+  <arg name="planning_resolution" default=".4"/>
   <arg name="mapping_resolution" default=".1" />
 
   <arg name="fly_trajectory_time_out" default=".1"/> 
@@ -22,9 +22,9 @@
   <!--arg name="localization_method" value="vins_mono"/-->
 
   <!--- set according to the localization method--> 
-  <arg name="system/dyaw_max" default="1.57"/>
-  <arg name="max_yaw_rate" default="90"/>
-  <arg name="max_yaw_rate_during_flight" default="90"/>
+  <arg name="system/dyaw_max" default=".9"/>
+  <arg name="max_yaw_rate" default="45"/>
+  <arg name="max_yaw_rate_during_flight" default="45"/>
   <param name="v_max" value="$(arg system/v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
@@ -37,7 +37,7 @@
   <arg name="coverage_threshold" default="100"/>
 
   <!-- DEBUGING-data collection params--> 
-  <arg name="DEBUG" value="true" />
+  <arg name="DEBUG" value="false" />
   <arg name="CLCT_DATA" value="true" />
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/sar/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/sar/supervisor_mailbox.txt" />
