@@ -1,5 +1,6 @@
 <launch>
   <arg name="host_ip"/>
+  <arg name="distance_from_goal_threshold"/> 
   <arg name="localization_method"/>
   <arg name="app_name"/>
   <arg name="DEBUG"/>
@@ -20,7 +21,7 @@
   <arg name="tf_frame" default="navigation" />
   <arg name="pcl_topic" default="/pointcloudOut" />
   <arg name="stl_file_path" default="" />
-  <arg name="mesh_resolution" default="1.0" />
+  <arg name="mesh_resolution" default=".4" />
   <arg name="resolution" default="0.4" />
   <arg name="visualize_max_z" default="999" />
   <arg name="sensor_max_range" default="100.0" />
@@ -32,13 +33,16 @@
   <arg name="system/v_max"/>
   <arg name="system/dyaw_max"/>
 
-
   <param name="ip_addr" type="string" value="$(arg host_ip)" />
+  <param name="distance_from_goal_threshold" type="double" value="$(arg distance_from_goal_threshold)" />
+  
+
+  
   <param name="localization_method" type="string" value="$(arg localization_method)" />
   <param name="coverage_threshold" value="$(arg coverage_threshold)"/> 
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/> 
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/> 
-
+  <param name="sensor_max_range" value="$(arg sensor_max_range)"/> 
 
 
 

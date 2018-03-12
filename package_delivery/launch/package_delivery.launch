@@ -13,9 +13,14 @@
     <param name="/ip_addr" value="$(arg host_ip)" />
 
     <!-- Drone's physical characteristics /-->
-    <arg name="v_max" default="5"/> 
     <arg name="a_max" default="8"/> 
     
+    <!-- parameters affecting perforamance -->
+    <arg name="v_max" default="5"/> 
+    <arg name="planning_resolution" default=".15"/>
+    <arg name="sensor_max_range" default="5" />
+
+
     <!--- note that time out is very important since it determines the hz of the thread it runs in -->
     <arg name="fly_trajectory_time_out" default=".1"/> 
     <!-- orb slam location--> 
@@ -65,13 +70,13 @@
     <!--node pkg="nodelet" type="nodelet" name="standalone_nodelet" args="manager"/-->
 
     <!--node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager"/-->
-        <param name="resolution" value="0.4" />
+        <param name="resolution" value="0.05" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
 		<param name="frame_id" type="string" value="world" />
 		
 		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="15" />
+		<param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
 
 		<!-- data source to integrate (PointCloud2) -->
 		<remap from="cloud_in" to="/points" />

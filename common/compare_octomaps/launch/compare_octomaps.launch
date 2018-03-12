@@ -1,6 +1,6 @@
 <launch>
     <node pkg="compare_octomaps" type="compare_octomaps" name="compare_octomaps" output="screen">
-    <param name="octomap_file" value="/home/nvidia/catkin_ws/my_map.bt" />
+    <param name="octomap_file" value="/home/nvidia/catkin_ws/mapfile2.bt" />
     <param name="minX" value="0"/>
     <param name="minY" value="0"/>
     <param name="minZ" value="0"/>

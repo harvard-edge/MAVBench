@@ -83,7 +83,7 @@ int main(int argc, char **argv){
   volumetric_mapping::OctomapManager *manager = new volumetric_mapping::OctomapManager(nh, nh_private);
   while(ros::ok()){  
       manager->publishAll();
-      ROS_INFO_STREAM("here is the coverage"<<coverage(manager, minX, minY, minZ, maxX, maxY, maxZ)<<std::endl);
+      //ROS_INFO_STREAM("here is the coverage"<<coverage(manager, minX, minY, minZ, maxX, maxY, maxZ)<<std::endl);
       ros::spinOnce();
       //ros::shutdown();   
       loop_rate.sleep();

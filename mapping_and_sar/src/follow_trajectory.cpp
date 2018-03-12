@@ -14,6 +14,7 @@
 #include <fstream>
 #include <profile_manager/profiling_data_srv.h>
 #include <profile_manager/start_profiling_srv.h>
+#include <std_srvs/SetBool.h>
 
 using namespace std;
 bool slam_lost = false;
@@ -25,6 +26,7 @@ long long g_planning_time_including_ros_overhead_acc  = 0;
 
 float g_max_yaw_rate;
 float g_max_yaw_rate_during_flight;
+bool g_trajectory_done = false;
 //bool g_dummy = false;
 
 
@@ -51,10 +53,8 @@ void dummy_cb(const std_msgs::Bool::ConstPtr& msg) {
 }
 */
 
-multiDOFpoint current_point(Drone& drone)
-{
+multiDOFpoint current_point(Drone& drone){
     multiDOFpoint result;
-
     geometry_msgs::Pose pose = drone.pose(); // Get drone's current position
 
     // geometry_msgs::Transform transform;
@@ -74,15 +74,23 @@ multiDOFpoint current_point(Drone& drone)
     result.y = pose.position.y;
     result.z = pose.position.z;
     result.yaw = YAW_UNCHANGED;
-    
+    result.vx = 0;
+    result.vy = 0;
+    result.vz = 0;
+   
+
+
     return result;
 }
+
 
 void callback_trajectory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg, Drone * drone, trajectory_t * normal_traj)
 {
     if (msg->points.empty())
         return;
 
+    g_trajectory_done = false;
+    
     double dt;
     std::string ns = ros::this_node::getName();
     if (!ros::param::get(ns + "/nbvp/dt", dt)) {
@@ -90,33 +98,67 @@ void callback_trajectory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPt
                 (ns + "/nbvp/dt").c_str());
     }
 
-    if (normal_traj->empty()) {
-        // Add an initial point at the current location
-        multiDOFpoint p = current_point(*drone);
-        normal_traj->push_back(p);
+    //--first correct  
+    bool correct = false; //only used for the first point
+    multiDOFpoint mdp_prev; 
+    multiDOFpoint mdp_next;
+    mdp_prev = current_point(*drone);
+    
+    float correction_in_x = msg->points[0].transforms[0].translation.x - mdp_prev.x;
+    float correction_in_y = msg->points[0].transforms[0].translation.y - mdp_prev.y;
+    float correction_in_z =  msg->points[0].transforms[0].translation.z - mdp_prev.z;
+    float first_yaw = yawFromQuat(msg->points[0].transforms[0].rotation);
+    ROS_INFO_STREAM("correction values"<<correction_in_x << " " <<correction_in_y << " "<<correction_in_z);
+    double disc = min((dt * g_v_max) / 
+        distance(mdp_prev.x - msg->points[0].transforms[0].translation.x,
+                mdp_prev.y - msg->points[0].transforms[0].translation.y,
+                mdp_prev.z - msg->points[0].transforms[0].translation.z), 1.0);
+    
+    for (double it = disc; it <= 1.0; it += disc) {
+        mdp_next.x = mdp_prev.x + disc*(correction_in_x);
+        mdp_next.y = mdp_prev.y + disc*correction_in_y;
+        mdp_next.z = mdp_prev.z + disc*correction_in_z;
+        mdp_next.yaw = YAW_UNCHANGED;
+
+        mdp_next.vx = (mdp_next.x - mdp_prev.x) / dt;
+        mdp_next.vy = (mdp_next.y - mdp_prev.y) / dt;
+        mdp_next.vz = (mdp_next.z - mdp_prev.z) / dt;
+        mdp_next.yaw = first_yaw;
+        mdp_next.duration = dt;
+        normal_traj->push_back(mdp_next);
+        mdp_prev = mdp_next;
     }
-
+        
+    //after correction, now push the new points 
     for (const auto& p : msg->points) {
-        multiDOFpoint& mdp_prev = normal_traj->back();
+        if (normal_traj->size() == 0) {
+            
+            mdp_prev = current_point(*drone);
+        } else{
+            mdp_prev = normal_traj->back();
+        }
 
-        multiDOFpoint mdp_next;
         mdp_next.x = p.transforms[0].translation.x;
         mdp_next.y = p.transforms[0].translation.y;
         mdp_next.z = p.transforms[0].translation.z;
-        mdp_next.yaw = YAW_UNCHANGED;
+        //mdp_next.yaw = YAW_UNCHANGED;
 
-        mdp_prev.vx = (mdp_next.x - mdp_prev.x) / dt;
-        mdp_prev.vy = (mdp_next.y - mdp_prev.y) / dt;
-        mdp_prev.vz = (mdp_next.z - mdp_prev.z) / dt;
-        mdp_prev.yaw = yawFromQuat(p.transforms[0].rotation);
-        mdp_prev.duration = dt;
 
+        mdp_next.vx = (mdp_next.x - mdp_prev.x) / dt;
+        mdp_next.vy = (mdp_next.y - mdp_prev.y) / dt;
+        mdp_next.vz = (mdp_next.z - mdp_prev.z) / dt;
+        mdp_next.yaw = yawFromQuat(p.transforms[0].rotation);
+        mdp_next.duration = dt;
         normal_traj->push_back(mdp_next);
+    
+        correct = false;
     }
 }
 
 bool trajectory_done(const trajectory_t& trajectory) {
-    return trajectory.size() == 0;
+    trajectory.size() == 0;
+    g_trajectory_done = (trajectory.size() == 0);
+    return g_trajectory_done;
 }
 
 void sigIntHandlerPrivate(int signo){
@@ -128,6 +170,13 @@ void sigIntHandlerPrivate(int signo){
     exit(0);
 }
 
+
+bool trajectory_done_srv_cb(std_srvs::SetBool::Request &req, 
+    std_srvs::SetBool::Response &res)
+{
+    res.success = g_trajectory_done;
+    return true;
+}
 
 int main(int argc, char **argv){
     ros::init(argc, argv, "follow_trajectory", ros::init_options::NoSigintHandler);
@@ -184,6 +233,9 @@ int main(int argc, char **argv){
     // Flight queues
     trajectory_t normal_traj, rev_normal_traj;
     trajectory_t slam_loss_traj;
+
+    ros::ServiceServer trajectory_done_service = n.advertiseService("trajectory_done_srv", trajectory_done_srv_cb);
+
 
     bool created_slam_loss_traj = false;
 
@@ -245,14 +297,7 @@ int main(int argc, char **argv){
             started_planning = true;
         }       
          
-        /* 
-        if (forward_traj->size() == 0 && started_planning) {//if no trajectory recieved,
-                                                            //spin
-            int angle = drone.get_yaw()+ 10;
-            //drone.set_yaw(angle <= 180 ? angle : angle - 360);
-
-        }       
-        */
+         
         cur_z = drone.pose().position.z; // Get drone's current position
         if (forward_traj->size() == 0 && started_planning) {//if no trajectory recieved,
             double dt = (ros ::Time::now() - last_time).toSec(); 
@@ -266,14 +311,20 @@ int main(int argc, char **argv){
                 last_time = ros::Time::now();
             }
         } 
-
+        
         follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
                 check_position, g_v_max, g_fly_trajectory_time_out);
+
+        if(forward_traj->size() != 0) {
+            last_time = ros::Time::now();
+            //for (auto el : foward_traj) {
+            //    ROS_ERROR_STREAM("forward traj is" << el.p
+            //        }
+        }
 
         // Choose next state (failure, completion, or more flying)
         if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){
             ROS_INFO_STREAM("slam loss");
-        //if (g_dummy){   
             log_data_before_shutting_down(); 
             g_localization_status = 0; 
             signal_supervisor(g_supervisor_mailbox, "kill"); 
@@ -282,8 +333,7 @@ int main(int argc, char **argv){
             loop_rate.sleep();
         }
         
-      }
-
+    }
     return 0;
 }
 

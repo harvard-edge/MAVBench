@@ -278,8 +278,9 @@ void spin_around(Drone &drone) {
     //to correct 
     double dt = (ros ::Time::now() - start_t).toSec(); 
     double v_z = (start_z - drone.pose().position.z)/dt;
-    drone.fly_velocity(0, 0, 10*v_z, angle_corrected, dt);
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    
+    drone.fly_velocity(0, 0, 10*v_z, angle_corrected, dt/10);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
 
 
@@ -298,7 +299,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         double v_x = p.vx;
         double v_y = p.vy;
         double v_z = p.vz;
-
+        //ROS_ERROR_STREAM("before correction"<<v_x<< " "<< v_y << " " <<v_z);
         if (check_position) {
             auto pos = drone.position();
             v_x += 0.05*(p.x-pos.x);
@@ -317,11 +318,13 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         }
 
         // Make sure we're not going over the maximum speed
-        double speed = std::sqrt(v_x*v_x + v_y*v_y + v_z*v_z);
+        double speed = std::sqrt((v_x*v_x + v_y*v_y + v_z*v_z)/3);
         double scale = 1;
         if (speed > max_speed) {
             scale = max_speed / speed;
-
+            //ROS_ERROR_STREAM("exceed max speed "<< "max_speed"<<max_speed<< " speed"<<speed<<"scael"<<scale);
+            //ROS_ERROR_STREAM("before speed scaling"<<v_x<< " "<< v_y << " " <<v_z);
+            
             v_x *= scale;
             v_y *= scale;
             v_z *= scale;
@@ -334,6 +337,8 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         // Fly for flight_time seconds
         auto segment_start_time = std::chrono::system_clock::now();
         drone.fly_velocity(v_x, v_y, v_z, yaw, scaled_flight_time+0.1); 
+
+        //ROS_ERROR_STREAM("fly with: "<<v_x<< " "<<v_y<<" " <<v_z);
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 

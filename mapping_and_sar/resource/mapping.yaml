@@ -4,11 +4,11 @@
 #system/dyaw_max: .5 
 #system/dyaw_max: 3.14
 system/camera/pitch: [0.0]
-system/camera/horizontal: [180.0]
-system/camera/vertical: [180.0]
-system/bbx/x: 1.5 
-system/bbx/y: 1.5 
-system/bbx/z: .5
+system/camera/horizontal: [90.0]
+system/camera/vertical: [90.0]
+system/bbx/x: 2 
+system/bbx/y: 2 
+system/bbx/z: 1
 system/bbx/overshoot: 0.5
 
 nbvp/gain/free: 0.05
@@ -21,7 +21,7 @@ nbvp/gain/zero: 0.0
 nbvp/status_monitor_rate: 100
 
 
-nbvp/gain/degressive_coeff: 0.05
+nbvp/gain/degressive_coeff: 0.01
 
 #nbvp/tree/extension_range: 4 
 nbvp/tree/exact_root: true
@@ -38,11 +38,11 @@ nbvp/log/on: true
 
 # bounding box: necessary to limit the simulation 
 # scenario (smaller than actual gazebo scenario)
-bbx/minX: -19.0
-bbx/minY: -28.0
+bbx/minX: -35.0
+bbx/minY: -60.0
 bbx/minZ: 3.0
-bbx/maxX: 19.0
-bbx/maxY: 28.0
+bbx/maxX: 35.0
+bbx/maxY: 60.0
 bbx/maxZ: 5.0
 bbx/softBounds: false
 

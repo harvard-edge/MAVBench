@@ -5,13 +5,17 @@
   <arg name="log_file" default="$(arg mav_name)" />
   
   <!-- important params affecting performance -->
-  <arg name="nbvp/gain/range" default="10"/>
-  <arg name="system/v_max" default="3.5"/>
-  <arg name="nbvp/tree/extension_range" default="10.5"/>
-    <arg name="planning_resolution" default=".4"/>
-  <arg name="mapping_resolution" default=".1" />
+  <arg name="nbvp/gain/range" default="4"/>
+  <arg name="v_max" default="15"/>
+  <arg name="nbvp/tree/extension_range" default="4.5"/>
+  <arg name="planning_resolution" default=".10"/>
+  <arg name="mapping_resolution" default="10" />
+  <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
+  <arg name="distance_from_goal_threshold" default=".4" />
+  <arg name="sensor_max_range" default="8" />
 
-  <arg name="fly_trajectory_time_out" default=".1"/> 
+
+  <arg name="fly_trajectory_time_out" default=".3"/> 
 
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
@@ -21,23 +25,24 @@
   <!--arg name="localization_method" value="gps" /-->
   <!--arg name="localization_method" value="vins_mono"/-->
 
-  <!--- set according to the localization method--> 
-  <arg name="system/dyaw_max" default="1.30"/>
+  <!--- set according to the localizat5ion method--> 
+  <arg name="system/dyaw_max" default="1.52"/>
   <arg name="max_yaw_rate" default="90"/>
   <arg name="max_yaw_rate_during_flight" default="90"/>
-  <param name="v_max" value="$(arg system/v_max)"/>
+  <param name="v_max" value="$(arg v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
+  
+  
   <!--- note that time is pretty important since it determines the hz of the thread it runs in --> 
   <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>
 
-  <arg name="sensor_max_range" value="15.0" />
 
   <!-- termination criteria-->
   <arg name="coverage_threshold" default="80"/>
 
   <!-- DEBUGING-data collection params--> 
-  <arg name="DEBUG" value="false" />
+  <arg name="DEBUG" value="true" />
   <arg name="CLCT_DATA" value="true" />
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />
@@ -60,6 +65,8 @@
   <!-- arg name="host_ip" default="10.157.90.62" /-->
   <param name="/ip_addr" value="$(arg host_ip)" />
 
+
+
     <group if="$(arg CLCT_DATA)">
         <param name="enable_statistics" value="true"/>
         <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
@@ -69,7 +76,7 @@
     <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
     <arg name="DEBUG" value="$(arg DEBUG)"/> 
     <arg name="nbvp/gain/range" value="$(arg nbvp/gain/range)"/>
-    <arg name="system/v_max" value="$(arg system/v_max)"/>
+    <arg name="system/v_max" value="$(arg v_max)"/>
     <arg name="system/dyaw_max" value="$(arg system/dyaw_max)"/>
 
     <arg name="nbvp/tree/extension_range" value="$(arg nbvp/tree/extension_range)"/>
@@ -80,6 +87,7 @@
     <arg name="app_name" value="mapping" />
     <arg name="mav_name" value="$(arg mav_name)" />
     <arg name="host_ip" value="$(arg host_ip)"/>
+    <arg name="distance_from_goal_threshold" value="$(arg distance_from_goal_threshold)"/>
     <arg name="localization_method" value="$(arg localization_method)"/>
     <arg name="waypoint_x" value="0.0" />
     <arg name="waypoint_y" value="0.0" />
@@ -104,8 +112,8 @@
   </include>
   <!--/comment-->
 
-
     <!--- get rid of this if you wan to directly use octomap_world octomap/-->
+    <!--- octomap for planning-->
     <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
         <param name="resolution" value="$(arg planning_resolution)" />
 		
@@ -120,7 +128,7 @@
 
 		<!-- Filter ground for binary occupancy map -->
 		<param name="base_frame_id" value="world" />
-		<!-- <param name="filter_ground" value="true" />
+		<!-- <param name="filter_ground" value="false" />
 		<param name="ground_filter_plane_distance" value="1.00" />
 		<param name="ground_filter/distance" value="0.50" /> -->
 	    <param name="pointcloud_min_z" type="double" value="-2.0" />
@@ -131,8 +139,7 @@
 		<param name="ground_filter/distance" value="0.04" />
 		<param name="ground_filter/angle" value="0.4" /> -->
 	</node>
-
-    <!--- octomap for planning-->
+    <comment>
     <node pkg="octomap_server" type="octomap_server_node" name="octomap_server_2">
         <param name="resolution" value="$(arg mapping_resolution)" />
 		
@@ -145,7 +152,9 @@
 		<!-- data source to integrate (PointCloud2) -->
 		<remap from="cloud_in" to="/points" />
 		<!-- Filter ground for binary occupancy map -->
-		<param name="base_frame_id" value="world" />
+		
+		<param name="sensor_model/min" value=".8" />
+        <param name="base_frame_id" value="world" />
 		<!-- <param name="filter_ground" value="true" />
 		<param name="ground_filter_plane_distance" value="1.00" />
 		<param name="ground_filter/distance" value="0.50" /> -->
@@ -159,7 +168,7 @@
 		<param name="ground_filter/distance" value="0.04" />
 		<param name="ground_filter/angle" value="0.4" /> -->
 	</node>
-
+    </comment>
   <arg name="param_file" value="$(find mapping_and_sar)/resource/mapping.yaml" />
   <!-- following the tejactory --> 
   <!-- group ns="$(arg mav_name)" -->
