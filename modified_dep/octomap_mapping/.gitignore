@@ -13,5 +13,4 @@
 *.a
 
 octomap_server/docs
-octomap_server/cfg
 octomap_server/src/octomap_server
