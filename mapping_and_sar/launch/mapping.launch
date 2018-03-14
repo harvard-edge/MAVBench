@@ -5,14 +5,14 @@
   <arg name="log_file" default="$(arg mav_name)" />
   
   <!-- important params affecting performance -->
-  <arg name="nbvp/gain/range" default="4"/>
-  <arg name="v_max" default="15"/>
-  <arg name="nbvp/tree/extension_range" default="4.5"/>
-  <arg name="planning_resolution" default=".10"/>
+  <arg name="v_max" default="5"/>
+  <arg name="nbvp/gain/range" default="8"/>
+  <arg name="nbvp/tree/extension_range" default="8.5"/>
+  <arg name="sensor_max_range" default="10" />
+  <arg name="planning_resolution" default=".15"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
   <arg name="distance_from_goal_threshold" default=".4" />
-  <arg name="sensor_max_range" default="8" />
 
 
   <arg name="fly_trajectory_time_out" default=".3"/> 

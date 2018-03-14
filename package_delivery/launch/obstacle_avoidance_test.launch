@@ -16,7 +16,7 @@
     <arg name="a_max" default="8"/> 
     
     <!-- parameters affecting perforamance -->
-    <arg name="v_max" default="7"/> 
+    <arg name="v_max" default="3"/> 
     <arg name="planning_resolution" default=".45"/>
     <arg name="sensor_max_range" default="15" />
 
@@ -26,7 +26,9 @@
     <!-- orb slam location--> 
     <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
     
-    
+    <arg name="hand_off_control_time" default="100"/>
+    <param name="hand_off_control_time" value="$(arg hand_off_control_time)"/>
+
 
    <!-- sensors /-->
    <arg name="all_front" default="false"/>	
@@ -114,12 +116,12 @@
  	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
 		<!-- IP of the Airsim computer -->
 		<param name="Airsim_ip" value="$(arg host_ip)" />
-
-		<!-- Port of the Airsim computer (this is default, do not change!) -->
+        <param name="all_front" value="$(arg all_front)"/>	
+		
+        <!-- Port of the Airsim computer (this is default, do not change!) -->
 		<param name="Airsim_port" value="41451"/>
 
 		<!-- RGB camera parameters (parameters when calibrated) -->
-	    <param name="all_front" value="$(arg all_front)"/>	
         <param name="Fx" value="256"/>
 		<param name="Fy" value="256"/>
 		<param name="cx" value="256"/>
@@ -170,7 +172,7 @@
 
     
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
-		<param name="panic_distance" value="3"/>
+		<param name="panic_distance" value="7"/>
     </node>
     
     <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
@@ -217,10 +219,9 @@
 	</node>
 
 	<!-- Demo program that controls drone -->
-	<!-- <node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp"> -->
-	<node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen">
-        <param name="ip_addr" value="$(arg host_ip)"/>
-        <!-- param name="issue_cmd__time_step" value=".05"/-->
+	<!-- <node pkg="package_delivery" type="obstacle_avoidance_test" name="obstacle_avoidance_test" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp"> -->
+	<node pkg="package_delivery" type="obstacle_avoidance_test" name="obstacle_avoidance_test" output="screen">
+
 		<!-- param name="points_to_replan_after" value="1000000000"/-->
         <param name="v_max" value="$(arg v_max)"/>
         <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>

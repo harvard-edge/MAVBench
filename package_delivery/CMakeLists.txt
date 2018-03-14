@@ -206,12 +206,16 @@ target_link_libraries(panic_pcl ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthrea
 add_executable(future_collision src/future_collision ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(future_collision ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
-
 add_executable(scanning ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 
     ${common_utility_src}/control_drone.cpp src/scanning.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(scanning package_delivery_generate_messages_cpp)
 target_link_libraries(scanning ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
+
+add_executable(obstacle_avoidance_test ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 
+    ${common_utility_src}/control_drone.cpp src/obstacle_avoidance_test.cpp ${common_utility_src}/timer.cpp)
+add_dependencies(obstacle_avoidance_test obstacle_avoidance_test_generate_messages_cpp)
+target_link_libraries(obstacle_avoidance_test ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
 
 #

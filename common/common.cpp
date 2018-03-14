@@ -59,15 +59,15 @@ void sigIntHandler(int sig)
     exit(0);
 }
 
-trajectory_t create_panic_trajectory(Drone& drone, const geometry_msgs::Vector3& panic_dir)
+trajectory_t create_panic_trajectory(Drone& drone, const geometry_msgs::Vector3& panic_velocity)
 {
     multiDOFpoint p;
 
     p.yaw = drone.get_yaw();
 
-    p.vx = panic_dir.x * std::sin(p.yaw*M_PI/180);
-    p.vy = panic_dir.y * std::cos(p.yaw*M_PI/180);
-    p.vz = panic_dir.z + 0.1; // Counter-act AirSim's slight downward drift
+    p.vx = panic_velocity.x * std::cos(M_PI/90 - p.yaw*M_PI/180);
+    p.vy = panic_velocity.y * std::cos(p.yaw*M_PI/180);
+    p.vz = panic_velocity.z + 0.1; // Counter-act AirSim's slight downward drift
 
     // p.vx = -std::sin(p.yaw*M_PI/180);
     // p.vy = -std::cos(p.yaw*M_PI/180);
@@ -307,6 +307,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
             v_z += 0.2*(p.z-pos.z);
         }
 
+        //ROS_ERROR_STREAM("before scaling"<<v_x<< " "<< v_y << " " <<v_z);
         // Calculate the yaw we should be flying with
         float yaw = p.yaw;
         if (yaw_strategy == ignore_yaw)
@@ -335,6 +336,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         double scaled_flight_time = flight_time / scale;
 
         // Fly for flight_time seconds
+        //ROS_ERROR_STREAM("after scaling"<<v_x<< " "<< v_y << " " <<v_z);
         auto segment_start_time = std::chrono::system_clock::now();
         drone.fly_velocity(v_x, v_y, v_z, yaw, scaled_flight_time+0.1); 
 

@@ -6,8 +6,8 @@
 system/camera/pitch: [0.0]
 system/camera/horizontal: [90.0]
 system/camera/vertical: [90.0]
-system/bbx/x: 2 
-system/bbx/y: 2 
+system/bbx/x: 3 
+system/bbx/y: 3 
 system/bbx/z: 1
 system/bbx/overshoot: 0.5
 
@@ -38,11 +38,11 @@ nbvp/log/on: true
 
 # bounding box: necessary to limit the simulation 
 # scenario (smaller than actual gazebo scenario)
-bbx/minX: -35.0
-bbx/minY: -60.0
+bbx/minX: -30.0
+bbx/minY: -28.0
 bbx/minZ: 3.0
-bbx/maxX: 35.0
-bbx/maxY: 60.0
+bbx/maxX: 30.0
+bbx/maxY: 28.0
 bbx/maxZ: 5.0
 bbx/softBounds: false
 
