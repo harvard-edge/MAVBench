@@ -27,8 +27,18 @@ long long g_planning_time_including_ros_overhead_acc  = 0;
 float g_max_yaw_rate;
 float g_max_yaw_rate_during_flight;
 bool g_trajectory_done = false;
+bool should_panic = false;
+geometry_msgs::Vector3 panic_velocity;
+
 //bool g_dummy = false;
 
+void panic_callback(const std_msgs::Bool::ConstPtr& msg) {
+    should_panic = msg->data;
+}
+
+void panic_velocity_callback(const geometry_msgs::Vector3::ConstPtr& msg) {
+    panic_velocity = *msg;
+}
 
 void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
@@ -77,9 +87,7 @@ multiDOFpoint current_point(Drone& drone){
     result.vx = 0;
     result.vy = 0;
     result.vz = 0;
-   
-
-
+    
     return result;
 }
 
@@ -182,14 +190,17 @@ int main(int argc, char **argv){
     ros::init(argc, argv, "follow_trajectory", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
     signal(SIGINT, sigIntHandlerPrivate);
-
-    // Read parameters
     std::string localization_method; 
     std::string mav_name;
     std::string ip_addr;
     ros::Time cur_t, last_t;
     float cur_z, last_z = -9999;
-
+    trajectory_t normal_traj, rev_normal_traj, panic_traj;
+    trajectory_t slam_loss_traj;
+    bool created_slam_loss_traj = false;
+    uint16_t port = 41451;
+    ros::Rate loop_rate(20);
+    
     ros::param::get("/follow_trajectory/ip_addr",ip_addr);
     ros::param::get("/follow_trajectory/mav_name",mav_name);
     if(!ros::param::get("/follow_trajectory/localization_method",localization_method))  {
@@ -222,44 +233,25 @@ int main(int argc, char **argv){
      return -1; 
     }
 
-    /*
-       if(!ros::param::get("/wiggle_speed",wiggle_speed))  {
-
-       ROS_FATAL_STREAM("Could not start follow_trajectory swiggle_speed not provided");
-       return -1;
-       }
-    */
-
-    // Flight queues
-    trajectory_t normal_traj, rev_normal_traj;
-    trajectory_t slam_loss_traj;
-
+    
     ros::ServiceServer trajectory_done_service = n.advertiseService("trajectory_done_srv", trajectory_done_srv_cb);
-
-
-    bool created_slam_loss_traj = false;
-
-    // Connect to drone
-    uint16_t port = 41451;
+    ros::Subscriber panic_sub =  n.subscribe<std_msgs::Bool>("panic_topic", 1, panic_callback);
+    ros::Subscriber panic_velocity_sub = 
+        n.subscribe<geometry_msgs::Vector3>("panic_velocity", 1, panic_velocity_callback);
+    std::string topic_name =  mav_name + "/" + mav_msgs::default_topics::COMMAND_TRAJECTORY;
+    
     Drone drone(ip_addr.c_str(), port, localization_method,
                 g_max_yaw_rate, g_max_yaw_rate_during_flight);
-
-    // Subscribe to topics
-    std::string topic_name =  mav_name + "/" + mav_msgs::default_topics::COMMAND_TRAJECTORY;
-    ros::Subscriber trajectory_follower_sub = n.subscribe<trajectory_msgs::MultiDOFJointTrajectory>(topic_name, 100, boost::bind(callback_trajectory, _1, &drone, &normal_traj));
 	ros::Subscriber slam_lost_sub = 
 		n.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
-    
-  // ros::Subscriber dummy_sub = 
-//		n.subscribe<std_msgs::Bool>("/dummy_topic", 1, dummy_cb);
-    
-    // Spin loop
-    ros::Rate loop_rate(20);
-    
+    ros::Subscriber trajectory_follower_sub = n.subscribe<trajectory_msgs::MultiDOFJointTrajectory>(topic_name, 100, boost::bind(callback_trajectory, _1, &drone, &normal_traj));
+
     int v_x, v_y, v_z;
     v_z = .6; 
-    //v_x = .5;
     ros::Time last_time = ros::Time::now();
+    bool app_started = false;  //decides when the first planning has occured
+                               //this allows us to activate all the
+                               //functionaliy in follow_trajecotry accordingly
     while (ros::ok()) {
         ros::spinOnce();
 
@@ -268,7 +260,14 @@ int main(int argc, char **argv){
         bool check_position = true;
         yaw_strategy_t yaw_strategy = follow_yaw;
 
-        // Handle SLAM loss queue
+        if (should_panic) {
+            ROS_ERROR("Panicking!");
+            panic_traj = create_panic_trajectory(drone, panic_velocity);
+            normal_traj.clear(); // Replan a path once we're done
+        } else {
+            panic_traj.clear();
+        }
+
         if (slam_lost) {
             ROS_WARN("SLAM lost!");
             if (!created_slam_loss_traj)
@@ -280,26 +279,27 @@ int main(int argc, char **argv){
             created_slam_loss_traj = false;
         }
 
-        // Choose correct queue to use
-        if (slam_lost) {
+        if (!panic_traj.empty()) {
+            forward_traj = &panic_traj;
+            rev_traj = nullptr;
+            check_position = false;
+            yaw_strategy = ignore_yaw;
+        } else if (!slam_loss_traj.empty()) {
             forward_traj = &slam_loss_traj;
             rev_traj = &normal_traj;
             check_position = false;
         } else {
-            // ROS_INFO("Chose normal path");
             forward_traj = &normal_traj;
             rev_traj = &rev_normal_traj;
         }
 
+        
         // to keep spinning while hovering to maximize coverage (increasing visibility)
-        static bool started_planning = false; 
-        if (forward_traj->size() > 0) {
-            started_planning = true;
+        if (normal_traj.size() > 0) {
+            app_started = true;
         }       
-         
-         
         cur_z = drone.pose().position.z; // Get drone's current position
-        if (forward_traj->size() == 0 && started_planning) {//if no trajectory recieved,
+        if (forward_traj->size() == 0 && app_started) {//if no trajectory recieved,
             double dt = (ros ::Time::now() - last_time).toSec(); 
             if (dt > .6) { 
                 if (last_z != -9999){
@@ -312,17 +312,14 @@ int main(int argc, char **argv){
             }
         } 
         
-        follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
-                check_position, g_v_max, g_fly_trajectory_time_out);
-
+        if(app_started){
+            follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
+                    check_position, g_v_max, g_fly_trajectory_time_out);
+        }
+        
         if(forward_traj->size() != 0) {
             last_time = ros::Time::now();
-            //for (auto el : foward_traj) {
-            //    ROS_ERROR_STREAM("forward traj is" << el.p
-            //        }
         }
-
-        // Choose next state (failure, completion, or more flying)
         if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){
             ROS_INFO_STREAM("slam loss");
             log_data_before_shutting_down(); 
@@ -332,7 +329,6 @@ int main(int argc, char **argv){
         }else if (trajectory_done(*forward_traj)){
             loop_rate.sleep();
         }
-        
     }
     return 0;
 }

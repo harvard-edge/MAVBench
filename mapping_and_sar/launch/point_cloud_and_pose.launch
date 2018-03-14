@@ -16,6 +16,7 @@
     <arg name="host_ip"/>
     <arg name="localization_method"/>
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
+    <arg name="all_front"/>
 
     <!-- set this to "" if you don't want perf -->
     <arg name="my_launch_prefix" value="" /> 
@@ -28,6 +29,7 @@
 	<!-- Point-cloud publisher -->
  	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
 		<!-- IP of the Airsim computer -->
+	    <param name="all_front" value="$(arg all_front)"/>	
         <param name="localization_method" value="$(arg localization_method)" />
         <param name="Airsim_ip" value="$(arg host_ip)" />
 
@@ -78,28 +80,25 @@
 	<node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager"/>
 
 	<!-- Convert to point cloud -->
+	<!-- Convert to point cloud -->
 	<node pkg="nodelet" type="nodelet" name="cloudify"
 	args="load depth_image_proc/point_cloud_xyz depth_transforms_manager --no-bond">
 
 		<!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
 		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
 		<!-- Input: Rectified depth image -->
-		<remap from="image_rect" to="/Airsim/depth"/>
-		<remap from="points" to="points"/>
+		<remap from="image_rect" to="/Airsim/depth_front"/>
+
     </node>
-	
-    <node pkg="nodelet" type="nodelet" name="cloudify2"
-	args="load depth_image_proc/point_cloud_xyz depth_transforms_manager --no-bond">
+    
+	<node pkg="nodelet" type="nodelet" name="cloudify_2"
+ 	args="load depth_image_proc/point_cloud_xyz depth_transforms_manager_2 --no-bond">
 
 		<!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
 		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
 		<!-- Input: Rectified depth image -->
-		<remap from="image_rect" to="/Airsim/depth"/>
-		<remap from="points" to="points"/>
+		<remap from="image_rect" to="/Airsim/depth_back"/>
+		<remap from="points" to="/points_back"/>
     </node>
-	
-    <!-- /group --> 
-
   
-
 </launch>

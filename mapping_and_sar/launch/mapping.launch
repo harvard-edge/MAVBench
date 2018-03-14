@@ -6,9 +6,9 @@
   
   <!-- important params affecting performance -->
   <arg name="v_max" default="5"/>
-  <arg name="nbvp/gain/range" default="8"/>
-  <arg name="nbvp/tree/extension_range" default="8.5"/>
-  <arg name="sensor_max_range" default="10" />
+  <arg name="nbvp/gain/range" default="12"/>
+  <arg name="nbvp/tree/extension_range" default="12.5"/>
+  <arg name="sensor_max_range" default="15" />
   <arg name="planning_resolution" default=".15"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
@@ -17,6 +17,9 @@
 
   <arg name="fly_trajectory_time_out" default=".3"/> 
 
+  <!-- sensors /-->
+  <arg name="all_front" default="false"/>	
+  
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
   <!-- localization method -->
@@ -107,6 +110,7 @@
   <!--comment -->
   <!-- point cloud and pose -->
   <include file="$(find mapping_and_sar)/launch/point_cloud_and_pose.launch">
+  <arg name="all_front" default="$(arg all_front)"/>	
   <arg name="localization_method" value="$(arg localization_method)"/>
   <arg name="host_ip" value="$(arg host_ip)"/>
   </include>
@@ -188,6 +192,12 @@
     </group>
 
   <node pkg="publish_imu" type="publish_imu" name="publish_imu"/> 
+
+    <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
+		<param name="panic_distance" value="3"/>
+    </node>
+
+
 
   <!--comment-->
   <!-- rviz -->
