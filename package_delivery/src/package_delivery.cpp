@@ -23,6 +23,10 @@
 #include <std_msgs/Bool.h>
 #include "common.h"
 #include "timer.h"
+#include <package_delivery/multiDOF.h>
+#include <package_delivery/multiDOF_array.h>
+#include <std_srvs/Empty.h>
+#include <std_srvs/SetBool.h>
 
 using namespace std;
 
@@ -30,8 +34,6 @@ using namespace std;
 std::string g_mission_status = "failed";
 
 bool should_panic = false;
-bool col_imminent = false;
-bool col_coming = false;
 bool slam_lost = false;
 
 long long g_accumulate_loop_time = 0; //it is in ms
@@ -52,7 +54,7 @@ string stats_file_addr;
 string ns;
 std::string g_supervisor_mailbox; //file to write to when completed
 
-enum State { setup, waiting, flying, completed, failed, invalid };
+enum State { setup, waiting, flying, trajectory_completed, failed, invalid };
 
 void log_data_before_shutting_down(){
 
@@ -116,25 +118,6 @@ double dist(coord t, geometry_msgs::Point m)
 {
     // We must convert between the two coordinate systems
     return std::sqrt((t.x-m.x)*(t.x-m.x) + (t.y-m.y)*(t.y-m.y) + (t.z-m.z)*(t.z-m.z));
-}
-
-// *** F:DN call back function for the panic_topic subscriber
-void panic_callback(const std_msgs::Bool::ConstPtr& msg) {
-    should_panic = msg->data;
-}
-
-void panic_velocity_callback(const geometry_msgs::Vector3::ConstPtr& msg) {
-    panic_velocity = *msg;
-}
-
-void col_imminent_callback(const std_msgs::Bool::ConstPtr& msg) {
-    //col_imminent = false;
-    col_imminent = msg->data;
-}
-
-void col_coming_callback(const std_msgs::Bool::ConstPtr& msg) {
-    //col_coming = false; 
-    col_coming = msg->data;
 }
 
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
@@ -248,12 +231,7 @@ int main(int argc, char **argv)
     geometry_msgs::Point start, goal;
 
     // Flight queues
-    trajectory_t normal_traj, rev_normal_traj;
-    trajectory_t panic_traj;
     trajectory_t slam_loss_traj;
-    trajectory_t future_col_traj;
-
-    bool created_future_col_traj = false;
     bool created_slam_loss_traj = false;
 
     uint16_t port = 41451;
@@ -261,22 +239,21 @@ int main(int argc, char **argv)
     bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
     
+   std_srvs::SetBool trajectory_done_srv_inst;
+
     ros::Time start_hook_t, end_hook_t;                                          
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
         nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv", true);
 	ros::ServiceClient record_profiling_data_client = 
         nh.serviceClient<profile_manager::profiling_data_srv>("record_profiling_data");
-    ros::Subscriber panic_sub = 
-		nh.subscribe<std_msgs::Bool>("panic_topic", 1, panic_callback);
-    ros::Subscriber panic_velocity_sub = 
-		nh.subscribe<geometry_msgs::Vector3>("panic_velocity", 1, panic_velocity_callback);
-    ros::Subscriber col_imminent_sub = 
-		nh.subscribe<std_msgs::Bool>("col_imminent", 1, col_imminent_callback);
-    ros::Subscriber col_coming_sub = 
-		nh.subscribe<std_msgs::Bool>("col_coming", 1, col_coming_callback);
-	ros::Subscriber slam_lost_sub = 
-		nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+        ros::Subscriber slam_lost_sub = nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+
+    ros::ServiceClient trajectory_done_client = 
+      nh.serviceClient<std_srvs::SetBool>("/trajectory_done_srv");
+
+    ros::Publisher trajectory_pub = nh.advertise <package_delivery::multiDOF_array>("normal_traj", 1);
+
 
     ros::ServiceClient start_profiling_client = 
       nh.serviceClient<profile_manager::start_profiling_srv>("/start_profiling");
@@ -292,6 +269,9 @@ int main(int argc, char **argv)
                                            //given the issues associated with
                                            //flight controler to land exactly
                                            //on the goal
+    
+    bool srv_call_status = false;
+    trajectory_t normal_traj;
     ros::Time panic_realization_start_t;
     ros::Time panic_realization_end_t;
     msr::airlib::FlightStats init_stats, end_stats;
@@ -301,9 +281,7 @@ int main(int argc, char **argv)
 	//----------------------------------------------------------------- 
     
     // Wait for the localization method to come online
-    ROS_INFO_STREAM("HElLO)000000000000!! " << localization_method);
     waitForLocalization(localization_method);
-    ROS_INFO("BFDSFSDSDF!!");
 
     //update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
     //log_time(stats_file_addr);
@@ -312,7 +290,6 @@ int main(int argc, char **argv)
     
     ros::Time loop_start_t(0,0); 
     ros::Time loop_end_t(0,0); //if zero, it's not valid
-
 
     for (State state = setup; ros::ok(); ) {
           
@@ -347,10 +324,23 @@ int main(int argc, char **argv)
             normal_traj = request_trajectory(get_trajectory_client, start, goal);
             end_hook_t = ros::Time::now(); 
             // Pause a little bit so that future_col can be updated
-            col_coming = col_imminent = false;
             g_planning_time_including_ros_overhead_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
             g_planning_ctr++; 
             std::this_thread::sleep_for(std::chrono::milliseconds(150));
+            package_delivery::multiDOF_array array_of_point_msg; 
+            for (auto point : normal_traj){
+                package_delivery::multiDOF point_msg;
+                point_msg.x = point.x;
+                point_msg.y = point.y;
+                point_msg.z = point.z;
+                point_msg.vx = point.vx;
+                point_msg.vy = point.vy;
+                point_msg.vz = point.vz;
+                point_msg.yaw = point.yaw;
+                point_msg.duration = point.duration;
+                array_of_point_msg.points.push_back(point_msg); 
+            }
+            trajectory_pub.publish(array_of_point_msg);
 
             if (!normal_traj.empty())
                 next_state = flying;
@@ -359,96 +349,32 @@ int main(int argc, char **argv)
         }
         else if (state == flying)
         {
-            trajectory_t * forward_traj = nullptr;
-            trajectory_t * rev_traj = nullptr;
-            bool check_position = true;
-            yaw_strategy_t yaw_strategy = follow_yaw;
-
-            // Handle panic queue
-            if (should_panic) {
-                ROS_ERROR("Panicking!");
-                panic_realization_start_t = ros::Time::now();
-                panic_traj = create_panic_trajectory(drone, panic_velocity);
-                normal_traj.clear(); // Replan a path once we're done
-            } else {
-                panic_traj.clear();
-            }
-
-            // Handle SLAM loss queue
-            if (slam_lost) {
-                ROS_WARN("SLAM lost!");
-                if (!created_slam_loss_traj)
-                    slam_loss_traj = create_slam_loss_trajectory(drone, normal_traj, rev_normal_traj);
-
-                // No need to keep the future collision trajectory if we're
-                // planning to replan anyway. Keeping it could cause collisions
-                // in some cases
-                future_col_traj.clear(); 
-
-                created_slam_loss_traj = true;
-            } else {
-                slam_loss_traj.clear();
-                created_slam_loss_traj = false;
-            }
-
-            // Handle future_collision queue
-            if (col_coming) {
-                ROS_WARN("Future collision appeared on trajectory!");
-
-                if (!created_future_col_traj)
-                    future_col_traj = create_future_col_trajectory(normal_traj, 0.5);
-
-                created_future_col_traj = true;
-
-                ROS_WARN_STREAM("Future col length " << future_col_traj.size());
-
-                normal_traj.clear(); // Replan the normal path once we're done
-            } else {
-                future_col_traj.clear();
-                created_future_col_traj = false;
-            }
-
-            // Choose correct queue to use
-            if (!panic_traj.empty()) {
-                forward_traj = &panic_traj;
-                rev_traj = nullptr;
-                check_position = false;
-                yaw_strategy = ignore_yaw;
-            } else if (!slam_loss_traj.empty()) {
-                forward_traj = &slam_loss_traj;
-                rev_traj = &normal_traj;
-                check_position = false;
-            } else if (!future_col_traj.empty()) {
-                forward_traj = &future_col_traj;
-                rev_traj = &rev_normal_traj;
-            } else {
-                forward_traj = &normal_traj;
-                rev_traj = &rev_normal_traj;
-            }
-
-            if (should_panic){ //CLCT_DATA
-                panic_realization_end_t = ros::Time::now();
-                g_panic_rlzd_t_accumulate += 
-                    (panic_realization_end_t - panic_realization_start_t).toSec()*1e9;
-                g_panic_ctr++;
-            }
-            
-            follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, check_position,v_max__global, g_fly_trajectory_time_out);
 
             // Choose next state (failure, completion, or more flying)
+            /* 
             if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)) {
                 if (reset_slam(drone, "/slam_lost"))
-                    next_state = completed;
+                    next_state = trajectory_completed;
                 else
                     next_state = failed;
             }
-            else if (trajectory_done(*forward_traj))
-                next_state = completed;
-            else
-                next_state = flying;
+            */
+            do{
+                srv_call_status = trajectory_done_client.call(trajectory_done_srv_inst);
+                if(!srv_call_status){
+                    ROS_INFO_STREAM("could not make a service all to trajectory done");
+                }else if (trajectory_done_srv_inst.response.success) {
+                    next_state = trajectory_completed; 
+                }else{
+                    next_state = flying;
+                }
+                ros::Duration(.2).sleep();     
+            }while(!srv_call_status|| !trajectory_done_srv_inst.response.success);
+
         }
-        else if (state == completed)
+        else if (state == trajectory_completed)
         {
+            ROS_INFO_STREAM(" in completed"); 
             drone.fly_velocity(0, 0, 0);
 
             if (dist(drone.position(), goal) < goal_s_error_margin) {

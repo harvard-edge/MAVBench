@@ -65,11 +65,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+ add_message_files(
+  FILES
+  multiDOF.msg
+  multiDOF_array.msg
+ )
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -210,6 +210,9 @@ add_executable(scanning ${common_utility_src}/Drone.cpp ${common_utility_src}/co
     ${common_utility_src}/control_drone.cpp src/scanning.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(scanning package_delivery_generate_messages_cpp)
 target_link_libraries(scanning ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
+
+add_executable(follow_trajectory src/follow_trajectory.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
+target_link_libraries(follow_trajectory ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread)
 
 
 add_executable(obstacle_avoidance_test ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 

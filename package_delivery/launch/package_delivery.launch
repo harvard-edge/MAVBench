@@ -16,8 +16,8 @@
     <arg name="a_max" default="8"/> 
     
     <!-- parameters affecting perforamance -->
-    <arg name="v_max" default="7"/> 
-    <arg name="planning_resolution" default=".45"/>
+    <arg name="v_max" default="5"/> 
+    <arg name="planning_resolution" default=".15"/>
     <arg name="sensor_max_range" default="15" />
 
 
@@ -29,7 +29,7 @@
     
 
    <!-- sensors /-->
-   <arg name="all_front" default="false"/>	
+   <arg name="all_front" default="true"/>	
     
     <!-- Set the localization method /-->
     <!--arg name="localization_method" default="orb_slam2_rgbd" /-->
@@ -170,7 +170,7 @@
 
     
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
-		<param name="panic_distance" value="3"/>
+		<param name="panic_distance" value="1"/>
     </node>
     
     <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
@@ -183,6 +183,14 @@
 		<!-- remap from="depth_img" to="/stereo/left/image_raw"/ -->
     </node>
     ?>
+
+    <node pkg="package_delivery" type="follow_trajectory" name="follow_trajectory" output="screen">
+    <!-- param name="yaw_t" value=".75"/ -->
+    <param name="ip_addr" value="$(arg host_ip)"/>
+    <param name="localization_method" type="string" value="$(arg localization_method)"/>
+    </node>
+
+
 
 	<!-- Path-Planner -->
 	<node pkg="package_delivery" type="motion_planner" name="motion_planner" output="screen" launch-prefix="$(arg my_launch_prefix)">
@@ -199,10 +207,10 @@
         <param name="rrt_step_size" value="1.0"/>
         <param name="rrt_bias" value="10"/>
 		
-        <param name="x_dist_to_sample_from__low_bound" value="-35"/>
-		<param name="x_dist_to_sample_from__high_bound" value="35"/>
+        <param name="x_dist_to_sample_from__low_bound" value="-50"/>
+		<param name="x_dist_to_sample_from__high_bound" value="50"/>
         <param name="y_dist_to_sample_from__low_bound" value="-5"/>
-        <param name="y_dist_to_sample_from__high_bound" value="100"/>
+        <param name="y_dist_to_sample_from__high_bound" value="200"/>
         <param name="z_dist_to_sample_from__low_bound" value="2"/>
         <param name="z_dist_to_sample_from__high_bound" value="8"/>
 
