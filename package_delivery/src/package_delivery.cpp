@@ -25,8 +25,10 @@
 #include "timer.h"
 #include <package_delivery/multiDOF.h>
 #include <package_delivery/multiDOF_array.h>
+#include <package_delivery/follow_trajectory_status_srv.h>
 #include <std_srvs/Empty.h>
 #include <std_srvs/SetBool.h>
+
 
 using namespace std;
 
@@ -183,11 +185,12 @@ geometry_msgs::Point get_goal() {
     return goal;
 }
 
-trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, geometry_msgs::Point goal) {
+trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, geometry_msgs::Point goal, geometry_msgs::Twist twist) {
     // Request the actual trajectory from the motion_planner node
     package_delivery::get_trajectory srv;
     srv.request.start = start;
     srv.request.goal = goal;
+    srv.request.twist  = twist; 
     int fail_ctr = 0;
     while(!client.call(srv) && fail_ctr<=5){
         fail_ctr++;
@@ -239,7 +242,7 @@ int main(int argc, char **argv)
     bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
     
-   std_srvs::SetBool trajectory_done_srv_inst;
+   package_delivery::follow_trajectory_status_srv follow_trajectory_status_srv_inst;
 
     ros::Time start_hook_t, end_hook_t;                                          
     // *** F:DN subscribers,publishers,servers,clients
@@ -249,8 +252,8 @@ int main(int argc, char **argv)
         nh.serviceClient<profile_manager::profiling_data_srv>("record_profiling_data");
         ros::Subscriber slam_lost_sub = nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
 
-    ros::ServiceClient trajectory_done_client = 
-      nh.serviceClient<std_srvs::SetBool>("/trajectory_done_srv");
+    ros::ServiceClient follow_trajectory_status_client = 
+      nh.serviceClient<package_delivery::follow_trajectory_status_srv>("/follow_trajectory_status");
 
     ros::Publisher trajectory_pub = nh.advertise <package_delivery::multiDOF_array>("normal_traj", 1);
 
@@ -290,7 +293,8 @@ int main(int argc, char **argv)
     
     ros::Time loop_start_t(0,0); 
     ros::Time loop_end_t(0,0); //if zero, it's not valid
-
+    geometry_msgs::Twist twist;
+    twist.linear.x = twist.linear.y = twist.linear.z = 1;
     for (State state = setup; ros::ok(); ) {
           
         ros::spinOnce();
@@ -321,7 +325,7 @@ int main(int argc, char **argv)
             start = get_start(drone);
             
             start_hook_t = ros::Time::now(); 
-            normal_traj = request_trajectory(get_trajectory_client, start, goal);
+            normal_traj = request_trajectory(get_trajectory_client, start, goal, twist);
             end_hook_t = ros::Time::now(); 
             // Pause a little bit so that future_col can be updated
             g_planning_time_including_ros_overhead_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
@@ -360,16 +364,17 @@ int main(int argc, char **argv)
             }
             */
             do{
-                srv_call_status = trajectory_done_client.call(trajectory_done_srv_inst);
+                srv_call_status = follow_trajectory_status_client.call(follow_trajectory_status_srv_inst);
                 if(!srv_call_status){
                     ROS_INFO_STREAM("could not make a service all to trajectory done");
-                }else if (trajectory_done_srv_inst.response.success) {
+                }else if (follow_trajectory_status_srv_inst.response.success.data) {
                     next_state = trajectory_completed; 
+                    twist = follow_trajectory_status_srv_inst.response.twist;
                 }else{
                     next_state = flying;
                 }
                 ros::Duration(.2).sleep();     
-            }while(!srv_call_status|| !trajectory_done_srv_inst.response.success);
+            }while(!srv_call_status|| !follow_trajectory_status_srv_inst.response.success.data);
 
         }
         else if (state == trajectory_completed)

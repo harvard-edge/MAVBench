@@ -16,12 +16,16 @@
 #include <std_srvs/SetBool.h>
 #include <package_delivery/multiDOF.h>
 #include <package_delivery/multiDOF_array.h>
+#include <package_delivery/follow_trajectory_status_srv.h>
+
 
 using namespace std;
 bool slam_lost = false;
 bool col_imminent = false;
 bool col_coming = false;
 
+
+trajectory_t normal_traj;
 float g_localization_status = 1.0;
 std::string g_supervisor_mailbox; //file to write to when completed
 float g_v_max;
@@ -69,9 +73,9 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     slam_lost = msg->data;
 }
 
-void callback_trajectory(const package_delivery::multiDOF_array::ConstPtr& msg, Drone * drone, trajectory_t * normal_traj)
+void callback_trajectory(const package_delivery::multiDOF_array::ConstPtr& msg, Drone * drone)//, trajectory_t * normal_traj)
 {
-    normal_traj->clear(); 
+    normal_traj.clear(); 
     for (auto point : msg->points){
         multiDOFpoint traj_point;
         traj_point.x = point.x;
@@ -82,9 +86,8 @@ void callback_trajectory(const package_delivery::multiDOF_array::ConstPtr& msg, 
         traj_point.vz = point.vz;
         traj_point.yaw = point.yaw;
         traj_point.duration = point.duration;
-        normal_traj->push_back(traj_point);
+        normal_traj.push_back(traj_point);
     }
-    ROS_INFO_STREAM("got all traj");
 }
 
 bool trajectory_done(const trajectory_t& trajectory) {
@@ -102,12 +105,18 @@ void sigIntHandlerPrivate(int signo){
     exit(0);
 }
 
-bool trajectory_done_srv_cb(std_srvs::SetBool::Request &req, 
-    std_srvs::SetBool::Response &res)
+bool follow_trajectory_status_cb(package_delivery::follow_trajectory_status_srv::Request &req, 
+    package_delivery::follow_trajectory_status_srv::Response &res)
 {
     //ROS_INFO_STREAM("made a srv call" << col_imminent); 
-    res.success = g_trajectory_done;// || col_coming;
+    res.success.data = g_trajectory_done || col_coming;
+    geometry_msgs::Twist last_velocity;
+    last_velocity.linear.x = normal_traj.front().vx;
+    last_velocity.linear.y = normal_traj.front().vy;
+    last_velocity.linear.z = normal_traj.front().vz;
+    res.twist = last_velocity;
     return true;
+
 }
 
 int main(int argc, char **argv){
@@ -119,7 +128,7 @@ int main(int argc, char **argv){
     std::string ip_addr;
     ros::Time cur_t, last_t;
     float cur_z, last_z = -9999;
-    trajectory_t normal_traj, rev_normal_traj, panic_traj;
+    trajectory_t rev_normal_traj, panic_traj;
     trajectory_t slam_loss_traj;
     bool created_slam_loss_traj = false;
     bool created_future_col_traj = false;
@@ -160,7 +169,7 @@ int main(int argc, char **argv){
     }
 
     
-    ros::ServiceServer trajectory_done_service = n.advertiseService("trajectory_done_srv", trajectory_done_srv_cb);
+    ros::ServiceServer trajectory_done_service = n.advertiseService("follow_trajectory_status", follow_trajectory_status_cb);
     ros::Subscriber panic_sub =  n.subscribe<std_msgs::Bool>("panic_topic", 1, panic_callback);
     ros::Subscriber panic_velocity_sub = 
         n.subscribe<geometry_msgs::Vector3>("panic_velocity", 1, panic_velocity_callback);
@@ -176,7 +185,7 @@ int main(int argc, char **argv){
 		n.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
     ros::Subscriber trajectory_follower_sub = 
         n.subscribe<package_delivery::multiDOF_array>("normal_traj", 
-                1, boost::bind(callback_trajectory, _1, &drone, &normal_traj));
+                1, boost::bind(callback_trajectory, _1, &drone));//, &normal_traj));
 
     bool app_started = false;  //decides when the first planning has occured
                                //this allows us to activate all the
@@ -186,7 +195,7 @@ int main(int argc, char **argv){
 
         trajectory_t * forward_traj = nullptr;
         trajectory_t * rev_traj = nullptr;
-        //bool check_position = true;
+        bool check_position = true;
         yaw_strategy_t yaw_strategy = follow_yaw;
 
         if (should_panic) {
@@ -209,7 +218,7 @@ int main(int argc, char **argv){
         }
 
         // Handle future_collision queue
-         
+         /*
         if (col_coming) {
             ROS_WARN("Future collision appeared on trajectory!");
         
@@ -225,7 +234,7 @@ int main(int argc, char **argv){
             future_col_traj.clear();
             created_future_col_traj = false;
         }
-        
+        */
         if (!panic_traj.empty()) {
             forward_traj = &panic_traj;
             rev_traj = nullptr;
@@ -245,7 +254,8 @@ int main(int argc, char **argv){
         }       
        
         if(app_started){
-            ROS_INFO_STREAM("now follow"); 
+            //ROS_INFO_STREAM("now follow"<<forward_traj->size()); 
+             
             follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
                     check_position, g_v_max, g_fly_trajectory_time_out);
         }

@@ -159,7 +159,7 @@ piecewise_trajectory OMPL_PRM(geometry_msgs::Point start, geometry_msgs::Point g
 
 
 // *** F:DN Optimize and smoothen a piecewise path without causing any new collisions.
-smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree);
+smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity);
 
 
 // ***F:DN Build the response to the service from the smooth_path
@@ -224,7 +224,10 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     //ROS_INFO("Path size: %u. Now smoothening...", piecewise_path.size());
 
     // Smoothen the path and build the multiDOFtrajectory response
-    smooth_path = smoothen_the_shortest_path(piecewise_path, octree);
+    smooth_path = smoothen_the_shortest_path(piecewise_path, octree, 
+                                    Eigen::Vector3d(req.twist.linear.x,
+                                        req.twist.linear.y,
+                                        req.twist.linear.z));
 	
     create_response(res, smooth_path);
 
@@ -810,7 +813,7 @@ void create_response(package_delivery::get_trajectory::Response &res, smooth_tra
 }
 
 
-smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree)
+smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity)
 {
     // Variables for visualization for debugging purposes
 	double distance = 0.5; 
@@ -823,8 +826,16 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	
 	// Convert roadmap path to optimizer's path format
 	mav_trajectory_generation::Vertex start_v(dimension), end_v(dimension);
-	start_v.makeStartOrEnd(Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z), derivative_to_optimize);
-	end_v.makeStartOrEnd(Eigen::Vector3d(piecewise_path.back().x, piecewise_path.back().y, piecewise_path.back().z), derivative_to_optimize);
+	//start_v.makeStartOrEnd(Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z), derivative_to_optimize);
+   	start_v.addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, initial_velocity);
+    start_v.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z));
+    
+
+
+    end_v.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(piecewise_path.back().x, piecewise_path.back().y, piecewise_path.back().z));
+   	end_v.addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, Eigen::Vector3d(0,0,0));
+    ///Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z));
+    //end_v.makeStartOrEnd(Eigen::Vector3d(piecewise_path.back().x, piecewise_path.back().y, piecewise_path.back().z), derivative_to_optimize);
 
 	vertices.push_back(start_v);
 	for (auto it = piecewise_path.begin()+1; it+1 != piecewise_path.end(); ++it) {
