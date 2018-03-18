@@ -299,14 +299,22 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         double v_x = p.vx;
         double v_y = p.vy;
         double v_z = p.vz;
+        //ROS_ERROR_STREAM("before before speed scaling"<<v_x<< " "<< v_y << " " <<v_z);
         //ROS_ERROR_STREAM("before correction"<<v_x<< " "<< v_y << " " <<v_z);
+         
         if (check_position) {
             auto pos = drone.position();
             v_x += 0.05*(p.x-pos.x);
             v_y += 0.05*(p.y-pos.y);
             v_z += 0.2*(p.z-pos.z);
+            if (distance(p.x-pos.y, p.y-pos.y, p.z-pos.z)>2) {
+                ROS_ERROR_STREAM("distance greater than 2"); 
+            }
+            else if (distance(p.x-pos.y, p.y-pos.y, p.z-pos.z)>1) {
+                ROS_ERROR_STREAM("distance greater than 1"); 
+            }
         }
-
+        
         //ROS_ERROR_STREAM("before scaling"<<v_x<< " "<< v_y << " " <<v_z);
         // Calculate the yaw we should be flying with
         float yaw = p.yaw;
@@ -321,14 +329,16 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         // Make sure we're not going over the maximum speed
         double speed = std::sqrt((v_x*v_x + v_y*v_y + v_z*v_z)/3);
         double scale = 1;
+        //ROS_ERROR_STREAM("BEFORE speed scaling"<<v_x<< " "<< v_y << " " <<v_z);
         if (speed > max_speed) {
             scale = max_speed / speed;
             //ROS_ERROR_STREAM("exceed max speed "<< "max_speed"<<max_speed<< " speed"<<speed<<"scael"<<scale);
-            //ROS_ERROR_STREAM("before speed scaling"<<v_x<< " "<< v_y << " " <<v_z);
             
             v_x *= scale;
             v_y *= scale;
             v_z *= scale;
+            ROS_ERROR_STREAM("AFTER speed scaling"<<v_x<< " "<< v_y << " " <<v_z);
+            
         }
 
         // Calculate the time for which these flight commands should run
@@ -356,6 +366,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
 
         time -= flight_time;
     }
+
 
     if (reverse_traj != nullptr)
         *reverse_traj = append_trajectory(reversed_commands, *reverse_traj);

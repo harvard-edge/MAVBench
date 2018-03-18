@@ -5,7 +5,7 @@
   <arg name="log_file" default="$(arg mav_name)" />
   
   <!-- important params affecting performance -->
-  <arg name="v_max" default="15"/>
+  <arg name="v_max" default="7"/>
   <arg name="nbvp/gain/range" default="12"/>
   <arg name="nbvp/tree/extension_range" default="12.5"/>
   <arg name="sensor_max_range" default="15" />
