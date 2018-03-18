@@ -75,6 +75,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_service_files(
   FILES
   get_trajectory.srv
+  follow_trajectory_status_srv.srv
 )
 
 ## Generate actions in the 'action' folder
