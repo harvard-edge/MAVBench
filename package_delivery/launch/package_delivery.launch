@@ -13,12 +13,12 @@
     <param name="/ip_addr" value="$(arg host_ip)" />
 
     <!-- Drone's physical characteristics /-->
-    <arg name="a_max" default="8"/> 
+    <arg name="a_max" default="4.5"/> 
     
     <!-- parameters affecting perforamance -->
     <arg name="v_max" default="5"/> 
     <arg name="planning_resolution" default=".15"/>
-    <arg name="sensor_max_range" default="15" />
+    <arg name="sensor_max_range" default="5" />
 
 
     <!--- note that time out is very important since it determines the hz of the thread it runs in -->
