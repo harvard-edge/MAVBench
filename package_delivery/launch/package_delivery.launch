@@ -26,9 +26,12 @@
     <!-- orb slam location--> 
     <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
     
-    
-    <param name="v_max" value="$(arg v_max)"/> 
-    <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/> 
+  <arg name="max_yaw_rate" default="90"/>
+  <arg name="max_yaw_rate_during_flight" default="90"/>
+  <param name="v_max" value="$(arg v_max)"/>
+  <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
+  <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
+  <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/> 
 
 
    <!-- sensors /-->
