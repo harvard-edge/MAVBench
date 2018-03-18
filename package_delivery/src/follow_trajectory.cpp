@@ -147,7 +147,7 @@ int main(int argc, char **argv){
         ROS_FATAL_STREAM("Could not start follow_trajectory vmax not provided");
         return -1;
     }
-/*
+
     if(!ros::param::get("max_yaw_rate",g_max_yaw_rate))  {
         ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate not provided");
         return -1;
@@ -157,7 +157,7 @@ int main(int argc, char **argv){
         ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate_during_flight not provided");
         return -1;
     }
-
+/*
     if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
         ROS_FATAL_STREAM("Could not start follow_trajectory supervisor_mailbox not provided");
         return -1;
