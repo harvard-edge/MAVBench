@@ -147,7 +147,7 @@ int main(int argc, char **argv){
         ROS_FATAL_STREAM("Could not start follow_trajectory vmax not provided");
         return -1;
     }
-
+/*
     if(!ros::param::get("max_yaw_rate",g_max_yaw_rate))  {
         ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate not provided");
         return -1;
@@ -162,12 +162,12 @@ int main(int argc, char **argv){
         ROS_FATAL_STREAM("Could not start follow_trajectory supervisor_mailbox not provided");
         return -1;
     }
-
+*/
     if(!ros::param::get("/fly_trajectory_time_out", g_fly_trajectory_time_out)){
         ROS_FATAL("Could not start follow_thrajectory. Parameter missing! fly_trajectory_time_out is not provided"); 
-     return -1; 
+        return -1; 
     }
-
+        ROS_INFO_STREAM("fly_traj" <<g_fly_trajectory_time_out);
     
     ros::ServiceServer trajectory_done_service = n.advertiseService("follow_trajectory_status", follow_trajectory_status_cb);
     ros::Subscriber panic_sub =  n.subscribe<std_msgs::Bool>("panic_topic", 1, panic_callback);
