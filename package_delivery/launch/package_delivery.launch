@@ -27,6 +27,9 @@
     <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
     
     
+    <param name="v_max" value="$(arg v_max)"/> 
+    <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/> 
+
 
    <!-- sensors /-->
    <arg name="all_front" default="true"/>	
