@@ -82,6 +82,8 @@ static int g_number_of_planning = 0 ;
 octomap::OcTree * octree = nullptr;
 trajectory_msgs::MultiDOFJointTrajectory traj_topic;
 ros::ServiceClient octo_client;
+bool g_requested_trajectory = false;
+
 
 // The following block of global variables only exist for debugging purposes
 visualization_msgs::MarkerArray smooth_traj_markers;
@@ -177,6 +179,7 @@ void postprocess(piecewise_trajectory& path);
 //*** F:DN getting the smoothened trajectory
 bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
 {
+    g_requested_trajectory = true; 
     auto hook_start_t = ros::Time::now();
     x__low_bound__global = std::min(x__low_bound__global, req.start.x);
     x__high_bound__global = std::max(x__high_bound__global, req.start.x);
@@ -233,7 +236,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 
     // Publish the trajectory (for debugging purposes)
     traj_topic = res.multiDOFtrajectory;
-
+    traj_topic.header.stamp = ros::Time::now();
     auto hook_end_t = ros::Time::now(); 
     g_planning_without_OM_PULL_time_acc += (((hook_end_t - hook_start_t).toSec())*1e9);
     g_number_of_planning++; 
@@ -366,23 +369,36 @@ int main(int argc, char ** argv)
     dummy_pub= nh.advertise<std_msgs::Bool>("dummy_topic", 1);
     std_msgs::Bool dummy_msg;
     dummy_msg.data = false;
-
+    enum State {publish_trajectory, idle};
+    State state, next_state;
+    next_state = state = idle;
     //----------------------------------------------------------------- 
     // *** F:DN BODY
     //----------------------------------------------------------------- 
-	ros::Rate pub_rate(10);
+	ros::Rate pub_rate(30);
 	while (ros::ok())
 	{
-        if (DEBUG__global) { //if debug, publish markers to be seen by rviz
-            smooth_traj_vis_pub.publish(smooth_traj_markers);
-            piecewise_traj_vis_pub.publish(piecewise_traj_markers);
-            graph_conn_pub.publish(graph_conn_list);
-            octo_pub.publish(omp);
-            pcl_pub.publish(pcl_ptr);
+        if (state == idle){
+            ros::spinOnce();
+            if (g_requested_trajectory) {
+                next_state = publish_trajectory;
+            }
+        }else if (state == publish_trajectory){
+            traj_pub.publish(traj_topic);
+            g_requested_trajectory = false;
+            next_state = idle;
+        
+            if (DEBUG__global) { //if debug, publish markers to be seen by rviz
+                smooth_traj_vis_pub.publish(smooth_traj_markers);
+                piecewise_traj_vis_pub.publish(piecewise_traj_markers);
+                graph_conn_pub.publish(graph_conn_list);
+                octo_pub.publish(omp);
+                pcl_pub.publish(pcl_ptr);
+            }
         }
-        traj_pub.publish(traj_topic);
-	    //dummy_pub.publish(dummy_msg);	
-        ros::spinOnce();
+        state = next_state;
+	     
+        //dummy_pub.publish(dummy_msg);	
 		pub_rate.sleep();
     }
 
@@ -807,7 +823,7 @@ void create_response(package_delivery::get_trajectory::Response &res, smooth_tra
         }
 
 		res.multiDOFtrajectory.points.push_back(point);
-
+        
         state_index++;
 	}
 }
@@ -858,7 +874,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	// Optimize until no collisions are present
 	bool col;
 	do {
-		ROS_INFO("Checking for collisions...");
+		//ROS_INFO("Checking for collisions...");
 		col = false;
 
 		// Estimate the time the drone should take flying between each node
@@ -924,8 +940,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	mav_trajectory_generation::Trajectory traj;
 	opt.getTrajectory(&traj);
 
-	ROS_INFO("Smoothened path!");
-
+	//ROS_INFO("Smoothened path!");
 	// Visualize path for debugging purposes
 	mav_trajectory_generation::drawMavTrajectory(traj, distance, frame_id, &smooth_traj_markers);
 	mav_trajectory_generation::drawVertices(vertices, frame_id, &piecewise_traj_markers);
@@ -1354,7 +1369,7 @@ piecewise_trajectory OMPL_plan(geometry_msgs::Point start, geometry_msgs::Point 
 
     if (solved)
     {
-        ROS_INFO("Solution found!");
+        //ROS_INFO("Solution found!");
         ss.simplifySolution();
 
         for (auto state : ss.getSolutionPath().getStates()) {

@@ -8,6 +8,7 @@
 
 // ROS message headers
 #include "std_msgs/Bool.h"
+#include "std_msgs/Int32.h"
 #include "trajectory_msgs/MultiDOFJointTrajectory.h"
 
 // Octomap specific headers
@@ -21,7 +22,7 @@
 #include "timer.h"
 #include <profile_manager/profiling_data_srv.h>
 #include <profile_manager/start_profiling_srv.h>
-
+#include <package_delivery/BoolPlusHeader.h>
 
 
 
@@ -30,12 +31,22 @@ typedef trajectory_msgs::MultiDOFJointTrajectory traj_msg_t;
 typedef std::chrono::system_clock sys_clock;
 typedef std::chrono::time_point<sys_clock> sys_clock_time_point;
 static const sys_clock_time_point never = sys_clock_time_point::min();
-ros::Time start_hook_t, end_hook_t;                                          
+
+// Profiling variables
+ros::Time start_hook_chk_col_t, end_hook_chk_col_t;                                          
 long long g_checking_collision_kernel_acc = 0;
+ros::Time g_checking_collision_t;
 long long g_future_collision_main_loop = 0;
 int g_check_collision_ctr = 0;
+double g_distance_to_collision_first_realized = 0;
+bool CLCT_DATA = false;
+bool DEBUG = false;
+ros::Time g_pt_cloud_header; //this is used to figure out the octomap msg that 
+						  //collision was detected in
 
+ros::Duration g_pt_cloud_to_future_collision_t; 
 
+bool g_got_new_traj = false;
 
 // Global variables
 octomap::OcTree * octree = nullptr;
@@ -44,6 +55,8 @@ std::string ip_addr__global;
 std::string localization_method;
 double drone_height__global;
 double drone_radius__global;
+
+
 
 template <class T>
 bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
@@ -93,7 +106,6 @@ double dist_to_collision(Drone& drone, const T& col_pos) {
 	return std::sqrt(dx*dx + dy*dy + dz*dz);
 }
 
-
 template <class T>
 bool in_safe_zone(const T& start, const T& pos) {
     const double radius = drone_radius__global;
@@ -106,19 +118,8 @@ bool in_safe_zone(const T& start, const T& pos) {
     return (std::sqrt(dx*dx + dy*dy) < radius && std::abs(dz) < height);
 }
 
-int g__ctr = 0;
-bool started = false;
-ros::Time start_t;
-
 void pull_octomap(const octomap_msgs::Octomap& msg)
 {
-    /* 
-    if (!started){
-        start_t = ros::Time::now();
-        started = true;
-    }
-    g__ctr++; 
-    */
     RESET_TIMER();
     if (octree != nullptr) {
         delete octree;
@@ -130,19 +131,13 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
     if (octree == nullptr) {
         ROS_ERROR("Octree could not be pulled.");
     }
-    /*
-    if (g__ctr > 10) {
-        ROS_ERROR_STREAM("call back hz "<<(double)g__ctr/(ros::Time::now() - start_t).toSec());
-        g__ctr = 0;
-        started = false;
-    }
-    */
-    LOG_ELAPSED(future_collision_pull);
+    g_pt_cloud_header = msg.header.stamp; 
+	LOG_ELAPSED(future_collision_pull);
 }
-
 
 void pull_traj(const traj_msg_t::ConstPtr& msg)
 {
+    g_got_new_traj = true; 
     traj = *msg;
 }
 
@@ -151,15 +146,14 @@ int seconds (sys_clock_time_point t) {
     return int_s.time_since_epoch().count() % 50;
 }
 
-
 bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
 {
 
-    start_hook_t = ros::Time::now();
+    start_hook_chk_col_t = ros::Time::now();
 
     RESET_TIMER();
 
-    const double min_dist_from_collision = 5.0;
+    const double min_dist_from_collision = 100.0;
     const std::chrono::milliseconds grace_period(1500);
 
     if (octree == nullptr || traj.points.size() < 1) {
@@ -183,8 +177,12 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
 
             // Check whether the drone is very close to the point of collision
             auto now = sys_clock::now();
-            if (dist_to_collision(drone, pos1) < min_dist_from_collision)
+            if (dist_to_collision(drone, pos1) < min_dist_from_collision){
                 time_to_warn = now;
+               	if(CLCT_DATA){ 
+                    g_distance_to_collision_first_realized = dist_to_collision(drone, pos1);
+				}
+            }
             // Otherwise, give the drone a grace period to continue along its
             // path. Don't update the time_to_warn if it's already been set to
             // some time in the future
@@ -203,8 +201,9 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
 
     LOG_ELAPSED(future_collision);
     
-    end_hook_t = ros::Time::now(); 
-    g_checking_collision_kernel_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
+    end_hook_chk_col_t = ros::Time::now(); 
+    g_checking_collision_t = end_hook_chk_col_t;
+    g_checking_collision_kernel_acc += ((end_hook_chk_col_t - start_hook_chk_col_t).toSec()*1e9);
     g_check_collision_ctr++;
     return col;
 }
@@ -224,6 +223,15 @@ void future_collision_initialize_params()
         ROS_FATAL("Could not start exploration. Localization parameter missing!");
         return; 
     }
+	if(!ros::param::get("/CLCT_DATA",CLCT_DATA)){
+        ROS_FATAL("Could not start exploration. Localization parameter missing!");
+        return; 
+    }
+    if(!ros::param::get("/DEBUG",DEBUG)){
+        ROS_FATAL("Could not start exploration. Localization parameter missing!");
+        return; 
+    }
+
 }
 
 void log_data_before_shutting_down(){
@@ -266,58 +274,87 @@ int main(int argc, char** argv)
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
+    
+    enum State {checking_for_collision, waiting_for_response};
     future_collision_initialize_params(); 
 
     bool collision_coming = false;
     auto time_to_warn = never;
 
-    std_msgs::Bool col_coming_msg;
+    package_delivery::BoolPlusHeader col_coming_msg;
     std_msgs::Bool col_imminent_msg;
 
     ros::Subscriber octomap_sub = nh.subscribe("octomap_binary", 1, pull_octomap);
     ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("multidoftraj", 1, pull_traj);
 
-    ros::Publisher col_coming_pub = nh.advertise<std_msgs::Bool>("col_coming", 1);
+    ros::Publisher col_coming_pub = nh.advertise<package_delivery::BoolPlusHeader>("col_coming", 1);
     ros::Publisher col_imminent_pub = nh.advertise<std_msgs::Bool>("col_imminent", 1);
+
+	// for profiling
+    ros::Publisher octomap_header_pub = nh.advertise<std_msgs::Int32>("octomap_header_col_detected", 1);
 
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
-
-
+    State state, next_state;
+    next_state = state = checking_for_collision;
     //profiling variables
     ros::Time main_loop_start_hook_t, main_loop_end_hook_t;
     
     //----------------------------------------------------------------- 
     // *** F:DN BODY
     //----------------------------------------------------------------- 
-
     ros::Rate loop_rate(20);
     while (ros::ok()) {
         
         main_loop_start_hook_t = ros::Time::now();
         
         ros::spinOnce();
-        collision_coming = check_for_collisions(drone, time_to_warn);
-
-        // Publish whether or not a future collision has been detected
-        col_coming_msg.data = collision_coming;
-        col_coming_pub.publish(col_coming_msg);
-
+        
+        if (state == checking_for_collision) {
+            collision_coming = check_for_collisions(drone, time_to_warn);
+            if (collision_coming) {
+                next_state = waiting_for_response;
+                // Publish whether or not a future collision has been detected
+                col_coming_msg.header.stamp = g_checking_collision_t;
+                col_coming_msg.data = collision_coming;
+                col_coming_pub.publish(col_coming_msg);
+                g_got_new_traj = false; 
+                // Profiling 
+                if(CLCT_DATA){ 
+                    g_pt_cloud_to_future_collision_t = start_hook_chk_col_t - g_pt_cloud_header;
+                } 
+                if(DEBUG) {
+                    ROS_INFO_STREAM("pt cloud to start of future collision"<< g_pt_cloud_to_future_collision_t);
+                    ROS_INFO_STREAM("collision detection time in future_collision"<<g_checking_collision_t);
+                }
+            }
+        }else if (state == waiting_for_response) {
+            if (g_got_new_traj){
+                next_state = checking_for_collision;
+            }
+        }
+        
+        state = next_state;
+        //profiling 
+		
         // Publish whether or not a collision is close enough that we should
         // respond to it
+        /* 
         if (collision_coming) {
             auto now = sys_clock::now();
             if (now >= time_to_warn) {
                 col_imminent_msg.data = true;
-                col_imminent_pub.publish(col_imminent_msg);
+				col_imminent_pub.publish(col_imminent_msg);
             }
         } else {
             col_imminent_msg.data = false;
             col_imminent_pub.publish(col_imminent_msg);
         }
-
+        */
+        
         main_loop_end_hook_t = ros::Time::now();
         g_future_collision_main_loop += (main_loop_end_hook_t - main_loop_start_hook_t).toSec()*1e9; 
+        
         loop_rate.sleep();
     }
 }

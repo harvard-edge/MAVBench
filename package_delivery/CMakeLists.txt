@@ -69,7 +69,8 @@ find_package(catkin REQUIRED COMPONENTS
   FILES
   multiDOF.msg
   multiDOF_array.msg
- )
+  BoolPlusHeader.msg
+  )
 
 ## Generate services in the 'srv' folder
 add_service_files(
