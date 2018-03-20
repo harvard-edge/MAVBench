@@ -17,12 +17,12 @@
 #include <package_delivery/multiDOF.h>
 #include <package_delivery/multiDOF_array.h>
 #include <package_delivery/follow_trajectory_status_srv.h>
-
-
+#include <package_delivery/BoolPlusHeader.h>
+//#include <geometry_msgs/Accel.h>
 using namespace std;
 bool slam_lost = false;
 bool col_imminent = false;
-bool col_coming = false;
+//bool col_coming = false;
 
 
 trajectory_t normal_traj;
@@ -37,6 +37,15 @@ float g_max_yaw_rate_during_flight;
 bool g_trajectory_done = false;
 bool should_panic = false;
 geometry_msgs::Vector3 panic_velocity;
+bool g_got_new_trajectory = false;
+ros::Time g_recieved_traj_t;
+
+// Profiling
+ros::Time col_coming_time_stamp;
+ros::Duration g_rcv_traj_to_follow_traj_t;
+bool prev_col_coming = false;
+bool CLCT_DATA, DEBUG;
+
 
 void panic_callback(const std_msgs::Bool::ConstPtr& msg) {
     should_panic = msg->data;
@@ -52,10 +61,7 @@ void col_imminent_callback(const std_msgs::Bool::ConstPtr& msg) {
     col_imminent = msg->data;
 }
 
-void col_coming_callback(const std_msgs::Bool::ConstPtr& msg) {
-    //col_coming = false; 
-    col_coming = msg->data;
-}
+
 
 void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
@@ -75,7 +81,12 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 
 void callback_trajectory(const package_delivery::multiDOF_array::ConstPtr& msg, Drone * drone)//, trajectory_t * normal_traj)
 {
+    g_recieved_traj_t = ros::Time::now();  
+    //g_recieved_traj_t = ms->header.stamp;
     normal_traj.clear(); 
+    if(DEBUG) { 
+        ROS_INFO_STREAM("pkg_del to call_back traj"<< ros::Time::now() - msg->header.stamp);
+    }
     for (auto point : msg->points){
         multiDOFpoint traj_point;
         traj_point.x = point.x;
@@ -88,6 +99,9 @@ void callback_trajectory(const package_delivery::multiDOF_array::ConstPtr& msg, 
         traj_point.duration = point.duration;
         normal_traj.push_back(traj_point);
     }
+    
+    g_got_new_trajectory = true;    
+    //ROS_INFO_STREAM("finished trajectory, size is"<<normal_traj.size());  
 }
 
 bool trajectory_done(const trajectory_t& trajectory) {
@@ -108,13 +122,18 @@ void sigIntHandlerPrivate(int signo){
 bool follow_trajectory_status_cb(package_delivery::follow_trajectory_status_srv::Request &req, 
     package_delivery::follow_trajectory_status_srv::Response &res)
 {
-    //ROS_INFO_STREAM("made a srv call" << col_imminent); 
-    res.success.data = g_trajectory_done || col_coming;
+    res.success.data = g_trajectory_done;// || col_coming;
     geometry_msgs::Twist last_velocity;
     last_velocity.linear.x = normal_traj.front().vx;
     last_velocity.linear.y = normal_traj.front().vy;
     last_velocity.linear.z = normal_traj.front().vz;
     res.twist = last_velocity;
+  
+    geometry_msgs::Twist last_acceleration;
+    last_acceleration.linear.x = normal_traj.front().ax;
+    last_acceleration.linear.y = normal_traj.front().ay;
+    last_acceleration.linear.z = normal_traj.front().az;
+    res.acceleration = last_acceleration;
     return true;
 
 }
@@ -157,6 +176,17 @@ int main(int argc, char **argv){
         ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate_during_flight not provided");
         return -1;
     }
+
+    if(!ros::param::get("CLCT_DATA",CLCT_DATA))  {
+        ROS_FATAL_STREAM("Could not start follow_trajectory CLCT_DATA not provided");
+        return -1;
+    }
+    if(!ros::param::get("DEBUG",DEBUG))  {
+        ROS_FATAL_STREAM("Could not start follow_trajectory DEBUG not provided");
+        return -1;
+    }
+
+
 /*
     if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
         ROS_FATAL_STREAM("Could not start follow_trajectory supervisor_mailbox not provided");
@@ -167,7 +197,6 @@ int main(int argc, char **argv){
         ROS_FATAL("Could not start follow_thrajectory. Parameter missing! fly_trajectory_time_out is not provided"); 
         return -1; 
     }
-        ROS_INFO_STREAM("fly_traj" <<g_fly_trajectory_time_out);
     
     ros::ServiceServer trajectory_done_service = n.advertiseService("follow_trajectory_status", follow_trajectory_status_cb);
     ros::Subscriber panic_sub =  n.subscribe<std_msgs::Bool>("panic_topic", 1, panic_callback);
@@ -175,10 +204,7 @@ int main(int argc, char **argv){
         n.subscribe<geometry_msgs::Vector3>("panic_velocity", 1, panic_velocity_callback);
     
 
-    ros::Subscriber col_coming_sub_sub = 
-        n.subscribe<std_msgs::Bool>("col_coming", 1, col_coming_callback);
     
-
     Drone drone(ip_addr.c_str(), port, localization_method,
                 g_max_yaw_rate, g_max_yaw_rate_during_flight);
 	ros::Subscriber slam_lost_sub = 
@@ -249,13 +275,23 @@ int main(int argc, char **argv){
             rev_traj = &rev_normal_traj;
         }
 
+        
         if (normal_traj.size() > 0) {
             app_started = true;
         }       
        
         if(app_started){
-            //ROS_INFO_STREAM("now follow"<<forward_traj->size()); 
-             
+            // Profiling 
+            if (CLCT_DATA) { 
+                if (g_got_new_trajectory) {
+                    g_rcv_traj_to_follow_traj_t =  
+                        ros::Time::now() - g_recieved_traj_t;
+                    if (DEBUG) {
+                        ROS_INFO_STREAM("follow_traj_cb to  func" << g_rcv_traj_to_follow_traj_t);
+                    }
+                } 
+            }
+            
             follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
                     check_position, g_v_max, g_fly_trajectory_time_out);
         }
@@ -268,6 +304,7 @@ int main(int argc, char **argv){
         }else if (trajectory_done(*forward_traj)){
             loop_rate.sleep();
         }
+        g_got_new_trajectory = false;
     }
     return 0;
 }

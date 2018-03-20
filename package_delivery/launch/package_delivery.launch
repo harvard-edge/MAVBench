@@ -1,31 +1,28 @@
 <launch>
-    <!-- args --> 
-    <!-- Behzad's workstation ip --> 
-    <arg name="host_ip" default="10.157.90.51" />
-    <!--arg name="host_ip" default="169.254.153.158" /-->
-    <!-- Hasans's workstation ip --> 
-    <!--arg name="host_ip" default="10.157.90.49" /-->
-    <!-- Hasans's direct connection ip --> 
-    <!-- arg name="host_ip" default="169.254.250.191" /-->
-    <!--Wenzhi's workstation ip-->
-    <!--arg name="host_ip" default="10.157.90.62" /-->
+  <!-- args and params --> 
+  <!-- Behzad's workstation ip --> 
+  <arg name="host_ip" default="10.157.90.51" />
+  <!--arg name="host_ip" default="169.254.153.158" /-->
+  <!-- Hasans's workstation ip --> 
+  <!--arg name="host_ip" default="10.157.90.49" /-->
+  <!-- Hasans's direct connection ip --> 
+  <!-- arg name="host_ip" default="169.254.250.191" /-->
+  <!--Wenzhi's workstation ip-->
+  <!--arg name="host_ip" default="10.157.90.62" /-->
+  <param name="/ip_addr" value="$(arg host_ip)" />
 
-    <param name="/ip_addr" value="$(arg host_ip)" />
+  <!-- Drone's physical characteristics /-->
+  <arg name="a_max" default="5"/> 
+  <arg name="v_max" default="3.2"/> 
+  
+  <!-- application parameters -->
+  <arg name="planning_resolution" default=".3"/>
+  <arg name="sensor_max_range" default="7" />
+  <arg name="fly_trajectory_time_out" default=".1"/> 
+  
+  <!-- orb slam location--> 
+  <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
 
-    <!-- Drone's physical characteristics /-->
-    <arg name="a_max" default="4.5"/> 
-    
-    <!-- parameters affecting perforamance -->
-    <arg name="v_max" default="5"/> 
-    <arg name="planning_resolution" default=".15"/>
-    <arg name="sensor_max_range" default="5" />
-
-
-    <!--- note that time out is very important since it determines the hz of the thread it runs in -->
-    <arg name="fly_trajectory_time_out" default=".1"/> 
-    <!-- orb slam location--> 
-    <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
-    
   <arg name="max_yaw_rate" default="90"/>
   <arg name="max_yaw_rate_during_flight" default="90"/>
   <param name="v_max" value="$(arg v_max)"/>
@@ -33,53 +30,56 @@
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
   <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/> 
 
+  
+  <!-- sensors /-->
+  <arg name="all_front" default="true"/>	
 
-   <!-- sensors /-->
-   <arg name="all_front" default="true"/>	
-    
-    <!-- Set the localization method /-->
-    <!--arg name="localization_method" default="orb_slam2_rgbd" /-->
-    <!--arg name="localization_method" default="vins_mono" /-->
-    <!--arg name="localization_method" default="gps" /-->
-    <arg name="localization_method" default="ground_truth" />
-    
-    
-    <!-- stat file-->
-    <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
-   <param name="supervisor_mailbox" value="$(find package_delivery)/../data/package_delivery/supervisor_mailbox.txt" />
- 
-
-    <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
-    <!-- also planning to prevent stdio stuff(if they really matter)-->
-    <arg name="DEBUG" default="true" />
-    <arg name="CLCT_DATA" value="true" />
-    <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
+  <!-- Set the localization method /-->
+  <!--arg name="localization_method" default="orb_slam2_rgbd" /-->
+  <!--arg name="localization_method" default="vins_mono" /-->
+  <!--arg name="localization_method" default="gps" /-->
+  <arg name="localization_method" default="ground_truth" />
 
 
-    <group if="$(arg CLCT_DATA)">
-    <param name="enable_statistics" value="true"/>
-    </group> 
+  <!-- stat file-->
+  <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
+  <param name="supervisor_mailbox" value="$(find package_delivery)/../data/package_delivery/supervisor_mailbox.txt" />
 
 
-    <!-- set this to "" if you don't want perf -->
-    <arg name="my_launch_prefix" default="" /> 
-    <!-- arg name="my_launch_prefix" default="/home/nvidia/install/perf/perf record -g fp"/ -->
+  <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
+  <!-- also planning to prevent stdio stuff(if they really matter)-->
+  <arg name="DEBUG" default="true" />
+  <arg name="CLCT_DATA" value="true" />
+  <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
+  <param name="DEBUG"  value="$(arg DEBUG)" />
+  <param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
 
-    <!-- starting nodes -->
-    <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
-    <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
-    <param name="ip_addr" value="$(arg host_ip)"/>
-    </node>
-    
-         
-    <!--comment-->
+  <group if="$(arg CLCT_DATA)">
+  <param name="enable_statistics" value="true"/>
+  </group> 
+
+
+  <!-- launch prefixes -->
+  <arg name="my_launch_prefix" default="" /> 
+  <!-- arg name="my_launch_prefix" default="/home/nvidia/install/perf/perf record -g fp"/ -->
+
+
+
+  <!-- starting nodes -->
+  <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
+  <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
+  <param name="ip_addr" value="$(arg host_ip)"/>
+  </node>
+
+
+  <!--comment-->
     <!-- Octomap -->
 	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
 
     <!--node pkg="nodelet" type="nodelet" name="standalone_nodelet" args="manager"/-->
 
     <!--node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager"/-->
-        <param name="resolution" value="0.45" />
+        <param name="resolution" value="$(arg planning_resolution)" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
 		<param name="frame_id" type="string" value="world" />
@@ -96,9 +96,9 @@
 		<param name="ground_filter_plane_distance" value="1.00" />
 		<param name="ground_filter/distance" value="0.50" /> -->
 	    <param name="pointcloud_min_z" type="double" value="-2.0" />
-	    <param name="pointcloud_max_z" type="double" value="10.0" />
+	    <param name="pointcloud_max_z" type="double" value="100.0" />
 	    <param name="occupancy_min_z" type="double" value="-2.00" />
-	    <param name="occupancy_max_z" type="double" value="10.0" />
+	    <param name="occupancy_max_z" type="double" value="100.0" />
 		<!-- <param name="ground_filter_plane_distance" value="0.07" />
 		<param name="ground_filter/distance" value="0.04" />
 		<param name="ground_filter/angle" value="0.4" /> -->
@@ -176,7 +176,7 @@
 
     
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
-		<param name="panic_distance" value="1"/>
+		<param name="panic_distance" value=".1"/>
     </node>
     
     <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
@@ -205,7 +205,7 @@
 
 		<param name="v_max" value="$(arg v_max)"/>
 		<param name="a_max" value="$(arg a_max)"/>
-        <param name="drone_radius" value="2.0"/>
+        <param name="drone_radius" value="1.5"/>
         <param name="drone_height" value="0.6"/>
 
 		<param name="max_roadmap_size" value="1600"/>
@@ -216,9 +216,9 @@
         <param name="x_dist_to_sample_from__low_bound" value="-50"/>
 		<param name="x_dist_to_sample_from__high_bound" value="50"/>
         <param name="y_dist_to_sample_from__low_bound" value="-5"/>
-        <param name="y_dist_to_sample_from__high_bound" value="200"/>
-        <param name="z_dist_to_sample_from__low_bound" value="2"/>
-        <param name="z_dist_to_sample_from__high_bound" value="8"/>
+        <param name="y_dist_to_sample_from__high_bound" value="500"/>
+        <param name="z_dist_to_sample_from__low_bound" value="5"/>
+        <param name="z_dist_to_sample_from__high_bound" value="9"/>
 
         <param name="sampling_interval" value="0.5"/>
 

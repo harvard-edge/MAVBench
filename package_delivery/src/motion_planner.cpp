@@ -77,11 +77,16 @@ int max_roadmap_size__global;
 std::function<piecewise_trajectory (geometry_msgs::Point, geometry_msgs::Point, int, int , int, octomap::OcTree *)> motion_planning_core;
 long long g_planning_without_OM_PULL_time_acc = 0;
 static int g_number_of_planning = 0 ;
+float g_planning_budget;
+
+
 
 //*** F:DN global variables
 octomap::OcTree * octree = nullptr;
 trajectory_msgs::MultiDOFJointTrajectory traj_topic;
 ros::ServiceClient octo_client;
+bool g_requested_trajectory = false;
+
 
 // The following block of global variables only exist for debugging purposes
 visualization_msgs::MarkerArray smooth_traj_markers;
@@ -159,7 +164,7 @@ piecewise_trajectory OMPL_PRM(geometry_msgs::Point start, geometry_msgs::Point g
 
 
 // *** F:DN Optimize and smoothen a piecewise path without causing any new collisions.
-smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity);
+smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity, Eigen::Vector3d initial_acceleration);
 
 
 // ***F:DN Build the response to the service from the smooth_path
@@ -177,6 +182,7 @@ void postprocess(piecewise_trajectory& path);
 //*** F:DN getting the smoothened trajectory
 bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
 {
+    g_requested_trajectory = true; 
     auto hook_start_t = ros::Time::now();
     x__low_bound__global = std::min(x__low_bound__global, req.start.x);
     x__high_bound__global = std::max(x__high_bound__global, req.start.x);
@@ -201,18 +207,25 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     if (motion_planning_core_str != "lawn_mower"){
         if (octree == nullptr) {
             ROS_ERROR("Octomap is not available.");
-            return false;
+            res.path_found = false;
+            return true;
         }
         clear_octomap_bbx({req.start.x, req.start.y, req.start.z});
     }
     // octomap_msgs::binaryMapToMsg(*octree, omp);
     //octree->writeBinary("/home/ubuntu/octomap.bt");
 
+    req.start.x += req.twist.linear.x*g_planning_budget;
+    req.start.y += req.twist.linear.y*g_planning_budget;
+    req.start.z += req.twist.linear.z*g_planning_budget;
+
+    
     piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length ,req.n_pts_per_dir, octree);
 
     if (piecewise_path.size() == 0) {
         ROS_ERROR("Empty path returned");
-        return false;
+        res.path_found = false;
+        return true;
     }
 
     //ROS_INFO("Path size: %u. Now post-processing...", piecewise_path.size());
@@ -227,18 +240,22 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     smooth_path = smoothen_the_shortest_path(piecewise_path, octree, 
                                     Eigen::Vector3d(req.twist.linear.x,
                                         req.twist.linear.y,
-                                        req.twist.linear.z));
+                                        req.twist.linear.z), 
+                                    Eigen::Vector3d(req.acceleration.linear.x,
+                                                    req.acceleration.linear.y,
+                                                    req.acceleration.linear.z));
 	
     create_response(res, smooth_path);
 
     // Publish the trajectory (for debugging purposes)
     traj_topic = res.multiDOFtrajectory;
-
+    traj_topic.header.stamp = ros::Time::now();
     auto hook_end_t = ros::Time::now(); 
     g_planning_without_OM_PULL_time_acc += (((hook_end_t - hook_start_t).toSec())*1e9);
     g_number_of_planning++; 
     //ROS_INFO_STREAM("om pulling and copying"<<(hook_end_t_2 - hook_start_t).toSec());
     ROS_INFO_STREAM("planning "<<(hook_end_t - hook_start_t).toSec());
+    res.path_found = true; 
     return true;
 }
 
@@ -246,6 +263,11 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 // *** F:DN initializing all the global variables 
 void motion_planning_initialize_params() {
 
+    if(!ros::param::get("/planning_budget", g_planning_budget)){
+      ROS_FATAL_STREAM("Could not start pkg delivery planning_budget not provided");
+      return ;
+    }
+    
     ros::param::get("motion_planner/max_roadmap_size", max_roadmap_size__global);
     ros::param::get("/motion_planner/sampling_interval", sampling_interval__global);
     ros::param::get("/motion_planner/rrt_step_size", rrt_step_size__global);
@@ -366,23 +388,36 @@ int main(int argc, char ** argv)
     dummy_pub= nh.advertise<std_msgs::Bool>("dummy_topic", 1);
     std_msgs::Bool dummy_msg;
     dummy_msg.data = false;
-
+    enum State {publish_trajectory, idle};
+    State state, next_state;
+    next_state = state = idle;
     //----------------------------------------------------------------- 
     // *** F:DN BODY
     //----------------------------------------------------------------- 
-	ros::Rate pub_rate(10);
+	ros::Rate pub_rate(30);
 	while (ros::ok())
 	{
-        if (DEBUG__global) { //if debug, publish markers to be seen by rviz
-            smooth_traj_vis_pub.publish(smooth_traj_markers);
-            piecewise_traj_vis_pub.publish(piecewise_traj_markers);
-            graph_conn_pub.publish(graph_conn_list);
-            octo_pub.publish(omp);
-            pcl_pub.publish(pcl_ptr);
+        if (state == idle){
+            ros::spinOnce();
+            if (g_requested_trajectory) {
+                next_state = publish_trajectory;
+            }
+        }else if (state == publish_trajectory){
+            traj_pub.publish(traj_topic);
+            g_requested_trajectory = false;
+            next_state = idle;
+        
+            if (DEBUG__global) { //if debug, publish markers to be seen by rviz
+                smooth_traj_vis_pub.publish(smooth_traj_markers);
+                piecewise_traj_vis_pub.publish(piecewise_traj_markers);
+                graph_conn_pub.publish(graph_conn_list);
+                octo_pub.publish(omp);
+                pcl_pub.publish(pcl_ptr);
+            }
         }
-        traj_pub.publish(traj_topic);
-	    //dummy_pub.publish(dummy_msg);	
-        ros::spinOnce();
+        state = next_state;
+	     
+        //dummy_pub.publish(dummy_msg);	
 		pub_rate.sleep();
     }
 
@@ -807,13 +842,13 @@ void create_response(package_delivery::get_trajectory::Response &res, smooth_tra
         }
 
 		res.multiDOFtrajectory.points.push_back(point);
-
+        
         state_index++;
 	}
 }
 
 
-smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity)
+smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity, Eigen::Vector3d initial_acceleration)
 {
     // Variables for visualization for debugging purposes
 	double distance = 0.5; 
@@ -828,6 +863,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	mav_trajectory_generation::Vertex start_v(dimension), end_v(dimension);
 	//start_v.makeStartOrEnd(Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z), derivative_to_optimize);
    	start_v.addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, initial_velocity);
+   	//start_v.addConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, Eigen::Vector3d(3, 0, 0));
     start_v.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z));
     
 
@@ -858,7 +894,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	// Optimize until no collisions are present
 	bool col;
 	do {
-		ROS_INFO("Checking for collisions...");
+		//ROS_INFO("Checking for collisions...");
 		col = false;
 
 		// Estimate the time the drone should take flying between each node
@@ -924,8 +960,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	mav_trajectory_generation::Trajectory traj;
 	opt.getTrajectory(&traj);
 
-	ROS_INFO("Smoothened path!");
-
+	//ROS_INFO("Smoothened path!");
 	// Visualize path for debugging purposes
 	mav_trajectory_generation::drawMavTrajectory(traj, distance, frame_id, &smooth_traj_markers);
 	mav_trajectory_generation::drawVertices(vertices, frame_id, &piecewise_traj_markers);
@@ -1350,11 +1385,11 @@ piecewise_trajectory OMPL_plan(geometry_msgs::Point start, geometry_msgs::Point 
     ss.setup();
 
     // Solve for path
-    ob::PlannerStatus solved = ss.solve(10.0);
+    ob::PlannerStatus solved = ss.solve(g_planning_budget);
 
     if (solved)
     {
-        ROS_INFO("Solution found!");
+        //ROS_INFO("Solution found!");
         ss.simplifySolution();
 
         for (auto state : ss.getSolutionPath().getStates()) {
