@@ -100,6 +100,7 @@ void update_stats_file(const std::string& stats_file__addr, const std::string& c
 struct multiDOFpoint {
     double x, y, z;
     double vx, vy, vz;
+    double ax, ay, az;
     double yaw;
     double duration;
 };

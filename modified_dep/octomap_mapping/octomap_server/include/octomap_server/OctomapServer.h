@@ -35,7 +35,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_msgs/ColorRGBA.h>
 #include <octomap_server/maxRangeSrv.h>
-
+#include <std_msgs/Int32.h>
 // #include <moveit_msgs/CollisionObject.h>
 // #include <moveit_msgs/CollisionMap.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -95,6 +95,7 @@ public:
   virtual bool octomapFullSrv(OctomapSrv::Request  &req, OctomapSrv::GetOctomap::Response &res);
   bool clearBBXSrv(BBXSrv::Request& req, BBXSrv::Response& resp);
   bool resetSrv(std_srvs::Empty::Request& req, std_srvs::Empty::Response& resp);
+  void OctomapHeaderColDetectedcb(std_msgs::Int32ConstPtr header) ;
   bool maxRangecb(octomap_server::maxRangeSrv::Request& req, octomap_server::maxRangeSrv::Response& resp);
   virtual void insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud);
   virtual bool openFile(const std::string& filename);
@@ -204,7 +205,8 @@ protected:
   message_filters::Subscriber<sensor_msgs::PointCloud2>* m_pointCloudSub;
   tf::MessageFilter<sensor_msgs::PointCloud2>* m_tfPointCloudSub;
   ros::ServiceServer m_octomapBinaryService, m_octomapFullService, m_clearBBXService, m_resetService, m_octomapResetMaxRange;
-  
+  ros::Subscriber m_octomapHeaderSub;  
+
   tf::TransformListener m_tfListener;
   boost::recursive_mutex m_config_mutex;
   dynamic_reconfigure::Server<OctomapServerConfig> m_reconfigureServer;

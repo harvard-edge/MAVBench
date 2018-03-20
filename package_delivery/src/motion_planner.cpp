@@ -77,6 +77,9 @@ int max_roadmap_size__global;
 std::function<piecewise_trajectory (geometry_msgs::Point, geometry_msgs::Point, int, int , int, octomap::OcTree *)> motion_planning_core;
 long long g_planning_without_OM_PULL_time_acc = 0;
 static int g_number_of_planning = 0 ;
+float g_planning_budget;
+
+
 
 //*** F:DN global variables
 octomap::OcTree * octree = nullptr;
@@ -161,7 +164,7 @@ piecewise_trajectory OMPL_PRM(geometry_msgs::Point start, geometry_msgs::Point g
 
 
 // *** F:DN Optimize and smoothen a piecewise path without causing any new collisions.
-smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity);
+smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity, Eigen::Vector3d initial_acceleration);
 
 
 // ***F:DN Build the response to the service from the smooth_path
@@ -204,18 +207,25 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     if (motion_planning_core_str != "lawn_mower"){
         if (octree == nullptr) {
             ROS_ERROR("Octomap is not available.");
-            return false;
+            res.path_found = false;
+            return true;
         }
         clear_octomap_bbx({req.start.x, req.start.y, req.start.z});
     }
     // octomap_msgs::binaryMapToMsg(*octree, omp);
     //octree->writeBinary("/home/ubuntu/octomap.bt");
 
+    req.start.x += req.twist.linear.x*g_planning_budget;
+    req.start.y += req.twist.linear.y*g_planning_budget;
+    req.start.z += req.twist.linear.z*g_planning_budget;
+
+    
     piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length ,req.n_pts_per_dir, octree);
 
     if (piecewise_path.size() == 0) {
         ROS_ERROR("Empty path returned");
-        return false;
+        res.path_found = false;
+        return true;
     }
 
     //ROS_INFO("Path size: %u. Now post-processing...", piecewise_path.size());
@@ -230,7 +240,10 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     smooth_path = smoothen_the_shortest_path(piecewise_path, octree, 
                                     Eigen::Vector3d(req.twist.linear.x,
                                         req.twist.linear.y,
-                                        req.twist.linear.z));
+                                        req.twist.linear.z), 
+                                    Eigen::Vector3d(req.acceleration.linear.x,
+                                                    req.acceleration.linear.y,
+                                                    req.acceleration.linear.z));
 	
     create_response(res, smooth_path);
 
@@ -242,6 +255,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     g_number_of_planning++; 
     //ROS_INFO_STREAM("om pulling and copying"<<(hook_end_t_2 - hook_start_t).toSec());
     ROS_INFO_STREAM("planning "<<(hook_end_t - hook_start_t).toSec());
+    res.path_found = true; 
     return true;
 }
 
@@ -249,6 +263,11 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
 // *** F:DN initializing all the global variables 
 void motion_planning_initialize_params() {
 
+    if(!ros::param::get("/planning_budget", g_planning_budget)){
+      ROS_FATAL_STREAM("Could not start pkg delivery planning_budget not provided");
+      return ;
+    }
+    
     ros::param::get("motion_planner/max_roadmap_size", max_roadmap_size__global);
     ros::param::get("/motion_planner/sampling_interval", sampling_interval__global);
     ros::param::get("/motion_planner/rrt_step_size", rrt_step_size__global);
@@ -829,7 +848,7 @@ void create_response(package_delivery::get_trajectory::Response &res, smooth_tra
 }
 
 
-smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity)
+smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_path, octomap::OcTree* octree, Eigen::Vector3d initial_velocity, Eigen::Vector3d initial_acceleration)
 {
     // Variables for visualization for debugging purposes
 	double distance = 0.5; 
@@ -844,6 +863,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	mav_trajectory_generation::Vertex start_v(dimension), end_v(dimension);
 	//start_v.makeStartOrEnd(Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z), derivative_to_optimize);
    	start_v.addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, initial_velocity);
+   	//start_v.addConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, Eigen::Vector3d(3, 0, 0));
     start_v.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z));
     
 
@@ -1365,7 +1385,7 @@ piecewise_trajectory OMPL_plan(geometry_msgs::Point start, geometry_msgs::Point 
     ss.setup();
 
     // Solve for path
-    ob::PlannerStatus solved = ss.solve(10.0);
+    ob::PlannerStatus solved = ss.solve(g_planning_budget);
 
     if (solved)
     {

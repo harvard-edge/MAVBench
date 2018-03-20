@@ -18,7 +18,7 @@
 #include <package_delivery/multiDOF_array.h>
 #include <package_delivery/follow_trajectory_status_srv.h>
 #include <package_delivery/BoolPlusHeader.h>
-
+//#include <geometry_msgs/Accel.h>
 using namespace std;
 bool slam_lost = false;
 bool col_imminent = false;
@@ -128,6 +128,12 @@ bool follow_trajectory_status_cb(package_delivery::follow_trajectory_status_srv:
     last_velocity.linear.y = normal_traj.front().vy;
     last_velocity.linear.z = normal_traj.front().vz;
     res.twist = last_velocity;
+  
+    geometry_msgs::Twist last_acceleration;
+    last_acceleration.linear.x = normal_traj.front().ax;
+    last_acceleration.linear.y = normal_traj.front().ay;
+    last_acceleration.linear.z = normal_traj.front().az;
+    res.acceleration = last_acceleration;
     return true;
 
 }
@@ -269,6 +275,7 @@ int main(int argc, char **argv){
             rev_traj = &rev_normal_traj;
         }
 
+        
         if (normal_traj.size() > 0) {
             app_started = true;
         }       
