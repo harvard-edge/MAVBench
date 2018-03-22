@@ -12,14 +12,17 @@
   <param name="/ip_addr" value="$(arg host_ip)" />
 
   <!-- Drone's physical characteristics /-->
-  <arg name="a_max" default="8"/> 
-  <arg name="v_max" default="2"/> 
+  <arg name="a_max" default="5"/> 
+  <arg name="v_max" default="3.5"/> 
   
   <!-- application parameters -->
   <arg name="planning_resolution" default=".3"/>
   <arg name="sensor_max_range" default="7" />
   <arg name="fly_trajectory_time_out" default=".1"/> 
-  
+  <arg name="planning_budget" default=".3"/>
+  <param name="planning_budget" value="$(arg planning_budget)"/>
+
+
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
 
@@ -94,9 +97,9 @@
 		<param name="ground_filter_plane_distance" value="1.00" />
 		<param name="ground_filter/distance" value="0.50" /> -->
 	    <param name="pointcloud_min_z" type="double" value="-2.0" />
-	    <param name="pointcloud_max_z" type="double" value="10.0" />
+	    <param name="pointcloud_max_z" type="double" value="100.0" />
 	    <param name="occupancy_min_z" type="double" value="-2.00" />
-	    <param name="occupancy_max_z" type="double" value="10.0" />
+	    <param name="occupancy_max_z" type="double" value="100.0" />
 		<!-- <param name="ground_filter_plane_distance" value="0.07" />
 		<param name="ground_filter/distance" value="0.04" />
 		<param name="ground_filter/angle" value="0.4" /> -->
@@ -195,7 +198,7 @@
     <param name="ip_addr" value="$(arg host_ip)"/>
     <param name="localization_method" type="string" value="$(arg localization_method)"/>
     </node>
-
+1
 
 
 	<!-- Path-Planner -->
@@ -205,7 +208,7 @@
 
 		<param name="v_max" value="$(arg v_max)"/>
 		<param name="a_max" value="$(arg a_max)"/>
-        <param name="drone_radius" value="1"/>
+        <param name="drone_radius" value="1.5"/>
         <param name="drone_height" value="0.6"/>
 
 		<param name="max_roadmap_size" value="1600"/>
@@ -216,9 +219,9 @@
         <param name="x_dist_to_sample_from__low_bound" value="-50"/>
 		<param name="x_dist_to_sample_from__high_bound" value="50"/>
         <param name="y_dist_to_sample_from__low_bound" value="-5"/>
-        <param name="y_dist_to_sample_from__high_bound" value="500"/>
-        <param name="z_dist_to_sample_from__low_bound" value="2"/>
-        <param name="z_dist_to_sample_from__high_bound" value="8"/>
+        <param name="y_dist_to_sample_from__high_bound" value="1000"/>
+        <param name="z_dist_to_sample_from__low_bound" value="5"/>
+        <param name="z_dist_to_sample_from__high_bound" value="9"/>
 
         <param name="sampling_interval" value="0.5"/>
 

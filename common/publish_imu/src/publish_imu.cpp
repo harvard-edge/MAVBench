@@ -54,6 +54,8 @@ int main(int argc, char **argv)
     ros::Publisher IMU_pub = nh.advertise <sensor_msgs::Imu>("imu_topic", 1);
     // ros::Publisher rpy_pub = nh.advertise <geometry_msgs::Vector3>("rpy_topic", 1);
     ros::Publisher error_pub = nh.advertise <std_msgs::Int32>("imu_error_rate", 1);
+    // ros::Publisher pose_pub = nh.advertise <geometry_msgs::Pose>("pose_topic", 1);
+    
     IMUStats IMU_stats;
     uint64_t last_t = 0;
     //geometry_msgs::Vector3 linear_acceleration; 
@@ -171,6 +173,7 @@ int main(int argc, char **argv)
         IMU_msg.linear_acceleration_covariance[8] = 0.1;
 
         IMU_msg.header.stamp = ros::Time(uint32_t(IMU_stats.time_stamp / 1000000000 ), uint32_t(IMU_stats.time_stamp % 1000000000));
+
         // IMU_msg.header.stamp = ros::Time::now();
         
         /*if (IMU_stats.time_stamp != IMU_stats.after_time_stamp) {
@@ -218,6 +221,14 @@ int main(int argc, char **argv)
             error_pub.publish(err_rate);
         }
 
+        // geometry_msgs::Pose pose;
+        // pose.position.x = drone.pose().position.x;
+        // pose.position.y = drone.pose().position.y;
+        // pose.position.z = drone.pose().position.z;
+        // pose_pub.publish(pose);
+
+        // std::cout << IMU_stats.time_stamp << "\t" << IMU_msg.header.stamp.toSec() << std::endl;
+        // std::cout << "\t" << ros::Time::now().toSec() << std::endl;
         pub_rate.sleep();
     }
 }

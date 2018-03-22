@@ -187,6 +187,7 @@ OctomapServer::OctomapServer(ros::NodeHandle private_nh_)
   m_resetService = private_nh.advertiseService("reset", &OctomapServer::resetSrv, this);
 
   m_octomapResetMaxRange = private_nh.advertiseService("reset_max_range", &OctomapServer::maxRangecb, this);
+  m_octomapHeaderSub = private_nh.subscribe("octomap_header_col_detected", 1, &OctomapServer::OctomapHeaderColDetectedcb, this);
 
 
   dynamic_reconfigure::Server<OctomapServerConfig>::CallbackType f;
@@ -267,8 +268,9 @@ bool OctomapServer::openFile(const std::string& filename){
 }
 
 void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud){
-  ros::WallTime startTime = ros::WallTime::now();
-
+   ros::Time start_time = ros::Time::now();
+    ros::WallTime startTime = ros::WallTime::now();
+  //g_point_cloud_time = ros::Time::now();  
 
   //
   // ground filtering in base frame
@@ -356,7 +358,8 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
   //ROS_ERROR("Pointcloud insertion in OctomapServer done (%zu+%zu pts (ground/nonground), %f sec)", pc_ground.size(), pc_nonground.size(), total_elapsed);
 
-  publishAll(cloud->header.stamp);
+  //publishAll(cloud->header.stamp);
+  publishAll(start_time);
 }
 
 void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground){
@@ -745,6 +748,18 @@ bool OctomapServer::maxRangecb(octomap_server::maxRangeSrv::Request& req, octoma
   return true;
 }
 
+void OctomapServer::OctomapHeaderColDetectedcb(std_msgs::Int32ConstPtr header) {
+    /* 
+    for (auto el : header_timeStamp_vec) {
+        if (header.data == el) {
+            ROS_INFO_STREAM("ptcloud recieved for collision detection "<< e.time_stamp);
+        }
+        head_timeStamp_vec.clear();
+    }
+    
+    ROS_INFO_STREAM("COOOOOOOOOOOOOOOOOOOOL");
+    */
+}
 
 
 bool OctomapServer::clearBBXSrv(BBXSrv::Request& req, BBXSrv::Response& resp){

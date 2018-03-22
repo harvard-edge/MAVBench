@@ -100,6 +100,7 @@ void update_stats_file(const std::string& stats_file__addr, const std::string& c
 struct multiDOFpoint {
     double x, y, z;
     double vx, vy, vz;
+    double ax, ay, az;
     double yaw;
     double duration;
 };
@@ -115,7 +116,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         bool check_position = true,
         float max_speed = std::numeric_limits<double>::infinity(),
         //float max_speed = 3,
-        float time = 2);
+        float time = 2); 
 
 
 // Recovery methods

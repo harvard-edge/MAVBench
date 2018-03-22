@@ -104,15 +104,19 @@ public:
         }
 
         if (min_distance < panic_distance){
+            //ROS_INFO_STREAM("min_distance"<<min_distance); 
             panic_front = true;
-            if (closest.x > 0 && closest.z > 0)
+            if (closest.x >= 0 && closest.z >= 0)
                 quadrant_front[0]++;
             if (closest.x < 0 && closest.z > 0)
                 quadrant_front[1]++;
-            if (closest.x < 0 && closest.z < 0)
+            if (closest.x <= 0 && closest.z <= 0)
                 quadrant_front[2]++;
             if (closest.x > 0 && closest.z < 0)
                 quadrant_front[3]++;
+            
+            //ROS_INFO_STREAM("close"<<closest.x<< " " <<closest.y<<" " << closest.z);
+            //ROS_INFO_STREAM("quads are"<<quadrant_front[0]<< " " <<quadrant_front[1]<<" " << quadrant_front[2]<<" " << quadrant_front[3]);
             closest_pt_front = closest; 
         } 
 
@@ -148,11 +152,11 @@ public:
         if (min_distance < panic_distance){
             //ROS_INFO_STREAM("min dis"<<min_distance);
             panic_back = true;
-            if (closest.x > 0 && closest.z > 0)
+            if (closest.x >= 0 && closest.z >= 0)
                 quadrant_back[0]++;
             if (closest.x < 0 && closest.z > 0)
                 quadrant_back[1]++;
-            if (closest.x < 0 && closest.z < 0)
+            if (closest.x <= 0 && closest.z <= 0)
                 quadrant_back[2]++;
             if (closest.x > 0 && closest.z < 0)
                 quadrant_back[3]++;
@@ -213,12 +217,15 @@ public:
         velocity.z--;
         */
 
+
+
         double distance_to_pt_front = distance(closest_pt_front.x, closest_pt_front.y, closest_pt_front.z);
         double distance_to_pt_back = distance( closest_pt_back.x, closest_pt_back.y, closest_pt_back.z);
         velocity.x = direction.x*(double)panic_distance/std::max(distance_to_pt_front, distance_to_pt_back);
         velocity.y = direction.y*(double)panic_distance/std::max(distance_to_pt_front, distance_to_pt_back);
         velocity.z = direction.z*(double)panic_distance/std::max(distance_to_pt_front, distance_to_pt_back);
-        
+        //ROS_INFO_STREAM("distance_to_pt_front"<<distance_to_pt_front<< " " <<velocity.x<<" " <<velocity.y<<" " <<velocity.z);
+        //ROS_INFO_STREAM("directoins"<<direction.x<< " " <<direction.y<<" " <<direction.z);
         if (std::isnan(velocity.x)) {
             velocity.x = direction.x*(double)panic_distance/.1;
 
@@ -230,6 +237,9 @@ public:
             velocity.z = direction.z*(double)panic_distance/.1;
         }
 
+        //ROS_INFO_STREAM("vels " <<velocity.x<<" " <<velocity.y<<" " <<velocity.z);
+
+        
         //reset for the next round
         for (int i = 0; i<4; i++) {
             quadrant_back[i] = 0;

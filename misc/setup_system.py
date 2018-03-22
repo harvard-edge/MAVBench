@@ -10,6 +10,12 @@ if (number_of_cores == 6):
                 str(ctr)+"/online")
         os.system("echo " + "userspace" + " | sudo dd of=/sys/devices/system/cpu/cpu"+\
                 str(ctr)+"/cpufreq/scaling_governor")
+        os.system("echo " + str(freq) + " | sudo dd of=/sys/devices/system/cpu/cpu"+\
+                str(ctr)+"/cpufreq/scaling_setspeed")
+        os.system("echo " + str(freq) + " | sudo dd of=/sys/devices/system/cpu/cpu"+\
+                str(ctr)+"/cpufreq/scaling_max_freq")
+        os.system("echo " + str(freq) + " | sudo dd of=/sys/devices/system/cpu/cpu"+\
+                str(ctr)+"/cpufreq/scaling_min_freq")
 else:
     for ctr in range(0, 6):
         if ( ctr == 1 or ctr == 2 or ctr >= number_of_cores+2):
