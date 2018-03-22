@@ -266,20 +266,23 @@ void spin_around(Drone &drone) {
     ros::Time last_time;
     float init_yaw = drone.get_yaw();
     double start_z = drone.pose().position.z; // Get drone's current position
-    auto start_t = ros::Time::now();
+
     int angle_corrected;
     for (int i = 0; i <= 360; i += 90) {
         int angle = init_yaw + i;
         angle_corrected  = (angle <= 180 ? angle : angle - 360);
-        drone.set_yaw(angle_corrected);
+        drone.set_yaw_at_z(angle_corrected, start_z);
         //drone.set_yaw(angle <= 180 ? angle : angle - 360);
     }
 
-    //to correct 
-    double dt = (ros ::Time::now() - start_t).toSec(); 
-    double v_z = (start_z - drone.pose().position.z)/dt;
+    // to correct 
+    double dz = start_z - drone.pose().position.z;
+    double vz = dz > 0 ? 1 : -1;
+    double dt = dz > 0 ? dz : -dz;
     
-    drone.fly_velocity(0, 0, 10*v_z, angle_corrected, dt/10);
+    drone.fly_velocity(0, 0, vz, YAW_UNCHANGED, dt);
+    std::this_thread::sleep_for(std::chrono::milliseconds(int(dt*1000.0)));
+    drone.fly_velocity(0, 0, 0);
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
 

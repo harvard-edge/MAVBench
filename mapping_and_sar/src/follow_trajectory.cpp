@@ -261,7 +261,7 @@ int main(int argc, char **argv){
         yaw_strategy_t yaw_strategy = follow_yaw;
 
         if (should_panic) {
-            ROS_ERROR("Panicking!");
+            ROS_DEBUG("Panicking!");
             panic_traj = create_panic_trajectory(drone, panic_velocity);
             normal_traj.clear(); // Replan a path once we're done
         } else {
@@ -270,8 +270,10 @@ int main(int argc, char **argv){
 
         if (slam_lost) {
             ROS_WARN("SLAM lost!");
-            if (!created_slam_loss_traj)
-                slam_loss_traj = create_slam_loss_trajectory(drone, normal_traj, rev_normal_traj);
+            if (!created_slam_loss_traj) {
+                // slam_loss_traj = create_slam_loss_trajectory(drone, normal_traj, rev_normal_traj);
+                slam_loss_traj = trajectory_t();
+            }
 
             created_slam_loss_traj = true;
         } else {
@@ -299,32 +301,34 @@ int main(int argc, char **argv){
             app_started = true;
         }       
         cur_z = drone.pose().position.z; // Get drone's current position
-        if (forward_traj->size() == 0 && app_started) {//if no trajectory recieved,
-            double dt = (ros ::Time::now() - last_time).toSec(); 
-            if (dt > .6) { 
-                if (last_z != -9999){
-                    drone.fly_velocity(0*v_x, 0*v_y, (last_z-cur_z)/dt,
-                            drone.get_yaw()+30, dt); 
-                }
-                //drone.fly_velocity(0*v_x, 0*v_y, v_z, drone.get_yaw()+30, 0.3); 
-                last_z = drone.pose().position.z; // Get drone's current position
-                last_time = ros::Time::now();
-            }
-        } 
+        // if (forward_traj->size() == 0 && app_started) {//if no trajectory recieved,
+        //     double dt = (ros ::Time::now() - last_time).toSec(); 
+        //     if (dt > .6) {
+        //         if (last_z != -9999){
+        //             double vz = (last_z-cur_z)/dt;
+
+        //             drone.fly_velocity(0, 0, vz,
+        //                     drone.get_yaw()+30, dt); 
+        //         }
+        //         //drone.fly_velocity(0*v_x, 0*v_y, v_z, drone.get_yaw()+30, 0.3); 
+        //         last_z = drone.pose().position.z; // Get drone's current position
+        //         last_time = ros::Time::now();
+        //     }
+        // }
         
         if(app_started){
-            follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
+            follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy,
                     check_position, g_v_max, g_fly_trajectory_time_out);
         }
-        
+
         if(forward_traj->size() != 0) {
             last_time = ros::Time::now();
         }
         if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){
-            ROS_INFO_STREAM("slam loss");
-            log_data_before_shutting_down(); 
-            g_localization_status = 0; 
-            signal_supervisor(g_supervisor_mailbox, "kill"); 
+            ROS_ERROR("Slam lost without recovery");
+            log_data_before_shutting_down();
+            g_localization_status = 0;
+            signal_supervisor(g_supervisor_mailbox, "kill");
             ros::shutdown();
         }else if (trajectory_done(*forward_traj)){
             loop_rate.sleep();

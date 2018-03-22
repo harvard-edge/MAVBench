@@ -181,7 +181,18 @@
     <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" />
     </group>
 
-  <node pkg="publish_imu" type="publish_imu" name="publish_imu"/> 
+  <group if="$(eval localization_method == 'vins_mono')">
+      <node pkg="timed_roslaunch" type="timed_roslaunch.sh" args="4 vins_estimator airsim.launch" name="timed_roslaunch" />
+  </group>
+
+  <group if="$(eval localization_method == 'gps')">
+     <node pkg="gps_publisher" type="gps_publisher" name="gps_publisher" />
+  </group>
+
+  <node pkg="publish_imu" type="publish_imu" name="publish_imu"> 
+		<param name="loop_rate" value="190"/>
+  </node>
+
 
     <node pkg="mapping_and_sar" type="object_detection_node" name="object_detection_node"  output="screen"/>
   <param name="mav_name" type="string" value="$(arg mav_name)" />

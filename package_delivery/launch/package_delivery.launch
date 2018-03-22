@@ -23,8 +23,8 @@
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
 
-  <arg name="max_yaw_rate" default="90"/>
-  <arg name="max_yaw_rate_during_flight" default="90"/>
+  <arg name="max_yaw_rate" default="10"/>
+  <arg name="max_yaw_rate_during_flight" default="10"/>
   <param name="v_max" value="$(arg v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
@@ -40,16 +40,14 @@
   <!--arg name="localization_method" default="gps" /-->
   <arg name="localization_method" default="ground_truth" />
 
-
   <!-- stat file-->
   <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
   <param name="supervisor_mailbox" value="$(find package_delivery)/../data/package_delivery/supervisor_mailbox.txt" />
 
-
   <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
   <!-- also planning to prevent stdio stuff(if they really matter)-->
-  <arg name="DEBUG" default="true" />
-  <arg name="CLCT_DATA" value="true" />
+  <arg name="DEBUG" default="false" />
+  <arg name="CLCT_DATA" value="false" />
   <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
   <param name="DEBUG"  value="$(arg DEBUG)" />
   <param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
@@ -123,6 +121,8 @@
 
 		<!-- Port of the Airsim computer (this is default, do not change!) -->
 		<param name="Airsim_port" value="41451"/>
+
+		<param name="loop_rate" value="25"/>
 
 		<!-- RGB camera parameters (parameters when calibrated) -->
 	    <param name="all_front" value="$(arg all_front)"/>	
@@ -245,12 +245,22 @@
 	<group if="$(eval localization_method == 'orb_slam2_rgbd')">
         <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" output="screen"/>
 	</group>
+
+  <group if="$(eval localization_method == 'vins_mono')">
+      <node pkg="timed_roslaunch" type="timed_roslaunch.sh" args="4 vins_estimator airsim.launch" name="timed_roslaunch" />
+  </group>
+
+  <group if="$(eval localization_method == 'gps')">
+     <node pkg="gps_publisher" type="gps_publisher" name="gps_publisher" />
+  </group>
     
     <!-- rviz -->
 	<group if="$(arg DEBUG)">
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find package_delivery)/extras/rvizConfig.rviz"/>
     </group>
 
-  <node pkg="publish_imu" type="publish_imu" name="publish_imu" output="screen"/> 
+  <node pkg="publish_imu" type="publish_imu" name="publish_imu" output="screen"> 
+    <param name="loop_rate" value="190"/>
+  </node>
 </launch>
 

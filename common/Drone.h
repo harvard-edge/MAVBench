@@ -42,6 +42,7 @@ public:
     void disarm();
     bool takeoff(double h);
     bool set_yaw(int y);
+    bool set_yaw_at_z(int y, double z);
     bool fly_velocity(double vx, double vy, double vz, float yaw = YAW_UNCHANGED, double duration = 3);
     bool land();
     bool set_yaw_based_on_quaternion(geometry_msgs::Quaternion q);

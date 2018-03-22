@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package>
+  <name>timed_roslaunch</name>
+
+  <version>0.0.0</version>
+  <description>A package to launch after a time delay</description>
+
+  <maintainer email="hngenc@utexas.com">Hasan Genc</maintainer>
+
+  <license>ASL 2.0</license>
+
+  <author>Koen Lekkerkerker</author>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+</package>
