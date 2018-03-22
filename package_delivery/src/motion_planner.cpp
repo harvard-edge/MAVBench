@@ -86,6 +86,7 @@ octomap::OcTree * octree = nullptr;
 trajectory_msgs::MultiDOFJointTrajectory traj_topic;
 ros::ServiceClient octo_client;
 bool g_requested_trajectory = false;
+bool path_found = false;
 
 
 // The following block of global variables only exist for debugging purposes
@@ -225,6 +226,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     if (piecewise_path.size() == 0) {
         ROS_ERROR("Empty path returned");
         res.path_found = false;
+        path_found  = false; 
         return true;
     }
 
@@ -256,6 +258,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     //ROS_INFO_STREAM("om pulling and copying"<<(hook_end_t_2 - hook_start_t).toSec());
     ROS_INFO_STREAM("planning "<<(hook_end_t - hook_start_t).toSec());
     res.path_found = true; 
+    path_found = true; 
     return true;
 }
 
@@ -403,7 +406,9 @@ int main(int argc, char ** argv)
                 next_state = publish_trajectory;
             }
         }else if (state == publish_trajectory){
-            traj_pub.publish(traj_topic);
+            if (path_found) { 
+                traj_pub.publish(traj_topic);
+            } 
             g_requested_trajectory = false;
             next_state = idle;
         
@@ -900,8 +905,14 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 		// Estimate the time the drone should take flying between each node
 		auto segment_times = estimateSegmentTimes(vertices, v_max__global, a_max__global, magic_fabian_constant);
 	
+        std::vector<double>  times;
+        for (auto el :segment_times) {
+            times.push_back(.5*el); 
+        }
+
+
 		// Optimize and create a smooth path from the vertices
-		opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
+		opt.setupFromVertices(vertices, times, derivative_to_optimize);
 		opt.solveLinear();
 
 		// Return all the smooth segments in the path

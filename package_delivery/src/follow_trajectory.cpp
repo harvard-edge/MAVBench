@@ -153,7 +153,7 @@ int main(int argc, char **argv){
     bool created_future_col_traj = false;
     trajectory_t future_col_traj;
     uint16_t port = 41451;
-    ros::Rate loop_rate(20);
+    ros::Rate loop_rate(50);
     
     ros::param::get("/follow_trajectory/ip_addr",ip_addr);
     ros::param::get("/follow_trajectory/mav_name",mav_name);
@@ -282,6 +282,7 @@ int main(int argc, char **argv){
        
         if(app_started){
             // Profiling 
+             
             if (CLCT_DATA) { 
                 if (g_got_new_trajectory) {
                     g_rcv_traj_to_follow_traj_t =  

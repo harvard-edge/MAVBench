@@ -287,7 +287,8 @@ void spin_around(Drone &drone) {
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
 void follow_trajectory(Drone& drone, trajectory_t * traj,
         trajectory_t * reverse_traj, yaw_strategy_t yaw_strategy,
-        bool check_position, float max_speed, float time) {
+        bool check_position, float max_speed, float time){
+
 
     trajectory_t reversed_commands;
 
@@ -299,12 +300,15 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
                              //when the planner fails
                              //and an empty trajectory
                              //is pushed
-        drone.fly_velocity(0,0,0, drone.get_yaw(),.1);
-        //ROS_ERROR_STREAM("SLAMING ON BREAKS YO");
+        drone.fly_velocity(0,0,0, drone.get_yaw(),3);
+        //ros::sleep::Duration(.3); 
+        ROS_ERROR_STREAM("SLAMING ON BREAKS YO");
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         return; 
     }
-    
+    ros::Time start_hook_t;
     while (time > 0 && traj->size() > 0) {
+        start_hook_t = ros::Time::now();  
         multiDOFpoint p = traj->front();
 
         // Calculate the velocities we should be flying at
@@ -354,7 +358,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
             //ROS_ERROR_STREAM("AFTER speed scaling"<<v_x<< " "<< v_y << " " <<v_z);
            speed = std::sqrt((v_x*v_x + v_y*v_y + v_z*v_z));
         }
-        
+        /*
         if(ctr %50 == 0) {
             if (ctr %100 == 0) {
                 max_speed_so_far = 0; 
@@ -363,16 +367,17 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
             ROS_ERROR_STREAM("max_speed_so_far "<<max_speed_so_far);
         }
         ctr++;
-        
+        */
         // Calculate the time for which these flight commands should run
         double flight_time = p.duration <= time ? p.duration : time;
         double scaled_flight_time = flight_time / scale;
 
         // Fly for flight_time seconds
-        //ROS_ERROR_STREAM("after scaling"<<v_x<< " "<< v_y << " " <<v_z);
+        ROS_ERROR_STREAM("---"<<v_x<< " "<< v_y << " " <<v_z);
         auto segment_start_time = std::chrono::system_clock::now();
-        drone.fly_velocity(v_x, v_y, v_z, yaw, scaled_flight_time+0.1); 
-        //ROS_ERROR_STREAM("fly with: "<<v_x<< " "<<v_y<<" " <<v_z);
+        drone.fly_velocity(v_x, v_y, v_z, yaw, scaled_flight_time); 
+        
+       //ROS_ERROR_STREAM("fly with: "<<v_x<< " "<<v_y<<" " <<v_z);
 
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 

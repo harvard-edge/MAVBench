@@ -268,8 +268,9 @@ bool OctomapServer::openFile(const std::string& filename){
 }
 
 void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud){
-  ros::WallTime startTime = ros::WallTime::now();
-  g_point_cloud_time = ros::Time::now();  
+   ros::Time start_time = ros::Time::now();
+    ros::WallTime startTime = ros::WallTime::now();
+  //g_point_cloud_time = ros::Time::now();  
 
   //
   // ground filtering in base frame
@@ -357,7 +358,8 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
   //ROS_ERROR("Pointcloud insertion in OctomapServer done (%zu+%zu pts (ground/nonground), %f sec)", pc_ground.size(), pc_nonground.size(), total_elapsed);
 
-  publishAll(cloud->header.stamp);
+  //publishAll(cloud->header.stamp);
+  publishAll(start_time);
 }
 
 void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground){
@@ -747,7 +749,7 @@ bool OctomapServer::maxRangecb(octomap_server::maxRangeSrv::Request& req, octoma
 }
 
 void OctomapServer::OctomapHeaderColDetectedcb(std_msgs::Int32ConstPtr header) {
-     
+    /* 
     for (auto el : header_timeStamp_vec) {
         if (header.data == el) {
             ROS_INFO_STREAM("ptcloud recieved for collision detection "<< e.time_stamp);
@@ -756,6 +758,7 @@ void OctomapServer::OctomapHeaderColDetectedcb(std_msgs::Int32ConstPtr header) {
     }
     
     ROS_INFO_STREAM("COOOOOOOOOOOOOOOOOOOOL");
+    */
 }
 
 

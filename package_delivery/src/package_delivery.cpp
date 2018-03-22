@@ -40,6 +40,8 @@ ros::Time col_coming_time_stamp;
 bool should_panic = false;
 bool slam_lost = false;
 bool col_coming = false;
+bool clcted_col_coming_data = true;
+
 
 long long g_accumulate_loop_time = 0; //it is in ms
 long long g_panic_rlzd_t_accumulate = 0;
@@ -67,6 +69,7 @@ enum State { setup, waiting, flying, trajectory_completed, failed, invalid };
 void col_coming_callback(const package_delivery::BoolPlusHeader::ConstPtr& msg) {
     col_coming = msg->data;
     col_coming_time_stamp = msg->header.stamp;
+    //ROS_INFO_STREAM("col_coming to col_coming_cb"<<ros::Time::now() - col_coming_time_stamp);
 
 }
 
@@ -217,14 +220,19 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
 
     }
     */ 
-    if (client.call(srv)) {
-        //ROS_INFO("Received trajectory.");
-        if(!srv.response.path_found){
-            return trajectory_t();
-        }
-    } else {
-        ROS_ERROR("Failed to call service.");
-        return trajectory_t();
+   while(true){ 
+       if(client.call(srv)) {
+           //ROS_INFO("Received trajectory.");
+           if(!srv.response.path_found){
+               return trajectory_t();
+           }else{
+               break;
+           }
+       } else {
+           ROS_ERROR("Failed to call service.");
+           //return trajectory_t();
+       }
+       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
     return create_trajectory(srv.response.multiDOFtrajectory, true);
@@ -263,7 +271,7 @@ int main(int argc, char **argv)
    package_delivery::follow_trajectory_status_srv follow_trajectory_status_srv_inst;
 
    int fail_ctr = 0;
-   int fail_threshold = 5;
+   int fail_threshold = 15;
 
     ros::Time start_hook_t, end_hook_t;                                          
     // *** F:DN subscribers,publishers,servers,clients
@@ -323,9 +331,11 @@ int main(int argc, char **argv)
     twist.linear.x = twist.linear.y = twist.linear.z = 1;
     geometry_msgs::Twist acceleration;
     acceleration.linear.x = acceleration.linear.y = acceleration.linear.z = 1; 
+	ros::Rate pub_rate(30);
     for (State state = setup; ros::ok(); ) {
-          
+		pub_rate.sleep();
         ros::spinOnce();
+        
         State next_state = invalid;
         loop_start_t = ros::Time::now();
         if (state == setup)
@@ -355,7 +365,12 @@ int main(int argc, char **argv)
             normal_traj = request_trajectory(get_trajectory_client, start, goal, 
                     twist, acceleration);
             end_hook_t = ros::Time::now(); 
-            ROS_INFO_STREAM("req traj with service"<<end_hook_t - start_hook_t); 
+            if (!clcted_col_coming_data){ 
+                ROS_INFO_STREAM("col coming to req traj"<< start_hook_t - col_coming_time_stamp);
+                clcted_col_coming_data = true; 
+            }
+            ROS_INFO_STREAM("req traj with srv overhead"<<end_hook_t - start_hook_t); 
+             
             // Pause a little bit so that future_col can be updated
             g_planning_time_including_ros_overhead_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
             g_planning_ctr++; 
@@ -389,40 +404,40 @@ int main(int argc, char **argv)
         }
         else if (state == flying)
         {
-
             // Choose next state (failure, completion, or more flying)
             /* 
-            if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)) {
-                if (reset_slam(drone, "/slam_lost"))
-                    next_state = trajectory_completed;
-                else
-                    next_state = failed;
+               if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)) {
+               if (reset_slam(drone, "/slam_lost"))
+               next_state = trajectory_completed;
+               else
+               next_state = failed;
+               }
+               */
+            srv_call_status = follow_trajectory_status_client.call(follow_trajectory_status_srv_inst);
+            if(!srv_call_status){
+                ROS_INFO_STREAM("could not make a service all to trajectory done");
+                next_state = flying;
+            }else if (follow_trajectory_status_srv_inst.response.success.data || col_coming) {
+                next_state = trajectory_completed; 
+                twist = follow_trajectory_status_srv_inst.response.twist;
+                acceleration = follow_trajectory_status_srv_inst.response.acceleration;
+                col_coming = false; 
+                clcted_col_coming_data = false;
+            }else{
+                next_state = flying;
             }
-            */
-            do{
-                srv_call_status = follow_trajectory_status_client.call(follow_trajectory_status_srv_inst);
-                if(!srv_call_status){
-                    ROS_INFO_STREAM("could not make a service all to trajectory done");
-                    next_state = flying;
-                }else if (follow_trajectory_status_srv_inst.response.success.data || col_coming) {
-                    next_state = trajectory_completed; 
-                    twist = follow_trajectory_status_srv_inst.response.twist;
-                    acceleration = follow_trajectory_status_srv_inst.response.acceleration;
-                    col_coming = false; 
-                    break;
-                }else{
-                    next_state = flying;
-                }
-                ros::Duration(.1).sleep();     
-            }while(!srv_call_status);//;|| !follow_trajectory_status_srv_inst.response.success.data);
 
         }
         else if (state == trajectory_completed)
         {
             fail_ctr = normal_traj.empty() ? fail_ctr+1 : 0; 
             
+            if (normal_traj.empty()){
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            }
             if (fail_ctr >fail_threshold) {
                 next_state = failed;
+
             }else if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
                 mission_status = "completed"; 

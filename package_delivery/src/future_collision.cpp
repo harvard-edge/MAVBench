@@ -120,6 +120,7 @@ bool in_safe_zone(const T& start, const T& pos) {
 
 void pull_octomap(const octomap_msgs::Octomap& msg)
 {
+    //ROS_INFO_STREAM("now octo"); 
     RESET_TIMER();
     if (octree != nullptr) {
         delete octree;
@@ -157,9 +158,10 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
     const std::chrono::milliseconds grace_period(1500);
 
     if (octree == nullptr || traj.points.size() < 1) {
+        //ROS_INFO_STREAM("shouldn't be here"); 
         return false;
     }
-
+    //ROS_INFO_STREAM("now check for colision");
     auto& start = traj.points[0].transforms[0].translation;
 
     bool col = false;
@@ -303,7 +305,7 @@ int main(int argc, char** argv)
     //----------------------------------------------------------------- 
     // *** F:DN BODY
     //----------------------------------------------------------------- 
-    ros::Rate loop_rate(20);
+    ros::Rate loop_rate(60);
     while (ros::ok()) {
         
         main_loop_start_hook_t = ros::Time::now();
@@ -324,7 +326,7 @@ int main(int argc, char** argv)
                     g_pt_cloud_to_future_collision_t = start_hook_chk_col_t - g_pt_cloud_header;
                 } 
                 if(DEBUG) {
-                    ROS_INFO_STREAM("pt cloud to start of future collision"<< g_pt_cloud_to_future_collision_t);
+                    ROS_INFO_STREAM("pt cloud to start of future collision"<< g_pt_cloud_to_future_collision_t<< " " <<start_hook_chk_col_t<<" " << g_pt_cloud_header);
                     ROS_INFO_STREAM("collision detection time in future_collision"<<g_checking_collision_t);
                 }
             }
