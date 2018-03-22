@@ -256,7 +256,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     g_planning_without_OM_PULL_time_acc += (((hook_end_t - hook_start_t).toSec())*1e9);
     g_number_of_planning++; 
     //ROS_INFO_STREAM("om pulling and copying"<<(hook_end_t_2 - hook_start_t).toSec());
-    ROS_INFO_STREAM("planning "<<(hook_end_t - hook_start_t).toSec());
+    //ROS_INFO_STREAM("planning "<<(hook_end_t - hook_start_t).toSec());
     res.path_found = true; 
     path_found = true; 
     return true;

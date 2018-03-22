@@ -13,7 +13,7 @@
 
   <!-- Drone's physical characteristics /-->
   <arg name="a_max" default="5"/> 
-  <arg name="v_max" default="3"/> 
+  <arg name="v_max" default="3.5"/> 
   
   <!-- application parameters -->
   <arg name="planning_resolution" default=".3"/>

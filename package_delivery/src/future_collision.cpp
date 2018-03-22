@@ -326,8 +326,8 @@ int main(int argc, char** argv)
                     g_pt_cloud_to_future_collision_t = start_hook_chk_col_t - g_pt_cloud_header;
                 } 
                 if(DEBUG) {
-                    ROS_INFO_STREAM("pt cloud to start of future collision"<< g_pt_cloud_to_future_collision_t<< " " <<start_hook_chk_col_t<<" " << g_pt_cloud_header);
-                    ROS_INFO_STREAM("collision detection time in future_collision"<<g_checking_collision_t);
+                    ROS_INFO_STREAM("pt cloud to start of future collision"<< g_pt_cloud_to_future_collision_t);//<< " " <<start_hook_chk_col_t<<" " << g_pt_cloud_header);
+                    //ROS_INFO_STREAM("collision detection time in future_collision"<<g_checking_collision_t);
                 }
             }
         }else if (state == waiting_for_response) {

@@ -55,6 +55,8 @@ int main(int argc, char **argv)
     ros::Rate pub_rate(110);
     sensor_msgs::Imu IMU_msg;
     ros::Publisher IMU_pub = nh.advertise <sensor_msgs::Imu>("imu_topic", 1);
+    ros::Publisher pose_pub = nh.advertise <geometry_msgs::Pose>("pose_topic", 1);
+    
     IMUStats IMU_stats;
     uint64_t last_t = 0;
     //geometry_msgs::Vector3 linear_acceleration; 
@@ -183,6 +185,12 @@ int main(int argc, char **argv)
 		misses++;
 		// std::cout << (misses*100) / samples << "%\n";
 	}
+
+    geometry_msgs::Pose pose;
+    pose.position.x = drone.pose().position.x;
+    pose.position.y = drone.pose().position.y;
+    pose.position.z = drone.pose().position.z;
+    pose_pub.publish(pose);
 
 	// std::cout << IMU_stats.time_stamp << "\t" << IMU_msg.header.stamp.toSec() << std::endl;
 	// std::cout << "\t" << ros::Time::now().toSec() << std::endl;
