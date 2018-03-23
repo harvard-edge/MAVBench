@@ -23,11 +23,11 @@
 #include <profile_manager/profiling_data_srv.h>
 #include <profile_manager/start_profiling_srv.h>
 #include <package_delivery/BoolPlusHeader.h>
-
-
+#include <package_delivery/multiDOF_array.h>
 
 // Typedefs
-typedef trajectory_msgs::MultiDOFJointTrajectory traj_msg_t;
+// typedef trajectory_msgs::MultiDOFJointTrajectory traj_msg_t;
+typedef package_delivery::multiDOF_array traj_msg_t;
 typedef std::chrono::system_clock sys_clock;
 typedef std::chrono::time_point<sys_clock> sys_clock_time_point;
 static const sys_clock_time_point never = sys_clock_time_point::min();
@@ -136,16 +136,28 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
 	LOG_ELAPSED(future_collision_pull);
 }
 
-void pull_traj(const traj_msg_t::ConstPtr& msg)
+void pull_traj(Drone& drone, const traj_msg_t::ConstPtr& msg)
 {
-    g_got_new_traj = true; 
+    auto pos = drone.position();
+    const auto& traj_front = msg->points.front();
+    double x_offset = pos.x - traj_front.x;
+    double y_offset = pos.y - traj_front.y;
+    double z_offset = pos.z - traj_front.z;
+
     traj = *msg;
+    for (auto& point : traj.points){
+        point.x += x_offset;
+        point.y += y_offset;
+        point.z += z_offset;
+    }
+
+    g_got_new_traj = true;
 }
 
-int seconds (sys_clock_time_point t) {
+/* int seconds (sys_clock_time_point t) {
     auto int_s = std::chrono::time_point_cast<std::chrono::seconds>(t);
     return int_s.time_since_epoch().count() % 50;
-}
+} */
 
 bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
 {
@@ -162,17 +174,17 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
         return false;
     }
     //ROS_INFO_STREAM("now check for colision");
-    auto& start = traj.points[0].transforms[0].translation;
+    // auto& start = traj.points[0].transforms[0].translation;
 
     bool col = false;
 
     for (int i = 0; i < traj.points.size() - 1; ++i) {
-        auto& pos1 = traj.points[i].transforms[0].translation;
-        auto& pos2 = traj.points[i+1].transforms[0].translation;
+        auto& pos1 = traj.points[i]; // .transforms[0].translation;
+        auto& pos2 = traj.points[i+1]; // .transforms[0].translation;
 
         // We ignore possible at the beginning of the journey
-        if (in_safe_zone(start, pos1))
-            continue;
+        // if (in_safe_zone(start, pos1))
+        //     continue;
 
         if (collision(octree, pos1, pos2)) {
             col = true;
@@ -280,6 +292,9 @@ int main(int argc, char** argv)
     enum State {checking_for_collision, waiting_for_response};
     future_collision_initialize_params(); 
 
+    uint16_t port = 41451;
+    Drone drone(ip_addr__global.c_str(), port, localization_method);
+
     bool collision_coming = false;
     auto time_to_warn = never;
 
@@ -287,7 +302,8 @@ int main(int argc, char** argv)
     std_msgs::Bool col_imminent_msg;
 
     ros::Subscriber octomap_sub = nh.subscribe("octomap_binary", 1, pull_octomap);
-    ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("multidoftraj", 1, pull_traj);
+    // ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("multidoftraj", 1, pull_traj);
+    ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("next_steps", 1, boost::bind(pull_traj, boost::ref(drone), _1));
 
     ros::Publisher col_coming_pub = nh.advertise<package_delivery::BoolPlusHeader>("col_coming", 1);
     ros::Publisher col_imminent_pub = nh.advertise<std_msgs::Bool>("col_imminent", 1);
@@ -295,8 +311,6 @@ int main(int argc, char** argv)
 	// for profiling
     ros::Publisher octomap_header_pub = nh.advertise<std_msgs::Int32>("octomap_header_col_detected", 1);
 
-    uint16_t port = 41451;
-    Drone drone(ip_addr__global.c_str(), port, localization_method);
     State state, next_state;
     next_state = state = checking_for_collision;
     //profiling variables

@@ -22,9 +22,9 @@
   
   <!-- localization method -->
   <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
-  <!--arg name="localization_method" value="ground_truth" /-->
+  <arg name="localization_method" value="ground_truth" />
   <!--arg name="localization_method" value="gps" /-->
-  <arg name="localization_method" value="vins_mono"/>
+  <!--arg name="localization_method" value="vins_mono"/-->
 
   <!--- set according to the localizat5ion method--> 
   <arg name="max_yaw_rate" default="15"/>
@@ -43,7 +43,7 @@
   <arg name="coverage_threshold" default="80"/>
 
   <!-- DEBUGING-data collection params--> 
-  <arg name="DEBUG" value="false" />
+  <arg name="DEBUG" value="true" />
   <arg name="CLCT_DATA" value="true" />
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />

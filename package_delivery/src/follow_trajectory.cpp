@@ -117,8 +117,8 @@ void callback_trajectory(const package_delivery::multiDOF_array::ConstPtr& msg, 
         traj_point.duration = point.duration;
         normal_traj.push_back(traj_point);
     }
-    
-    g_got_new_trajectory = true;    
+
+    g_got_new_trajectory = true;
     //ROS_INFO_STREAM("finished trajectory, size is"<<normal_traj.size());  
 }
 
@@ -153,7 +153,28 @@ bool follow_trajectory_status_cb(package_delivery::follow_trajectory_status_srv:
     last_acceleration.linear.z = normal_traj.front().az;
     res.acceleration = last_acceleration;
     return true;
+}
 
+package_delivery::multiDOF_array next_steps_msg(const trajectory_t& traj) {
+    package_delivery::multiDOF_array array_of_point_msg;
+
+    for (const auto& point : traj){
+        package_delivery::multiDOF point_msg;
+        point_msg.x = point.x;
+        point_msg.y = point.y;
+        point_msg.z = point.z;
+        point_msg.vx = point.vx;
+        point_msg.vy = point.vy;
+        point_msg.vz = point.vz;
+        point_msg.ax = point.ax;
+        point_msg.ay = point.ay;
+        point_msg.az = point.az;
+        point_msg.yaw = point.yaw;
+        point_msg.duration = point.duration;
+        array_of_point_msg.points.push_back(point_msg); 
+    }
+
+    return array_of_point_msg;
 }
 
 int main(int argc, char **argv){
@@ -217,11 +238,12 @@ int main(int argc, char **argv){
     }
     
     ros::ServiceServer trajectory_done_service = n.advertiseService("follow_trajectory_status", follow_trajectory_status_cb);
+
+    ros::Publisher next_steps_pub = n.advertise<package_delivery::multiDOF_array>("/next_steps", 1);
+
     ros::Subscriber panic_sub =  n.subscribe<std_msgs::Bool>("panic_topic", 1, panic_callback);
     ros::Subscriber panic_velocity_sub = 
         n.subscribe<geometry_msgs::Vector3>("panic_velocity", 1, panic_velocity_callback);
-    
-
     
     Drone drone(ip_addr.c_str(), port, localization_method,
                 g_max_yaw_rate, g_max_yaw_rate_during_flight);
@@ -262,7 +284,7 @@ int main(int argc, char **argv){
         }
 
         // Handle future_collision queue
-         /*
+        /*
         if (col_coming) {
             ROS_WARN("Future collision appeared on trajectory!");
         
@@ -319,6 +341,8 @@ int main(int argc, char **argv){
             
             follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
                     check_position, g_v_max, g_fly_trajectory_time_out);
+
+            next_steps_pub.publish(next_steps_msg(*forward_traj));
         }
         if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){
             ROS_INFO_STREAM("slam loss");

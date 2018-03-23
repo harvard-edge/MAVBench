@@ -1,33 +1,31 @@
 <launch>
   <!-- args and params --> 
   <!-- Behzad's workstation ip --> 
-  <arg name="host_ip" default="10.157.90.51" />
+  <!-- arg name="host_ip" default="10.157.90.51" /-->
   <!--arg name="host_ip" default="169.254.153.158" /-->
   <!-- Hasans's workstation ip --> 
   <!--arg name="host_ip" default="10.157.90.49" /-->
   <!-- Hasans's direct connection ip --> 
-  <!-- arg name="host_ip" default="169.254.250.191" /-->
+  <arg name="host_ip" default="169.254.250.191" />
   <!--Wenzhi's workstation ip-->
   <!--arg name="host_ip" default="10.157.90.62" /-->
   <param name="/ip_addr" value="$(arg host_ip)" />
 
   <!-- Drone's physical characteristics /-->
   <arg name="a_max" default="5"/> 
-  <arg name="v_max" default="2.5"/> 
+  <arg name="v_max" default="2"/> 
   
-  <!-- application parameters -->
-  <arg name="planning_resolution" default=".15"/>
-  <arg name="sensor_max_range" default="7" />
+  <arg name="planning_resolution" default=".5"/>
+  <arg name="sensor_max_range" default="20" />
   <arg name="fly_trajectory_time_out" default=".1"/> 
   <arg name="planning_budget" default=".3"/>
   <param name="planning_budget" value="$(arg planning_budget)"/>
 
-
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
 
-  <arg name="max_yaw_rate" default="10"/>
-  <arg name="max_yaw_rate_during_flight" default="10"/>
+  <arg name="max_yaw_rate" default="90"/>
+  <arg name="max_yaw_rate_during_flight" default="90"/>
   <param name="v_max" value="$(arg v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
@@ -49,7 +47,7 @@
 
   <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
   <!-- also planning to prevent stdio stuff(if they really matter)-->
-  <arg name="DEBUG" default="false" />
+  <arg name="DEBUG" default="true" />
   <arg name="CLCT_DATA" value="false" />
   <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
   <param name="DEBUG"  value="$(arg DEBUG)" />
