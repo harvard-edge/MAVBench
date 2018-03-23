@@ -26,7 +26,6 @@
 #include <package_delivery/multiDOF_array.h>
 
 // Typedefs
-// typedef trajectory_msgs::MultiDOFJointTrajectory traj_msg_t;
 typedef package_delivery::multiDOF_array traj_msg_t;
 typedef std::chrono::system_clock sys_clock;
 typedef std::chrono::time_point<sys_clock> sys_clock_time_point;
@@ -136,6 +135,10 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
 	LOG_ELAPSED(future_collision_pull);
 }
 
+void new_traj(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg) {
+    g_got_new_traj = true;
+}
+
 void pull_traj(Drone& drone, const traj_msg_t::ConstPtr& msg)
 {
     auto pos = drone.position();
@@ -150,8 +153,6 @@ void pull_traj(Drone& drone, const traj_msg_t::ConstPtr& msg)
         point.y += y_offset;
         point.z += z_offset;
     }
-
-    g_got_new_traj = true;
 }
 
 /* int seconds (sys_clock_time_point t) {
@@ -302,7 +303,7 @@ int main(int argc, char** argv)
     std_msgs::Bool col_imminent_msg;
 
     ros::Subscriber octomap_sub = nh.subscribe("octomap_binary", 1, pull_octomap);
-    // ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("multidoftraj", 1, pull_traj);
+    ros::Subscriber new_traj_sub = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>("multidoftraj", 1, new_traj);
     ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("next_steps", 1, boost::bind(pull_traj, boost::ref(drone), _1));
 
     ros::Publisher col_coming_pub = nh.advertise<package_delivery::BoolPlusHeader>("col_coming", 1);
