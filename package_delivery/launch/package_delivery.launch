@@ -1,12 +1,12 @@
 <launch>
   <!-- args and params --> 
   <!-- Behzad's workstation ip --> 
-  <!-- arg name="host_ip" default="10.157.90.51" /-->
+  <arg name="host_ip" default="10.157.90.51" />
   <!--arg name="host_ip" default="169.254.153.158" /-->
   <!-- Hasans's workstation ip --> 
   <!--arg name="host_ip" default="10.157.90.49" /-->
   <!-- Hasans's direct connection ip --> 
-  <arg name="host_ip" default="169.254.250.191" />
+  <!-- arg name="host_ip" default="169.254.250.191" /-->
   <!--Wenzhi's workstation ip-->
   <!--arg name="host_ip" default="10.157.90.62" /-->
   <param name="/ip_addr" value="$(arg host_ip)" />
@@ -73,11 +73,8 @@
 
   <!--comment-->
     <!-- Octomap -->
-	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen">
-
-    <!--node pkg="nodelet" type="nodelet" name="standalone_nodelet" args="manager"/-->
-
-    <!--node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager"/-->
+    <node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager">
+	<!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"-->
         <param name="resolution" value="$(arg planning_resolution)" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
@@ -87,7 +84,7 @@
 		<param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
 
 		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points" />
+		<!-- remap from="cloud_in" to="/points" / -->
 
 		<!-- Filter ground for binary occupancy map -->
 		<param name="base_frame_id" value="world" />
@@ -145,12 +142,9 @@
 
 
 	<!-- Nodelet manager for this pipeline -->
-    <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager"/>
-    <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager_2"/>
-    
-    <comment>	
-    <remap from="/points" to="/cloud_in" />
-    </comment>
+    <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager">
+        <remap from="/points" to="/cloud_in" />
+    </node>
 
 	<!-- Convert to point cloud -->
 	<node pkg="nodelet" type="nodelet" name="cloudify"
@@ -162,19 +156,6 @@
 		<remap from="image_rect" to="/Airsim/depth_front"/>
 
     </node>
-    
-	<node pkg="nodelet" type="nodelet" name="cloudify_2"
- 	args="load depth_image_proc/point_cloud_xyz depth_transforms_manager_2 --no-bond">
-
-		<!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
-		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
-		<!-- Input: Rectified depth image -->
-		<remap from="image_rect" to="/Airsim/depth_back"/>
-		<remap from="points" to="/points_back"/>
-    </node>
-  
-
-
     
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
 		<param name="panic_distance" value=".1"/>
