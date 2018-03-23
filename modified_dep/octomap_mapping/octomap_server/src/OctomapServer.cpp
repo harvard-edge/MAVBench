@@ -196,6 +196,7 @@ OctomapServer::OctomapServer(ros::NodeHandle private_nh_)
 
   // Profiling
   octomap_integration_acc = 0;
+  pt_cld_octomap_commun_overhead_acc = 0; 
   octomap_ctr = 0;
 }
 
@@ -274,7 +275,7 @@ bool OctomapServer::openFile(const std::string& filename){
 
 void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud){
    ros::Time start_time = ros::Time::now();
-
+   pt_cld_octomap_commun_overhead_acc +=  (start_time - cloud->header.stamp).toSec()*1e9;
    octomap_ctr++;
 
    ros::Duration pt_cld_to_octomap_insert_cb = start_time - cloud->header.stamp;

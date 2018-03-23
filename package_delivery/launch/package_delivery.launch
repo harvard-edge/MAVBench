@@ -13,7 +13,7 @@
 
   <!-- Drone's physical characteristics /-->
   <arg name="a_max" default="5"/> 
-  <arg name="v_max" default="2.5"/> 
+  <arg name="v_max" default="1.5"/> 
   
   <!-- application parameters -->
   <arg name="planning_resolution" default=".15"/>
@@ -26,8 +26,8 @@
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
 
-  <arg name="max_yaw_rate" default="10"/>
-  <arg name="max_yaw_rate_during_flight" default="10"/>
+  <arg name="max_yaw_rate" default="90"/>
+  <arg name="max_yaw_rate_during_flight" default="90"/>
   <param name="v_max" value="$(arg v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
@@ -49,8 +49,8 @@
 
   <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
   <!-- also planning to prevent stdio stuff(if they really matter)-->
-  <arg name="DEBUG" default="false" />
-  <arg name="CLCT_DATA" value="false" />
+  <arg name="DEBUG" default="true" />
+  <arg name="CLCT_DATA" value="true" />
   <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
   <param name="DEBUG"  value="$(arg DEBUG)" />
   <param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>

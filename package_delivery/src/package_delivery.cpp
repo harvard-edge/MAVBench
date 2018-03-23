@@ -36,6 +36,8 @@ using namespace std;
 //global variable to log in stats manager
 std::string g_mission_status = "failed";
 ros::Time col_coming_time_stamp; 
+long long g_pt_cld_to_pkg_delivery_commun_acc = 0;
+int g_col_com_ctr = 0;
 
 bool should_panic = false;
 bool slam_lost = false;
@@ -73,7 +75,11 @@ enum State { setup, waiting, flying, trajectory_completed, failed, invalid };
 
 void col_coming_callback(const package_delivery::BoolPlusHeader::ConstPtr& msg) {
     col_coming = msg->data;
-    col_coming_time_stamp = msg->header.stamp;
+    if (CLCT_DATA){ 
+        col_coming_time_stamp = msg->header.stamp;
+        g_pt_cld_to_pkg_delivery_commun_acc += (ros::Time::now() - msg->header.stamp).toSec()*1e9;
+        g_col_com_ctr++;
+    }
     //ROS_INFO_STREAM("col_coming to col_coming_cb"<<ros::Time::now() - col_coming_time_stamp);
 
 }
@@ -92,6 +98,24 @@ void log_data_before_shutting_down(){
         }
     }
     
+    profiling_data_srv_inst.request.key = "img_to_pkgDel_commun_t";
+    profiling_data_srv_inst.request.value = (((double)g_pt_cld_to_pkg_delivery_commun_acc)/1e9)/g_col_com_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    profiling_data_srv_inst.request.key = "motion_planning_plus_srv_call";
+    profiling_data_srv_inst.request.value = ((double)g_planning_time_including_ros_overhead_acc/g_planning_ctr)/1e9;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
     profiling_data_srv_inst.request.key = "package_delivery_main_loop";
     profiling_data_srv_inst.request.value = (((double)g_accumulate_loop_time)/1e9)/g_main_loop_ctr;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
@@ -111,15 +135,6 @@ void log_data_before_shutting_down(){
     
     profiling_data_srv_inst.request.key = "panic_time_in_package_delivery_node";
     profiling_data_srv_inst.request.value = (g_panic_rlzd_t_accumulate/ (double)g_panic_ctr)*1e-9;
-    if (ros::service::waitForService("/record_profiling_data", 10)){ 
-        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
-            ROS_ERROR_STREAM("could not probe data using stats manager");
-            ros::shutdown();
-        }
-    }
-
-    profiling_data_srv_inst.request.key = "motion_planning_plus_srv_call";
-    profiling_data_srv_inst.request.value = ((double)g_planning_time_including_ros_overhead_acc/g_planning_ctr)/1e9;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -421,7 +436,8 @@ int main(int argc, char **argv)
                 array_of_point_msg.header.stamp = temp;
             }
             
-            ROS_INFO_STREAM("blah blah"<< (ros::Time::now() - col_coming_time_stamp) << " " << ros::Time::now() << " " << col_coming_time_stamp); 
+            //ROS_INFO_STREAM("blah blah"<< (ros::Time::now() - col_coming_time_stamp) << " " << ros::Time::now() << " " << col_coming_time_stamp); 
+            ros::Time cp_time = ros::Time::now(); 
             for (auto point : normal_traj){
                 package_delivery::multiDOF point_msg;
                 point_msg.x = point.x;
@@ -437,6 +453,8 @@ int main(int argc, char **argv)
                 point_msg.duration = point.duration;
                 array_of_point_msg.points.push_back(point_msg); 
             }
+            ros::Time cp_end_time = ros::Time::now(); 
+
             trajectory_pub.publish(array_of_point_msg);
 
             if (!normal_traj.empty())

@@ -42,12 +42,14 @@ ros::Time g_recieved_traj_t;
 
 // Profiling
 ros::Time col_coming_time_stamp;
-ros::Duration g_rcv_traj_to_follow_traj_t;
+long long g_rcv_traj_to_follow_traj_acc_t = 0;
 bool prev_col_coming = false;
 bool CLCT_DATA, DEBUG;
 int g_follow_ctr = 0;
 long long g_img_to_follow_acc = 0;
 ros::Time g_msg_time_stamp;
+long long g_pt_cld_to_futurCol_commun_acc = 0;
+int g_traj_ctr = 0; 
 
 
 
@@ -78,6 +80,24 @@ void log_data_before_shutting_down(){
         }
     }
 
+    profiling_data_srv_inst.request.key = "img_to_follow_traj_commun_t";
+    profiling_data_srv_inst.request.value = (((double)g_pt_cld_to_futurCol_commun_acc)/1e9)/g_traj_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+    
+    profiling_data_srv_inst.request.key = "traj_rcv_to_follow";
+    profiling_data_srv_inst.request.value = (((double)g_rcv_traj_to_follow_traj_acc_t)/1e9)/g_follow_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+    
     profiling_data_srv_inst.request.key = "image_to_follow_time";
     profiling_data_srv_inst.request.value = (((double)g_img_to_follow_acc)/1e9)/g_follow_ctr;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
@@ -86,7 +106,6 @@ void log_data_before_shutting_down(){
             ros::shutdown();
         }
     }
-
 }
 
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
@@ -95,16 +114,16 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 
 void callback_trajectory(const package_delivery::multiDOF_array::ConstPtr& msg, Drone * drone)//, trajectory_t * normal_traj)
 {
-    g_recieved_traj_t = ros::Time::now();  
-    //g_recieved_traj_t = ms->header.stamp;
-    normal_traj.clear(); 
-    /* 
-    if(DEBUG) { 
-        ROS_INFO_STREAM("pkg_del to call_back traj"<< ros::Time::now() - msg->header.stamp);
+    if (CLCT_DATA){ 
+        g_recieved_traj_t = ros::Time::now();  
+        g_msg_time_stamp = msg->header.stamp;
+        if (g_msg_time_stamp.sec != 0) {  
+            g_pt_cld_to_futurCol_commun_acc += (ros::Time::now() - msg->header.stamp).toSec()*1e9;
+            g_traj_ctr++; 
+        } 
     }
-    */
-    g_msg_time_stamp = msg->header.stamp;
     
+    normal_traj.clear(); 
     for (auto point : msg->points){
         multiDOFpoint traj_point;
         traj_point.x = point.x;
@@ -303,14 +322,15 @@ int main(int argc, char **argv){
              
             if (CLCT_DATA) { 
                 if (g_got_new_trajectory) {
-                    g_rcv_traj_to_follow_traj_t =  
-                        ros::Time::now() - g_recieved_traj_t;
+                    g_rcv_traj_to_follow_traj_acc_t +=  
+                        (ros::Time::now() - g_recieved_traj_t).toSec()*1e9;
                     if (g_msg_time_stamp.sec != 0) {  
                         g_img_to_follow_acc += (ros::Time::now() - g_msg_time_stamp).toSec()*1e9;
                         g_follow_ctr++; 
                     }
                     if (DEBUG) {
-                        ROS_INFO_STREAM("follow_traj_cb to  func" << g_rcv_traj_to_follow_traj_t);
+                       ; 
+                        //ROS_INFO_STREAM("follow_traj_cb to  func" << g_rcv_traj_to_follow_traj_t);
                         //ROS_INFO_STREAM("whatevs------- " << g_img_to_follow_acc);
                         //
                     }

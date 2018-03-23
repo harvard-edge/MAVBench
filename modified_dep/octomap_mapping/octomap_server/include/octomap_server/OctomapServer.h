@@ -78,6 +78,7 @@ class OctomapServer {
 
 public:
  long long octomap_integration_acc;
+ long long pt_cld_octomap_commun_overhead_acc; 
  int octomap_ctr;
 
 #ifdef COLOR_OCTOMAP_SERVER

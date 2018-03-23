@@ -44,6 +44,9 @@ bool DEBUG = false;
 ros::Time g_pt_cloud_header; //this is used to figure out the octomap msg that 
 						  //collision was detected in
 
+long long g_pt_cloud_future_collision_acc = 0;
+int g_octomap_rcv_ctr = 0;
+
 ros::Duration g_pt_cloud_to_future_collision_t; 
 
 bool g_got_new_traj = false;
@@ -132,8 +135,12 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
     if (octree == nullptr) {
         ROS_ERROR("Octree could not be pulled.");
     }
-    g_pt_cloud_header = msg.header.stamp; 
-	LOG_ELAPSED(future_collision_pull);
+    if (CLCT_DATA){ 
+        g_pt_cloud_header = msg.header.stamp; 
+        g_pt_cloud_future_collision_acc += (ros::Time::now() - g_pt_cloud_header).toSec()*1e9;
+        g_octomap_rcv_ctr++;
+    }
+    LOG_ELAPSED(future_collision_pull);
 }
 
 void pull_traj(const traj_msg_t::ConstPtr& msg)
@@ -241,6 +248,15 @@ void log_data_before_shutting_down(){
     std::string ns = ros::this_node::getName();
     profile_manager::profiling_data_srv profiling_data_srv_inst;
     
+    profiling_data_srv_inst.request.key = "img_to_futureCol_commun_t";
+    profiling_data_srv_inst.request.value = (((double)g_pt_cloud_future_collision_acc)/1e9)/g_octomap_rcv_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+    
     profiling_data_srv_inst.request.key = "future_collision_kernel";
     profiling_data_srv_inst.request.value = (((double)g_checking_collision_kernel_acc)/1e9)/g_check_collision_ctr;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
@@ -326,7 +342,7 @@ int main(int argc, char** argv)
                     g_pt_cloud_to_future_collision_t = start_hook_chk_col_t - g_pt_cloud_header;
                 } 
                 if(DEBUG) {
-                    ROS_INFO_STREAM("pt cloud to start of future collision"<< g_pt_cloud_to_future_collision_t);//<< " " <<start_hook_chk_col_t<<" " << g_pt_cloud_header);
+                    ROS_INFO_STREAM("pt cloud to start of checking collision in future collision"<< g_pt_cloud_to_future_collision_t);//<< " " <<start_hook_chk_col_t<<" " << g_pt_cloud_header);
                     //ROS_INFO_STREAM("collision detection time in future_collision"<<g_checking_collision_t);
                 }
             }

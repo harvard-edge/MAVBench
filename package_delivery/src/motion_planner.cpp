@@ -907,7 +907,7 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 	
         std::vector<double>  times;
         for (auto el :segment_times) {
-            times.push_back(.5*el); 
+            times.push_back(.8*el); 
         }
 
 
