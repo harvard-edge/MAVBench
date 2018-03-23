@@ -50,6 +50,8 @@ int g_panic_ctr = 0;
 bool g_start_profiling = false; 
 
 double v_max__global, a_max__global, g_fly_trajectory_time_out;
+float g_max_yaw_rate;
+float g_max_yaw_rate_during_flight;
 long long g_planning_time_including_ros_overhead_acc  = 0;
 int  g_planning_ctr = 0; 
 bool clct_data = true;
@@ -182,6 +184,16 @@ void package_delivery_initialize_params() {
      return; 
     }
 
+    if(!ros::param::get("max_yaw_rate",g_max_yaw_rate))  {
+        ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate not provided");
+        return;
+    }
+
+    if(!ros::param::get("max_yaw_rate_during_flight",g_max_yaw_rate_during_flight))  {
+        ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate_during_flight not provided");
+        return;
+    }
+
     if(!ros::param::get("/package_delivery/fly_trajectory_time_out", g_fly_trajectory_time_out)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
@@ -277,7 +289,8 @@ int main(int argc, char **argv)
     bool created_slam_loss_traj = false;
 
     uint16_t port = 41451;
-    Drone drone(ip_addr__global.c_str(), port, localization_method);
+    Drone drone(ip_addr__global.c_str(), port, localization_method,
+                g_max_yaw_rate, g_max_yaw_rate_during_flight);
     bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
     

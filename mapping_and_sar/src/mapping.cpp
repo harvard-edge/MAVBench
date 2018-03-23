@@ -158,13 +158,13 @@ int main(int argc, char** argv)
   profile_manager::start_profiling_srv start_profiling_srv_inst;
   start_profiling_srv_inst.request.key = "";
   std_srvs::SetBool trajectory_done_srv_inst;
-  
+
   bool clct_data = true;
   uint16_t port = 41451;
   std::string ip_addr__global;
   std::string localization_method; 
   std::string ns = ros::this_node::getName();
-  double distance_from_goal_threshold = 0; 
+  double distance_from_goal_threshold = 0;
   if (!ros::param::get("/ip_addr", ip_addr__global)) {
     ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
               (ns + "/ip_addr").c_str());
@@ -259,7 +259,8 @@ int main(int argc, char** argv)
   }
 
   // Wait for the localization method to come online
-  waitForLocalization(localization_method);
+  // waitForLocalization(localization_method);
+  waitForLocalization("ground_truth");
 
   double segment_dedicated_time = yaw_t + dt;
   control_drone(drone);
@@ -321,9 +322,9 @@ int main(int argc, char** argv)
   
   spin_around(drone);
   
-  
   // Move back a little bit
   //int ctr =0; 
+  /*
   float first_z;
   for (int ctr = 0; ctr < 7; ctr++) {
       samples_array.points.clear();
@@ -342,7 +343,9 @@ int main(int argc, char** argv)
       ros::Duration(.5).sleep();
   }
   spin_around(drone);
+  */
 
+  /*
   for (int ctr = 0; ctr < 7; ctr++) {
       samples_array.points.clear();
       auto cur_pos = drone.position();
@@ -359,7 +362,9 @@ int main(int argc, char** argv)
       ros::Duration(.5).sleep();
   }
   spin_around(drone);
+  */
 
+  /*
   for (int ctr = 0; ctr < 7; ctr++) {
       samples_array.points.clear();
       auto cur_pos = drone.position();
@@ -376,7 +381,9 @@ int main(int argc, char** argv)
       ros::Duration(.5).sleep();
   }
   spin_around(drone);
+  */
 
+  /*
   for (int ctr = 0; ctr < 7; ctr++) {
       samples_array.points.clear();
       auto cur_pos = drone.position();
@@ -391,9 +398,11 @@ int main(int argc, char** argv)
       trajectory_pub.publish(samples_array);
       //std::this_thread::sleep_for(std::chrono::milliseconds(200));
       ros::Duration(.5).sleep();
-  } 
+  }
   spin_around(drone);
+  */
 
+  /*
   for (int ctr = 0; ctr < 7; ctr++) {
       samples_array.points.clear();
       auto cur_pos = drone.position();
@@ -409,6 +418,7 @@ int main(int argc, char** argv)
       ros::Duration(.5).sleep();
       //std::this_thread::sleep_for(std::chrono::milliseconds(200));
   }
+  */
 
   // Start planning: The planner is called and the computed path sent to the controller.
   g_iteration = 0;
@@ -444,6 +454,12 @@ int main(int argc, char** argv)
     
     if (g_slam_lost) { //skip the iteration
         continue;
+        // ROS_ERROR("Slam lost! Giving up!");
+        // g_mission_status = "failed";
+        // log_data_before_shutting_down();
+        // signal_supervisor(g_supervisor_mailbox, "kill"); 
+        // ros::shutdown(); 
+        // break;
     }
     
     ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
@@ -589,3 +605,4 @@ int main(int argc, char** argv)
     }     
   }
 }
+

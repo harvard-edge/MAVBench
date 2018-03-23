@@ -57,37 +57,23 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
-        airsim_qc/vi_sensor/base_link:
-          Value: true
-        airsim_qc/vi_sensor/camera_depth_optical_center_link:
-          Value: true
-        airsim_qc/vi_sensor/camera_left_link:
-          Value: true
-        airsim_qc/vi_sensor/camera_right_link:
-          Value: true
         ground_truth:
+          Value: true
+        vins_mono:
           Value: true
         world:
           Value: false
-        world:
-          Value: true
       Marker Scale: 7
       Name: TF
       Show Arrows: true
       Show Axes: true
-      Show Names: false
+      Show Names: true
       Tree:
-        airsim_qc/vi_sensor/base_link:
-          {}
         world:
           world:
-            airsim_qc/vi_sensor/camera_depth_optical_center_link:
-              {}
-            airsim_qc/vi_sensor/camera_left_link:
-              {}
-            airsim_qc/vi_sensor/camera_right_link:
-              {}
             ground_truth:
+              {}
+            vins_mono:
               {}
       Update Interval: 0
       Value: true
@@ -197,8 +183,8 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
-      Distance: 15.8120136
+      Class: rviz/XYOrbit
+      Distance: 45.8120136
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
@@ -207,7 +193,7 @@ Visualization Manager:
       Focal Point:
         X: -7.53839493
         Y: -1.98038101
-        Z: 39.7428055
+        Z: 0
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
@@ -215,7 +201,7 @@ Visualization Manager:
       Near Clip Distance: 0.00999999978
       Pitch: 1.46479738
       Target Frame: <Fixed Frame>
-      Value: Orbit (rviz)
+      Value: XYOrbit (rviz)
       Yaw: 3.77404428
     Saved: ~
 Window Geometry:

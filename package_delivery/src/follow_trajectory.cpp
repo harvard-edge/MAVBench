@@ -243,7 +243,7 @@ int main(int argc, char **argv){
         yaw_strategy_t yaw_strategy = follow_yaw;
 
         if (should_panic) {
-            ROS_ERROR("Panicking!");
+            // ROS_ERROR("Panicking!");
             panic_traj = create_panic_trajectory(drone, panic_velocity);
             normal_traj.clear(); // Replan a path once we're done
         } else {

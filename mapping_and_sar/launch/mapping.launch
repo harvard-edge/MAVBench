@@ -5,11 +5,11 @@
   <arg name="log_file" default="$(arg mav_name)" />
   
   <!-- important params affecting performance -->
-  <arg name="v_max" default="7"/>
-  <arg name="nbvp/gain/range" default="12"/>
-  <arg name="nbvp/tree/extension_range" default="12.5"/>
-  <arg name="sensor_max_range" default="15" />
-  <arg name="planning_resolution" default=".15"/>
+  <arg name="v_max" default="1"/>
+  <arg name="nbvp/gain/range" default="4"/>
+  <arg name="nbvp/tree/extension_range" default="4.5"/>
+  <arg name="sensor_max_range" default="6" />
+  <arg name="planning_resolution" default=".45"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
   <arg name="distance_from_goal_threshold" default=".4" />
@@ -18,20 +18,18 @@
   <arg name="fly_trajectory_time_out" default=".3"/> 
 
   <!-- sensors /-->
-  <arg name="all_front" default="false"/>	
+  <arg name="all_front" default="true"/>	
   
-  <!-- orb slam location--> 
-  <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
   <!-- localization method -->
   <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
-  <arg name="localization_method" value="ground_truth" />
+  <!--arg name="localization_method" value="ground_truth" /-->
   <!--arg name="localization_method" value="gps" /-->
-  <!--arg name="localization_method" value="vins_mono"/-->
+  <arg name="localization_method" value="vins_mono"/>
 
   <!--- set according to the localizat5ion method--> 
-  <arg name="system/dyaw_max" default="1.52"/>
-  <arg name="max_yaw_rate" default="90"/>
-  <arg name="max_yaw_rate_during_flight" default="90"/>
+  <arg name="max_yaw_rate" default="15"/>
+  <arg name="max_yaw_rate_during_flight" default="15"/>
+  <arg name="system/dyaw_max" default="$(eval arg('max_yaw_rate_during_flight') * 3.14159265359 / 180.0)"/>
   <param name="v_max" value="$(arg v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
@@ -45,7 +43,7 @@
   <arg name="coverage_threshold" default="80"/>
 
   <!-- DEBUGING-data collection params--> 
-  <arg name="DEBUG" value="true" />
+  <arg name="DEBUG" value="false" />
   <arg name="CLCT_DATA" value="true" />
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />
@@ -58,12 +56,12 @@
 
   <!-- Behzad's workstation ip --> 
   <!-- arg name="host_ip" value="10.157.34.101" /--> 
-  <arg name="host_ip" value="10.157.90.51" />
+  <!-- arg name="host_ip" value="10.157.90.51" /-->
   <!--arg name="host_ip" value="169.254.153.158" /-->
   <!-- Hasans's workstation ip --> 
   <!--arg name="host_ip" default="10.157.90.49" /-->
   <!-- Hasans's direct connection ip --> 
-  <!-- arg name="host_ip" default="169.254.250.191" / -->
+  <arg name="host_ip" default="169.254.250.191" />
   <!-- Wenzhi's workstation ip -->
   <!-- arg name="host_ip" default="10.157.90.62" /-->
   <param name="/ip_addr" value="$(arg host_ip)" />
@@ -187,15 +185,28 @@
 
     
 	
-    <group if="$(eval localization_method == 'orb_slam2_rgbd')">
+  <group if="$(eval localization_method == 'orb_slam2_rgbd')">
+    <!-- orb slam location--> 
+    <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
+
     <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" />
-    </group>
+  </group>
 
-  <node pkg="publish_imu" type="publish_imu" name="publish_imu"/> 
+  <group if="$(eval localization_method == 'vins_mono')">
+      <node pkg="timed_roslaunch" type="timed_roslaunch.sh" args="4 vins_estimator airsim.launch" name="timed_roslaunch" />
+  </group>
 
-    <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
+  <group if="$(eval localization_method == 'gps')">
+     <node pkg="gps_publisher" type="gps_publisher" name="gps_publisher" />
+  </group>
+
+  <node pkg="publish_imu" type="publish_imu" name="publish_imu"> 
+		<param name="loop_rate" value="150"/>
+  </node>
+
+  <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
 		<param name="panic_distance" value="3"/>
-    </node>
+  </node>
 
 
 
@@ -204,7 +215,5 @@
   <group if="$(arg DEBUG)">
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mapping_and_sar)/extras/rvizConfig.rviz"/>
   </group>
-  
-
 
 </launch>

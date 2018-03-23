@@ -33,6 +33,8 @@
         <param name="localization_method" value="$(arg localization_method)" />
         <param name="Airsim_ip" value="$(arg host_ip)" />
 
+        <param name="loop_rate" value="20" />
+
 		<!-- Port of the Airsim computer (this is default, do not change!) -->
 		<param name="Airsim_port" value="41451"/>
 
@@ -45,6 +47,7 @@
         <param name="scale_y" value="288"/> <!-- Height when calibrated!-->
         <param name="width" value="512"/>  <!-- Width when calibrated!-->
         <param name="height" value="288"/> <!-- Height when calibrated!-->
+
         <comment> 
         <param name="Fx" value="200"/>
         <param name="Fy" value="200"/>

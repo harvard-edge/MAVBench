@@ -1360,12 +1360,12 @@ piecewise_trajectory OMPL_plan(geometry_msgs::Point start, geometry_msgs::Point 
 
     // Set bounds
     ob::RealVectorBounds bounds(3);
-    bounds.setLow(0, std::min(x__low_bound__global, start.x));
-    bounds.setHigh(0, std::max(x__high_bound__global, start.x));
-    bounds.setLow(1, std::min(y__low_bound__global, start.y));
-    bounds.setHigh(1, std::max(y__high_bound__global, start.y));
-    bounds.setLow(2, std::min(z__low_bound__global, start.z));
-    bounds.setHigh(2, std::max(z__high_bound__global, start.z));
+    bounds.setLow(0, x__low_bound__global);
+    bounds.setHigh(0, x__high_bound__global);
+    bounds.setLow(1, y__low_bound__global);
+    bounds.setHigh(1, y__high_bound__global);
+    bounds.setLow(2, z__low_bound__global);
+    bounds.setHigh(2, z__high_bound__global);
 
     space->setBounds(bounds);
 

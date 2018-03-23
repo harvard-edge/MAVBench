@@ -59,7 +59,9 @@ void control_drone(Drone& drone)
         if (cmd == "a") {
             drone.arm();
         } else if (cmd == "s") {
-            sleep(5);
+			double t;
+			cin >> t;
+            sleep(t);
 		} else if (cmd == "d") {
 			drone.disarm();
 		} else if (cmd == "t") {
