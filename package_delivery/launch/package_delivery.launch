@@ -16,8 +16,8 @@
   <arg name="v_max" default="2"/> 
   <arg name="future_col_drone_radius" default="1.5"/>
   <arg name="future_col_drone_height" default="0.6"/>
-  <arg name="planner_drone_radius" default="2">
-  <arg name="planner_drone_height" default="0.6">
+  <arg name="planner_drone_radius" default="2"/>
+  <arg name="planner_drone_height" default="0.6"/>
   
   <arg name="planning_resolution" default=".5"/>
   <arg name="sensor_max_range" default="7" />
