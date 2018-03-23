@@ -285,8 +285,8 @@ void motion_planning_initialize_params() {
     ros::param::get("/motion_planner/nodes_to_add_to_roadmap", nodes_to_add_to_roadmap__global);
     ros::param::get("/motion_planner/max_dist_to_connect_at", max_dist_to_connect_at__global);
 
-    ros::param::get("/motion_planner/drone_radius", drone_radius__global);
-    ros::param::get("/motion_planner/drone_height", drone_height__global);
+    ros::param::get("/motion_planner/planner_drone_radius", drone_radius__global);
+    ros::param::get("/motion_planner/planner_drone_height", drone_height__global);
     ros::param::get("/motion_planner/v_max", v_max__global);
     ros::param::get("/motion_planner/a_max", a_max__global);
     ros::param::get("ros_DEBUG", DEBUG__global);
@@ -309,7 +309,6 @@ void motion_planning_initialize_params() {
         std::cout<<"This motion planning type is not defined"<<std::endl;
         exit(0);
     }
-
 }
 
 void log_data_before_shutting_down(){
