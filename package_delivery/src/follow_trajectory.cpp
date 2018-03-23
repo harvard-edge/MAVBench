@@ -318,7 +318,7 @@ int main(int argc, char **argv){
         
         if (normal_traj.size() > 0) {
             app_started = true;
-        }       
+        }
        
         if(app_started){
             // Profiling 
@@ -339,10 +339,18 @@ int main(int argc, char **argv){
                 } 
             }
             
-            follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
+            // Back up if no trajectory was found
+            if (!forward_traj->empty())
+                follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
                     check_position, g_v_max, g_fly_trajectory_time_out);
+            else {
+                ROS_ERROR("New SLAMING BREAKS YO");
+                follow_trajectory(drone, &rev_normal_traj, nullptr, face_backward, 
+                    check_position, 1, g_fly_trajectory_time_out);
+            }
 
-            next_steps_pub.publish(next_steps_msg(*forward_traj));
+            if (forward_traj->size() > 0)
+                next_steps_pub.publish(next_steps_msg(*forward_traj));
         }
         if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){
             ROS_INFO_STREAM("slam loss");

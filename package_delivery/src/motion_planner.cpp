@@ -211,7 +211,7 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
             res.path_found = false;
             return true;
         }
-        clear_octomap_bbx({req.start.x, req.start.y, req.start.z});
+        // clear_octomap_bbx({req.start.x, req.start.y, req.start.z});
     }
     // octomap_msgs::binaryMapToMsg(*octree, omp);
     //octree->writeBinary("/home/ubuntu/octomap.bt");
