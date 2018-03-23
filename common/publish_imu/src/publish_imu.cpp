@@ -26,6 +26,7 @@
 #include "std_msgs/Bool.h"
 #include <signal.h>
 #include "common.h"
+#include "Profiling.h"
 #include <cstring>
 #include <string>
 #include "HelperFunctions/QuatRotEuler.h"

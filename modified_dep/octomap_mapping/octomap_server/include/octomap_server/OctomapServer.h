@@ -77,6 +77,9 @@ namespace octomap_server {
 class OctomapServer {
 
 public:
+ long long octomap_integration_acc;
+ int octomap_ctr;
+
 #ifdef COLOR_OCTOMAP_SERVER
   typedef pcl::PointXYZRGB PCLPoint;
   typedef pcl::PointCloud<pcl::PointXYZRGB> PCLPointCloud;
@@ -99,6 +102,7 @@ public:
   bool maxRangecb(octomap_server::maxRangeSrv::Request& req, octomap_server::maxRangeSrv::Response& resp);
   virtual void insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud);
   virtual bool openFile(const std::string& filename);
+  void log_data_before_shutting_down();
 
 protected:
   inline static void updateMinKey(const octomap::OcTreeKey& in, octomap::OcTreeKey& min) {
@@ -261,6 +265,9 @@ protected:
   unsigned m_multires2DScale;
   bool m_projectCompleteMap;
   bool m_useColoredMap;
+
+ // Profiling
+ 
 };
 }
 

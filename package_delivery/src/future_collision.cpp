@@ -317,7 +317,7 @@ int main(int argc, char** argv)
             if (collision_coming) {
                 next_state = waiting_for_response;
                 // Publish whether or not a future collision has been detected
-                col_coming_msg.header.stamp = g_checking_collision_t;
+                col_coming_msg.header.stamp = g_pt_cloud_header;
                 col_coming_msg.data = collision_coming;
                 col_coming_pub.publish(col_coming_msg);
                 g_got_new_traj = false; 

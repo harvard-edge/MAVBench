@@ -63,6 +63,9 @@ string localization_method;
 string stats_file_addr;
 string ns;
 std::string g_supervisor_mailbox; //file to write to when completed
+bool CLCT_DATA;
+bool DEBUG;
+
 
 enum State { setup, waiting, flying, trajectory_completed, failed, invalid };
 
@@ -146,7 +149,17 @@ void package_delivery_initialize_params() {
       ROS_FATAL_STREAM("Could not start mapping supervisor_mailbox not provided");
       return ;
     }
+   
+    if(!ros::param::get("/DEBUG",DEBUG))  {
+      ROS_FATAL_STREAM("Could not start pkg delivery DEBUG not provided");
+      return ;
+    }
     
+    if(!ros::param::get("/CLCT_DATA",CLCT_DATA))  {
+      ROS_FATAL_STREAM("Could not start pkg delivery CLCT_DATA not provided");
+      return ;
+    }
+
     if(!ros::param::get("/package_delivery/ip_addr",ip_addr__global)){
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/ip_addr").c_str());
@@ -286,7 +299,6 @@ int main(int argc, char **argv)
 
     ros::Publisher trajectory_pub = nh.advertise <package_delivery::multiDOF_array>("normal_traj", 1);
 
-
     ros::Subscriber col_coming_sub = 
         nh.subscribe<package_delivery::BoolPlusHeader>("col_coming", 1, col_coming_callback);
     
@@ -358,25 +370,45 @@ int main(int argc, char **argv)
         }
         else if (state == waiting)
         {
-
-            start_hook_t = ros::Time::now(); 
+            if (CLCT_DATA){ 
+                start_hook_t = ros::Time::now(); 
+            }
             
             start = get_start(drone);
             normal_traj = request_trajectory(get_trajectory_client, start, goal, 
                     twist, acceleration);
-            end_hook_t = ros::Time::now(); 
-            if (!clcted_col_coming_data){ 
-                ROS_INFO_STREAM("col coming to req traj"<< start_hook_t - col_coming_time_stamp);
-                clcted_col_coming_data = true; 
-            }
-            ROS_INFO_STREAM("req traj with srv overhead"<<end_hook_t - start_hook_t); 
-             
-            // Pause a little bit so that future_col can be updated
-            g_planning_time_including_ros_overhead_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
-            g_planning_ctr++; 
+           
+            // Profiling
+            if (CLCT_DATA){ 
+                end_hook_t = ros::Time::now(); 
+                /* 
+                if (!clcted_col_coming_data){ 
+                    g_col_coming_to_req_traj_acc += (start_hook_t - col_coming_time_stamp).toSec()*1e9;
+                    clcted_col_coming_data = true; 
+                    if (DEBUG){ 
+                        ROS_INFO_STREAM("col coming to req traj"<< (start_hook_t - col_coming_time_stamp).toSec());
+                    }
+                }
+                */     
+                if (DEBUG){ 
+                    ROS_INFO_STREAM("req traj with srv overhead"<<end_hook_t - start_hook_t); 
+                }
+                g_planning_time_including_ros_overhead_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
+                g_planning_ctr++; 
+            } 
+            
             //std::this_thread::sleep_for(std::chrono::milliseconds(150));
             package_delivery::multiDOF_array array_of_point_msg; 
-            array_of_point_msg.header.stamp = ros::Time::now();
+            
+            if (!clcted_col_coming_data){ 
+                array_of_point_msg.header.stamp = col_coming_time_stamp;//ros::Time::now();
+                clcted_col_coming_data = true; 
+            }else{
+                ros::Time temp(0,0); 
+                array_of_point_msg.header.stamp = temp;
+            }
+            
+            ROS_INFO_STREAM("blah blah"<< (ros::Time::now() - col_coming_time_stamp) << " " << ros::Time::now() << " " << col_coming_time_stamp); 
             for (auto point : normal_traj){
                 package_delivery::multiDOF point_msg;
                 point_msg.x = point.x;
@@ -417,13 +449,19 @@ int main(int argc, char **argv)
             if(!srv_call_status){
                 ROS_INFO_STREAM("could not make a service all to trajectory done");
                 next_state = flying;
-            }else if (follow_trajectory_status_srv_inst.response.success.data || col_coming) {
+            }else if (follow_trajectory_status_srv_inst.response.success.data) {
+                next_state = trajectory_completed; 
+                twist = follow_trajectory_status_srv_inst.response.twist;
+                acceleration = follow_trajectory_status_srv_inst.response.acceleration;
+            }
+            else if (col_coming){
                 next_state = trajectory_completed; 
                 twist = follow_trajectory_status_srv_inst.response.twist;
                 acceleration = follow_trajectory_status_srv_inst.response.acceleration;
                 col_coming = false; 
                 clcted_col_coming_data = false;
-            }else{
+            }
+            else{
                 next_state = flying;
             }
 
@@ -433,7 +471,7 @@ int main(int argc, char **argv)
             fail_ctr = normal_traj.empty() ? fail_ctr+1 : 0; 
             
             if (normal_traj.empty()){
-                std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
             }
             if (fail_ctr >fail_threshold) {
                 next_state = failed;

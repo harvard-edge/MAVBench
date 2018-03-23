@@ -45,6 +45,10 @@ ros::Time col_coming_time_stamp;
 ros::Duration g_rcv_traj_to_follow_traj_t;
 bool prev_col_coming = false;
 bool CLCT_DATA, DEBUG;
+int g_follow_ctr = 0;
+long long g_img_to_follow_acc = 0;
+ros::Time g_msg_time_stamp;
+
 
 
 void panic_callback(const std_msgs::Bool::ConstPtr& msg) {
@@ -73,6 +77,16 @@ void log_data_before_shutting_down(){
             ros::shutdown();
         }
     }
+
+    profiling_data_srv_inst.request.key = "image_to_follow_time";
+    profiling_data_srv_inst.request.value = (((double)g_img_to_follow_acc)/1e9)/g_follow_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
 }
 
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
@@ -84,9 +98,13 @@ void callback_trajectory(const package_delivery::multiDOF_array::ConstPtr& msg, 
     g_recieved_traj_t = ros::Time::now();  
     //g_recieved_traj_t = ms->header.stamp;
     normal_traj.clear(); 
+    /* 
     if(DEBUG) { 
         ROS_INFO_STREAM("pkg_del to call_back traj"<< ros::Time::now() - msg->header.stamp);
     }
+    */
+    g_msg_time_stamp = msg->header.stamp;
+    
     for (auto point : msg->points){
         multiDOFpoint traj_point;
         traj_point.x = point.x;
@@ -287,8 +305,14 @@ int main(int argc, char **argv){
                 if (g_got_new_trajectory) {
                     g_rcv_traj_to_follow_traj_t =  
                         ros::Time::now() - g_recieved_traj_t;
+                    if (g_msg_time_stamp.sec != 0) {  
+                        g_img_to_follow_acc += (ros::Time::now() - g_msg_time_stamp).toSec()*1e9;
+                        g_follow_ctr++; 
+                    }
                     if (DEBUG) {
                         ROS_INFO_STREAM("follow_traj_cb to  func" << g_rcv_traj_to_follow_traj_t);
+                        //ROS_INFO_STREAM("whatevs------- " << g_img_to_follow_acc);
+                        //
                     }
                 } 
             }

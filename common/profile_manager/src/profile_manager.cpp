@@ -9,6 +9,8 @@
 #include <rosgraph_msgs/TopicStatistics.h>
 #include "Drone.h"
 #include "common.h"
+#include "Profiling.h"
+
 #include <map>
 using namespace std;
 

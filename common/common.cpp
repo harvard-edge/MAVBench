@@ -36,22 +36,6 @@ static T last_msg (std::string topic) {
 }
 
 
-void signal_supervisor(std::string file_to_write_to, std::string msg){
-    std::ofstream file_to_write_to_h; //file handle write to when completed
-    file_to_write_to_h.open(file_to_write_to, std::ofstream::out);
-    file_to_write_to_h<< msg;
-    file_to_write_to_h.close();
-}
-
-
-void update_stats_file(const std::string& stats_file__addr, const std::string& content){
-    std::ofstream myfile;
-    myfile.open(stats_file__addr, std::ofstream::out | std::ofstream::app);
-    myfile << content << std::endl;
-    myfile.close();
-    return;
-}
-
 
 void sigIntHandler(int sig)
 {
@@ -300,10 +284,13 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
                              //when the planner fails
                              //and an empty trajectory
                              //is pushed
-        drone.fly_velocity(0,0,0, drone.get_yaw(),3);
+        drone.fly_velocity(0,0,0, drone.get_yaw(),1);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        drone.fly_velocity(-2,-2,0, drone.get_yaw(),.5);
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         //ros::sleep::Duration(.3); 
         ROS_ERROR_STREAM("SLAMING ON BREAKS YO");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         return; 
     }
     ros::Time start_hook_t;
@@ -320,9 +307,9 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
          
         if (check_position) {
             auto pos = drone.position();
-            v_x += 0.8*(p.x-pos.x);
-            v_y += 0.8*(p.y-pos.y);
-            v_z += 0.4*(p.z-pos.z);
+            v_x += 0.2*(p.x-pos.x);
+            v_y += 0.2*(p.y-pos.y);
+            v_z += 0.1*(p.z-pos.z);
             /* 
             if (distance(p.x-pos.y, p.y-pos.y, p.z-pos.z)>2) {
                 ROS_ERROR_STREAM("distance greater than 2"); 

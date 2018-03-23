@@ -38,17 +38,61 @@
 
 #include <ros/ros.h>
 #include <octomap_server/OctomapServer.h>
+#include "profile_manager/start_profiling_srv.h"
+#include "profile_manager/profiling_data_srv.h"
+#include <signal.h>
 
 #define USAGE "\nUSAGE: octomap_server <map.[bt|ot]>\n" \
         "  map.bt: inital octomap 3D map file to read\n"
 
+
+//Profiling
+int g_main_loop_ctr = 0;
+long long g_accumulate_loop_time = 0; //it is in ms
+
 using namespace octomap_server;
+
+long long octomap_integration_acc = 0;
+int octomap_ctr = 0;
+
+void log_data_before_shutting_down(){
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
+
+    std::string ns = ros::this_node::getName();
+    profiling_data_srv_inst.request.key = "octomap_integration";
+    profiling_data_srv_inst.request.value = (((double)octomap_integration_acc)/1e9)/octomap_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager using octomap");
+            ros::shutdown();
+        }
+    }
+
+    profiling_data_srv_inst.request.key = "octomap_main_loop";
+    profiling_data_srv_inst.request.value = (((double)g_accumulate_loop_time)/1e9)/g_main_loop_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+        }
+    }
+}
+
+
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    exit(0);
+}
 
 int main(int argc, char** argv){
   ros::init(argc, argv, "octomap_server");
   const ros::NodeHandle& private_nh = ros::NodeHandle("~");
   std::string mapFilename(""), mapFilenameParam("");
 
+  signal(SIGINT, sigIntHandlerPrivate);
+  
   if (argc > 2 || (argc == 2 && std::string(argv[1]) == "-h")){
     ROS_ERROR("%s", USAGE);
     exit(-1);
@@ -75,13 +119,22 @@ int main(int argc, char** argv){
       exit(1);
     }
   }
-
-  try{
-    ros::spin();
-  }catch(std::runtime_error& e){
-    ROS_ERROR("octomap_server exception: %s", e.what());
-    return -1;
+  
+  ros::Time loop_start_t, loop_end_t; 
+  while(ros::ok) {
+      loop_start_t = ros::Time::now();
+      octomap_integration_acc = server.octomap_integration_acc;
+      octomap_ctr = server.octomap_ctr;
+      try{
+          ros::spinOnce();
+      }catch(std::runtime_error& e){
+          ROS_ERROR("octomap_server exception: %s", e.what());
+          return -1;
+      }
+     loop_end_t = ros::Time::now();
+     g_accumulate_loop_time += (((loop_end_t - loop_start_t).toSec())*1e9);
+     g_main_loop_ctr++;
+  
   }
-
   return 0;
 }

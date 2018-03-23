@@ -6,7 +6,7 @@
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include <geometry_msgs/Vector3.h>
-
+#include "Profiling.h"
 #include "Drone.h"
 
 

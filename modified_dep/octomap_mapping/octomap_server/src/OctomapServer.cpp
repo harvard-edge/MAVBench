@@ -193,10 +193,15 @@ OctomapServer::OctomapServer(ros::NodeHandle private_nh_)
   dynamic_reconfigure::Server<OctomapServerConfig>::CallbackType f;
   f = boost::bind(&OctomapServer::reconfigureCallback, this, _1, _2);
   m_reconfigureServer.setCallback(f);
+
+  // Profiling
+  octomap_integration_acc = 0;
+  octomap_ctr = 0;
 }
 
+
 OctomapServer::~OctomapServer(){
-  if (m_tfPointCloudSub){
+    if (m_tfPointCloudSub){
     delete m_tfPointCloudSub;
     m_tfPointCloudSub = NULL;
   }
@@ -269,7 +274,12 @@ bool OctomapServer::openFile(const std::string& filename){
 
 void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud){
    ros::Time start_time = ros::Time::now();
-    ros::WallTime startTime = ros::WallTime::now();
+
+   octomap_ctr++;
+
+   ros::Duration pt_cld_to_octomap_insert_cb = start_time - cloud->header.stamp;
+   //ROS_INFO_STREAM("pt_cld_to_octomap_insert"<<pt_cld_to_octomap_insert_cb);
+   ros::WallTime startTime = ros::WallTime::now();
   //g_point_cloud_time = ros::Time::now();  
 
   //
@@ -356,10 +366,11 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
   insertScan(sensorToWorldTf.getOrigin(), pc_ground, pc_nonground);
 
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
+  octomap_integration_acc += total_elapsed*1e9;
   //ROS_ERROR("Pointcloud insertion in OctomapServer done (%zu+%zu pts (ground/nonground), %f sec)", pc_ground.size(), pc_nonground.size(), total_elapsed);
 
-  //publishAll(cloud->header.stamp);
-  publishAll(start_time);
+  publishAll(cloud->header.stamp);
+  //publishAll(start_time);
 }
 
 void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground){
