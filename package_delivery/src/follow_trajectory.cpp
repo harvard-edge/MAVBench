@@ -26,6 +26,7 @@ bool col_imminent = false;
 
 
 trajectory_t normal_traj;
+trajectory_t rev_normal_traj;
 float g_localization_status = 1.0;
 std::string g_supervisor_mailbox; //file to write to when completed
 float g_v_max;
@@ -141,16 +142,20 @@ bool follow_trajectory_status_cb(package_delivery::follow_trajectory_status_srv:
     package_delivery::follow_trajectory_status_srv::Response &res)
 {
     res.success.data = g_trajectory_done;// || col_coming;
+
+    const multiDOFpoint& current_point =
+        normal_traj.empty() ? rev_normal_traj.front() : normal_traj.front();
+    
     geometry_msgs::Twist last_velocity;
-    last_velocity.linear.x = normal_traj.front().vx;
-    last_velocity.linear.y = normal_traj.front().vy;
-    last_velocity.linear.z = normal_traj.front().vz;
+    last_velocity.linear.x = current_point.vx;
+    last_velocity.linear.y = current_point.vy;
+    last_velocity.linear.z = current_point.vz;
     res.twist = last_velocity;
   
     geometry_msgs::Twist last_acceleration;
-    last_acceleration.linear.x = normal_traj.front().ax;
-    last_acceleration.linear.y = normal_traj.front().ay;
-    last_acceleration.linear.z = normal_traj.front().az;
+    last_acceleration.linear.x = current_point.ax;
+    last_acceleration.linear.y = current_point.ay;
+    last_acceleration.linear.z = current_point.az;
     res.acceleration = last_acceleration;
     return true;
 }
@@ -186,7 +191,7 @@ int main(int argc, char **argv){
     std::string ip_addr;
     ros::Time cur_t, last_t;
     float cur_z, last_z = -9999;
-    trajectory_t rev_normal_traj, panic_traj;
+    trajectory_t panic_traj;
     trajectory_t slam_loss_traj;
     bool created_slam_loss_traj = false;
     bool created_future_col_traj = false;
@@ -345,8 +350,7 @@ int main(int argc, char **argv){
                     check_position, g_v_max, g_fly_trajectory_time_out);
             else {
                 ROS_ERROR("New SLAMING BREAKS YO");
-                follow_trajectory(drone, &rev_normal_traj, nullptr, face_backward, 
-                    check_position, 1, g_fly_trajectory_time_out);
+                follow_trajectory(drone, &rev_normal_traj, nullptr, face_backward, true, 1, g_fly_trajectory_time_out);
             }
 
             if (forward_traj->size() > 0)
