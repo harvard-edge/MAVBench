@@ -37,7 +37,7 @@ def action_upon_termination():
         if(len(ros_process_list_filtered)<= len(process_ignore_list) -1):#rosmaster doesn't show up
             break
         else:
-            if (ctr > 5): #a time out
+            if (ctr > 25): #a time out
                 break
         ctr+=1
 #    sys.exit(0)

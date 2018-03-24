@@ -38,19 +38,76 @@
 #include <octomap_server/OctomapServer.h>
 #include <pluginlib/class_list_macros.h>
 #include <nodelet/nodelet.h>
-
+//#include <signal.h>
+#include "profile_manager/start_profiling_srv.h"
+#include "profile_manager/profiling_data_srv.h"
 
 namespace octomap_server
 {
 
+
+static OctomapServer  *glbl_ptr;
+void log_data_before_shutting_down(){
+    profile_manager::profiling_data_srv profiling_data_srv_inst;
+    
+    profiling_data_srv_inst.request.key = "img_to_octomap_commun_t";
+    profiling_data_srv_inst.request.value = ((double)glbl_ptr->pt_cld_octomap_commun_overhead_acc/1e9)/glbl_ptr->octomap_ctr;
+     
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager using octomap");
+            ros::shutdown();
+        }
+    }
+     
+    //ROS_ERROR_STREAM("oooooooook"<<glbl_ptr->octomap_ctr);
+    //ROS_ERROR_STREAM("---------------------- BLAAAAAAAAAAAAAAAH33"<<((double)glbl_ptr->pt_cld_octomap_commun_overhead_acc/1e9)/glbl_ptr->octomap_ctr); 
+    
+    /* 
+    std::string ns = ros::this_node::getName();
+    profiling_data_srv_inst.request.key = "octomap_integration";
+    profiling_data_srv_inst.request.value = (((double)octomap_integration_acc)/1e9)/octomap_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager using octomap");
+            ros::shutdown();
+        }
+    }
+    
+    ROS_ERROR_STREAM("---------------------- BLAAAAAAAAAAAAAAAH4"); 
+   */ 
+    
+    /*
+    profiling_data_srv_inst.request.key = "octomap_main_loop";
+    profiling_data_srv_inst.request.value = (((double)g_accumulate_loop_time)/1e9)/g_main_loop_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+        }
+    }
+    */
+}
+/*
+void sigIntHandlerPrivate(int signo){
+    if (signo == SIGINT) {
+        log_data_before_shutting_down(); 
+        ros::shutdown();
+    }
+    //exit(0);
+}
+*/
 class OctomapServerNodelet : public nodelet::Nodelet
 {
 public:
   virtual void onInit()
   {
-    NODELET_DEBUG("Initializing octomap server nodelet ...");
+    
+  glbl_ptr =   server_.get();
+  NODELET_DEBUG("Initializing octomap server nodelet ...");
     ros::NodeHandle& private_nh = this->getPrivateNodeHandle();
     server_.reset(new OctomapServer(private_nh));
+
+    //signal(SIGINT, sigIntHandlerPrivate);
 
     std::string mapFilename("");
     if (private_nh.getParam("map_file", mapFilename)) {
@@ -59,6 +116,8 @@ public:
       }
     }
   }
+ 
+
 private:
   boost::shared_ptr<OctomapServer> server_;
 };

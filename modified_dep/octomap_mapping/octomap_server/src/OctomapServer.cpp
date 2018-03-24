@@ -29,7 +29,9 @@
 
 #include <octomap_server/OctomapServer.h>
 #include "octomap_server/maxRangeSrv.h"
-
+//#include <signal.h>
+#include "profile_manager/start_profiling_srv.h"
+#include "profile_manager/profiling_data_srv.h"
 
 using namespace octomap;
 using octomap_msgs::Octomap;
@@ -70,6 +72,8 @@ OctomapServer::OctomapServer(ros::NodeHandle private_nh_)
   m_groundFilterDistance(0.04), m_groundFilterAngle(0.15), m_groundFilterPlaneDistance(0.07),
   m_compressMap(true),
   m_incrementalUpdate(false),
+  CLCT_DATA(false),
+  data_collection_iteration_freq(100),
   m_initConfig(true)
 {
   double probHit, probMiss, thresMin, thresMax;
@@ -110,6 +114,11 @@ OctomapServer::OctomapServer(ros::NodeHandle private_nh_)
   private_nh.param("sensor_model/max", thresMax, 0.97);
   private_nh.param("compress_map", m_compressMap, m_compressMap);
   private_nh.param("incremental_2D_projection", m_incrementalUpdate, m_incrementalUpdate);
+  private_nh.param("CLCT_DATA", CLCT_DATA, false);
+  private_nh.param("data_collection_iteration_freq_OM", data_collection_iteration_freq, 100);
+
+  profile_manager_client = 
+      private_nh.serviceClient<profile_manager::profiling_data_srv>("/record_profiling_data", true);
 
   if (m_filterGroundPlane && (m_pointcloudMinZ > 0.0 || m_pointcloudMaxZ < 0.0)){
     ROS_WARN_STREAM("You enabled ground filtering but incoming pointclouds will be pre-filtered in ["
@@ -274,16 +283,15 @@ bool OctomapServer::openFile(const std::string& filename){
 }
 
 void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud){
-   ros::Time start_time = ros::Time::now();
-   pt_cld_octomap_commun_overhead_acc +=  (start_time - cloud->header.stamp).toSec()*1e9;
-   octomap_ctr++;
-
-   ros::Duration pt_cld_to_octomap_insert_cb = start_time - cloud->header.stamp;
-   //ROS_INFO_STREAM("pt_cld_to_octomap_insert"<<pt_cld_to_octomap_insert_cb);
+    if(CLCT_DATA) {
+       ros::Time start_time = ros::Time::now();
+       pt_cld_octomap_commun_overhead_acc +=  (start_time - cloud->header.stamp).toSec()*1e9;
+       octomap_ctr++;
+   }
+   
    ros::WallTime startTime = ros::WallTime::now();
-  //g_point_cloud_time = ros::Time::now();  
-
-  //
+  
+   //
   // ground filtering in base frame
   //
   PCLPointCloud pc; // input cloud for filtering and ground-detection
@@ -299,6 +307,7 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
 
   Eigen::Matrix4f sensorToWorld;
   pcl_ros::transformAsMatrix(sensorToWorldTf, sensorToWorld);
+
 
 
   // set up filter for height range, also removes NANs:
@@ -367,8 +376,27 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
   insertScan(sensorToWorldTf.getOrigin(), pc_ground, pc_nonground);
 
   double total_elapsed = (ros::WallTime::now() - startTime).toSec();
-  octomap_integration_acc += total_elapsed*1e9;
-  //ROS_ERROR("Pointcloud insertion in OctomapServer done (%zu+%zu pts (ground/nonground), %f sec)", pc_ground.size(), pc_nonground.size(), total_elapsed);
+  if(CLCT_DATA){
+      octomap_integration_acc += total_elapsed*1e9;
+      if ((octomap_ctr+1) % data_collection_iteration_freq == 0) {
+          profile_manager::profiling_data_srv profiling_data_srv_inst;
+          profiling_data_srv_inst.request.key = "img_to_octomap_commun_t";
+          profiling_data_srv_inst.request.value = ((double)pt_cld_octomap_commun_overhead_acc/1e9)/octomap_ctr;
+
+          if (!profile_manager_client.call(profiling_data_srv_inst)){ 
+              ROS_ERROR_STREAM("could not probe data using stats manager using octomap");
+              ros::shutdown();
+          }
+          
+          std::string ns = ros::this_node::getName();
+          profiling_data_srv_inst.request.key = "octomap_integration";
+          profiling_data_srv_inst.request.value = (((double)octomap_integration_acc)/1e9)/octomap_ctr;
+          if (!profile_manager_client.call(profiling_data_srv_inst)){ 
+              ROS_ERROR_STREAM("could not probe data using stats manager using octomap");
+              ros::shutdown();
+          }
+      }
+  }
 
   publishAll(cloud->header.stamp);
   //publishAll(start_time);

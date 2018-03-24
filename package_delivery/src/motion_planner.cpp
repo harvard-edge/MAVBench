@@ -488,7 +488,7 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
         end_ptr->z = end.z();
     }
 
-	LOG_ELAPSED(motion_planner);
+	//LOG_ELAPSED(motion_planner);
 	return collided;
 }
 #else
@@ -538,14 +538,14 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
                         end_ptr->z = end.z();
                     }
 
-					LOG_ELAPSED(motion_planner);
+					//LOG_ELAPSED(motion_planner);
 					return true;
                 }
 			}
 		}
 	}
 
-	LOG_ELAPSED(motion_planner);
+	//LOG_ELAPSED(motion_planner);
 	return false;
 }
 #endif
@@ -633,7 +633,7 @@ void generate_octomap(const octomap_msgs::Octomap& msg)
         ROS_ERROR("Octree could not be pulled.");
     }
 
-    LOG_ELAPSED(motion_planner_pull);
+    //LOG_ELAPSED(motion_planner_pull);
 }
 
 

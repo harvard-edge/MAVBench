@@ -15,13 +15,11 @@
   <arg name="a_max" default="5"/> 
   <arg name="v_max" default="1.5"/> 
   
-  <!-- application parameters -->
-  <arg name="planning_resolution" default=".15"/>
+  <arg name="planning_resolution" default=".5"/>
   <arg name="sensor_max_range" default="7" />
   <arg name="fly_trajectory_time_out" default=".1"/> 
   <arg name="planning_budget" default=".3"/>
   <param name="planning_budget" value="$(arg planning_budget)"/>
-
 
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
@@ -49,15 +47,20 @@
 
   <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
   <!-- also planning to prevent stdio stuff(if they really matter)-->
-  <arg name="DEBUG" default="true" />
+  <arg name="DEBUG" default="false" />
   <arg name="CLCT_DATA" value="true" />
   <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
   <param name="DEBUG"  value="$(arg DEBUG)" />
   <param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
 
+  
   <group if="$(arg CLCT_DATA)">
   <param name="enable_statistics" value="true"/>
   </group> 
+
+  <!-- only for to octomap and pt cloud--> 
+  <arg name="data_collection_iteration_freq" value="300" />
+  <param name="data_collection_iteration_freq_ptCld" value="$(eval 5*arg('data_collection_iteration_freq'))"/>
 
 
   <!-- launch prefixes -->
@@ -75,11 +78,8 @@
 
   <!--comment-->
     <!-- Octomap -->
-	<node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen">
-
-    <!--node pkg="nodelet" type="nodelet" name="standalone_nodelet" args="manager"/-->
-
-    <!--node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager"/-->
+    <node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager" output="screen">
+	<!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"-->
         <param name="resolution" value="$(arg planning_resolution)" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
@@ -87,9 +87,11 @@
 		
 		<!-- maximum range to integrate (speedup!) -->
 		<param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
-
-		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points" />
+		<param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
+        <param name="data_collection_iteration_freq_OM" value="$(arg data_collection_iteration_freq)"/>
+        
+        <!-- data source to integrate (PointCloud2) -->
+		<!-- remap from="cloud_in" to="/points" / -->
 
 		<!-- Filter ground for binary occupancy map -->
 		<param name="base_frame_id" value="world" />
@@ -147,12 +149,9 @@
 
 
 	<!-- Nodelet manager for this pipeline -->
-    <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager"/>
-    <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager_2"/>
-    
-    <comment>	
-    <remap from="/points" to="/cloud_in" />
-    </comment>
+    <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager" output="screen">
+        <remap from="/points" to="/cloud_in" />
+    </node>
 
 	<!-- Convert to point cloud -->
 	<node pkg="nodelet" type="nodelet" name="cloudify"
@@ -164,19 +163,6 @@
 		<remap from="image_rect" to="/Airsim/depth_front"/>
 
     </node>
-    
-	<node pkg="nodelet" type="nodelet" name="cloudify_2"
- 	args="load depth_image_proc/point_cloud_xyz depth_transforms_manager_2 --no-bond">
-
-		<!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
-		<remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
-		<!-- Input: Rectified depth image -->
-		<remap from="image_rect" to="/Airsim/depth_back"/>
-		<remap from="points" to="/points_back"/>
-    </node>
-  
-
-
     
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
 		<param name="panic_distance" value=".1"/>

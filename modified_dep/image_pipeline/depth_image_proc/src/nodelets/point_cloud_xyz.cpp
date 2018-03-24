@@ -70,7 +70,9 @@ class PointCloudXyzNodelet : public nodelet::Nodelet
   long long img_to_pt_cloud_acc;
   bool CLCT_DATA_;
   bool DEBUG_;
+  int data_collection_iteration_freq_; 
   std::string g_supervisor_mailbox; //file to write to when completed
+  ros::ServiceClient profile_manager_client;
 
   virtual void onInit();
 
@@ -103,6 +105,10 @@ void PointCloudXyzNodelet::onInit()
     ROS_FATAL("Could not start img_proc. Parameter missing! Looking for DEBUG");
     return;
   }
+  if (!ros::param::get("/data_collection_iteration_freq_ptCld", data_collection_iteration_freq_)) {
+    ROS_FATAL("Could not start img_proc. Parameter missing! Looking for data_collection_iteration_freq_ptCld");
+    return;
+  }
   if (!ros::param::get("/CLCT_DATA", CLCT_DATA_)) {
     ROS_FATAL("Could not start img_proc. Parameter missing! Looking for CLCT_DATA");
     return ;
@@ -111,6 +117,8 @@ void PointCloudXyzNodelet::onInit()
       ROS_FATAL_STREAM("Could not start mapping supervisor_mailbox not provided");
       return ;
   }
+  
+  
   pt_cld_ctr = 0;
   pt_cld_generation_acc = 0;
   img_to_pt_cloud_acc = 0;
@@ -119,6 +127,9 @@ void PointCloudXyzNodelet::onInit()
   // Make sure we don't enter connectCb() between advertising and assigning to pub_point_cloud_
   boost::lock_guard<boost::mutex> lock(connect_mutex_);
   pub_point_cloud_ = nh.advertise<PointCloud>("points", 1, connect_cb, connect_cb);
+  
+  profile_manager_client = 
+      private_nh.serviceClient<profile_manager::profiling_data_srv>("/record_profiling_data", true);
 }
 
  PointCloudXyzNodelet::~PointCloudXyzNodelet(){
@@ -148,11 +159,10 @@ void PointCloudXyzNodelet::log_data_before_shutting_down(){
     
     profiling_data_srv_inst.request.key = "img_to_cloud_commun_t";
     profiling_data_srv_inst.request.value = (((double)img_to_pt_cloud_acc)/1e9)/pt_cld_ctr;
-    if (ros::service::waitForService("/record_profiling_data", 10)){ 
-        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
-            ROS_ERROR_STREAM("could not probe data using stats manager in point cloud");
-            ros::shutdown();
-        }
+    
+    if (!profile_manager_client.call(profiling_data_srv_inst)){ 
+        ROS_ERROR_STREAM("could not probe data using stats manager in point cloud");
+        ros::shutdown();
     }
     
     profiling_data_srv_inst.request.key = "pt_cloud_generation_kernel";
@@ -217,14 +227,13 @@ void PointCloudXyzNodelet::depthCb(const sensor_msgs::ImageConstPtr& depth_msg,
   if (CLCT_DATA_){
       ros::Duration pt_cloud_generation_t = end_hook_t - start_hook_t;
     if(DEBUG_) {
-        ROS_INFO_STREAM("pt_cloud generation"<<  pt_cloud_generation_t.toSec());
+        //ROS_INFO_STREAM("pt_cloud generation"<<  pt_cloud_generation_t.toSec());
     }
-    
     
     pt_cld_generation_acc += pt_cloud_generation_t.toSec()*1e9; 
     pt_cld_ctr++; 
      
-    if (pt_cld_ctr % 1000 == 0 || pt_cld_ctr %10000 == 0) {
+    if ((pt_cld_ctr+1) % data_collection_iteration_freq_ == 0) {
         log_data_before_shutting_down();       
         //profiling_data_srv_inst.request.value = (((double)pt_cld_generation_acc)/1e9)/pt_cld_ctr;
     }

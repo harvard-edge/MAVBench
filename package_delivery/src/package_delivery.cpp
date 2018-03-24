@@ -70,7 +70,6 @@ std::string g_supervisor_mailbox; //file to write to when completed
 bool CLCT_DATA;
 bool DEBUG;
 
-
 enum State { setup, waiting, flying, trajectory_completed, failed, invalid };
 
 void col_coming_callback(const package_delivery::BoolPlusHeader::ConstPtr& msg) {
@@ -358,7 +357,7 @@ int main(int argc, char **argv)
 	//----------------------------------------------------------------- 
     
     // Wait for the localization method to come online
-    waitForLocalization(localization_method);
+    waitForLocalization("ground_truth");
 
     //update_stats_file(stats_file_addr,"\n\n# NEW\n# Package delivery\n###\nTime: ");
     //log_time(stats_file_addr);
@@ -459,10 +458,10 @@ int main(int argc, char **argv)
 
             if (!normal_traj.empty())
                 next_state = flying;
-            else{
+            else {
                 next_state = trajectory_completed;
             }
-                    
+
             //next_state = failed;
         }
         else if (state == flying)
@@ -520,9 +519,9 @@ int main(int argc, char **argv)
                 //ROS_WARN("We're a little off...");
 
                 auto pos = drone.position();
-             //   std::cout << "Pos: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
-              //  std::cout << "Goal: " << goal.x << " " << goal.y << " " << goal.z << std::endl;
-               // std::cout << "Dist: " << dist(pos, goal) << std::endl;
+                // std::cout << "Pos: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
+                // std::cout << "Goal: " << goal.x << " " << goal.y << " " << goal.z << std::endl;
+                // std::cout << "Dist: " << dist(pos, goal) << std::endl;
 
                 start = get_start(drone);
                 next_state = waiting;

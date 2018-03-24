@@ -283,19 +283,20 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
     static int ctr    = 0;
     
     
-    if (traj->size() == 0) { //this is the scenario
-                             //when the planner fails
-                             //and an empty trajectory
-                             //is pushed
-        drone.fly_velocity(0,0,0, drone.get_yaw(),1);
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        drone.fly_velocity(-2,-2,0, drone.get_yaw(),.5);
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        //ros::sleep::Duration(.3); 
-        ROS_ERROR_STREAM("SLAMING ON BREAKS YO");
-        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-        return; 
-    }
+    // if (traj->size() == 0) { //this is the scenario
+    //                          //when the planner fails
+    //                          //and an empty trajectory
+    //                          //is pushed
+    //     drone.fly_velocity(0,0,0);
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    //     // drone.fly_velocity(-2,-2,0, drone.get_yaw(),.5);
+    //     // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    //     //ros::sleep::Duration(.3); 
+    //     ROS_ERROR_STREAM("SLAMING ON BREAKS YO");
+    //     //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    //     return; 
+    // }
+    
     ros::Time start_hook_t;
     while (time > 0 && traj->size() > 0) {
         start_hook_t = ros::Time::now();  

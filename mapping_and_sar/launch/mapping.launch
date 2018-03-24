@@ -22,13 +22,13 @@
   
   <!-- localization method -->
   <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
-  <!--arg name="localization_method" value="ground_truth" /-->
+  <arg name="localization_method" value="ground_truth" />
   <!--arg name="localization_method" value="gps" /-->
-  <arg name="localization_method" value="vins_mono"/>
+  <!--arg name="localization_method" value="vins_mono"/-->
 
   <!--- set according to the localizat5ion method--> 
-  <arg name="max_yaw_rate" default="15"/>
-  <arg name="max_yaw_rate_during_flight" default="15"/>
+  <arg name="max_yaw_rate" default="90"/>
+  <arg name="max_yaw_rate_during_flight" default="90"/>
   <arg name="system/dyaw_max" default="$(eval arg('max_yaw_rate_during_flight') * 3.14159265359 / 180.0)"/>
   <param name="v_max" value="$(arg v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
@@ -43,7 +43,7 @@
   <arg name="coverage_threshold" default="80"/>
 
   <!-- DEBUGING-data collection params--> 
-  <arg name="DEBUG" value="false" />
+  <arg name="DEBUG" value="true" />
   <arg name="CLCT_DATA" value="true" />
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />
@@ -56,12 +56,12 @@
 
   <!-- Behzad's workstation ip --> 
   <!-- arg name="host_ip" value="10.157.34.101" /--> 
-  <!-- arg name="host_ip" value="10.157.90.51" /-->
+  <arg name="host_ip" value="10.157.90.51" />
   <!--arg name="host_ip" value="169.254.153.158" /-->
   <!-- Hasans's workstation ip --> 
   <!--arg name="host_ip" default="10.157.90.49" /-->
   <!-- Hasans's direct connection ip --> 
-  <arg name="host_ip" default="169.254.250.191" />
+  <!--arg name="host_ip" default="169.254.250.191" /-->
   <!-- Wenzhi's workstation ip -->
   <!-- arg name="host_ip" default="10.157.90.62" /-->
   <param name="/ip_addr" value="$(arg host_ip)" />

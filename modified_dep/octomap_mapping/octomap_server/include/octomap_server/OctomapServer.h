@@ -81,6 +81,11 @@ public:
  long long pt_cld_octomap_commun_overhead_acc; 
  int octomap_ctr;
 
+ //void log_data_before_shutting_down();
+ void sigIntHandlerPrivate(int);
+ long long g_pt_cld_to_octomap_commun_olverhead_acc;
+
+
 #ifdef COLOR_OCTOMAP_SERVER
   typedef pcl::PointXYZRGB PCLPoint;
   typedef pcl::PointCloud<pcl::PointXYZRGB> PCLPointCloud;
@@ -268,7 +273,9 @@ protected:
   bool m_useColoredMap;
 
  // Profiling
- 
+ bool CLCT_DATA;
+ int data_collection_iteration_freq; 
+ ros::ServiceClient profile_manager_client;
 };
 }
 
