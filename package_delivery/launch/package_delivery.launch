@@ -13,7 +13,11 @@
 
   <!-- Drone's physical characteristics /-->
   <arg name="a_max" default="5"/> 
-  <arg name="v_max" default="1.5"/> 
+  <arg name="v_max" default="2"/> 
+  <arg name="future_col_drone_radius" default="1.5"/>
+  <arg name="future_col_drone_height" default="0.6"/>
+  <arg name="planner_drone_radius" default="2"/>
+  <arg name="planner_drone_height" default="0.6"/>
   
   <arg name="planning_resolution" default=".5"/>
   <arg name="sensor_max_range" default="7" />
@@ -194,8 +198,10 @@
 
 		<param name="v_max" value="$(arg v_max)"/>
 		<param name="a_max" value="$(arg a_max)"/>
-        <param name="drone_radius" value="1.5"/>
-        <param name="drone_height" value="0.6"/>
+        <param name="drone_radius" value="$(arg future_col_drone_radius)"/>
+        <param name="drone_height" value="$(arg future_col_drone_height)"/>
+        <param name="planner_drone_radius" value="$(arg planner_drone_radius)"/>
+        <param name="planner_drone_height" value="$(arg planner_drone_height)"/>
 
 		<param name="max_roadmap_size" value="1600"/>
 
