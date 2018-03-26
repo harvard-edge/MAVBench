@@ -19,7 +19,7 @@
   <arg name="planner_drone_radius" default="2"/>
   <arg name="planner_drone_height" default="0.6"/>
   
-  <arg name="planning_resolution" default=".5"/>
+  <arg name="planning_resolution" default=".15"/>
   <arg name="sensor_max_range" default="7" />
   <arg name="fly_trajectory_time_out" default=".1"/> 
   <arg name="planning_budget" default=".3"/>
@@ -51,7 +51,7 @@
 
   <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
   <!-- also planning to prevent stdio stuff(if they really matter)-->
-  <arg name="DEBUG" default="false" />
+  <arg name="DEBUG" default="true" />
   <arg name="CLCT_DATA" value="true" />
   <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
   <param name="DEBUG"  value="$(arg DEBUG)" />
