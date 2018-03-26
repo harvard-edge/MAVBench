@@ -6,7 +6,6 @@ set(darknet_lib_dir $ENV{HOME}/darknet/obj)
 set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
 set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
 
-
 #-- collecting all the files in the darknet_obj folder
 #file(GLOB darknet_obj_files
 #    "*.o"
@@ -130,6 +129,9 @@ add_executable(mapping src/mapping.cpp ${common_utility_src}/control_drone.cpp $
 target_link_libraries(mapping ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread)
 #${CUDA_OPENCVLIBS})
 add_dependencies(mapping ${catkin_EXPORTED_TARGETS})
+
+add_executable(future_collision src/future_collision ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
+target_link_libraries(future_collision ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
 #add_executable(object_detection_node src/object_detection_node.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/objdetect.cpp ${common_utility_src}/timer.cpp)
 #target_link_libraries(object_detection_node  ${catkin_LIBRARIES}   darknet AirLib MavLinkCom rpc pthread)

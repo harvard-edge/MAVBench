@@ -205,6 +205,8 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
   }
   res.path.clear();
 
+  params_.exact_root_ = req.exact_root;
+
   bool DEBUG = false;
   std::string ns = ros::this_node::getName();
   if(!ros::param::get(ns + "/DEBUG", DEBUG)) {

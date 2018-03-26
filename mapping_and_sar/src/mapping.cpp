@@ -55,6 +55,7 @@ int g_iteration = 0;
 long long g_accumulate_loop_time = 0; //it is in ms
 int g_loop_ctr = 0; 
 bool g_start_profiling = false; 
+bool g_future_col = false;
 long long g_motion_planning_plus_srv_call_acc = 0;
 
 
@@ -63,6 +64,8 @@ float g_max_yaw_rate;
 float g_max_yaw_rate_during_flight;
 float g_sensor_max_range;
 double g_fly_trajectory_time_out;
+unsigned int g_future_col_seq = 0;
+
 void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
 
@@ -135,6 +138,10 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     g_slam_lost = msg->data;
 }
 
+void future_col_callback (const std_msgs::Bool::ConstPtr& msg) {
+    g_future_col = msg->data;
+    g_future_col_seq++;
+}
 
 int main(int argc, char** argv)
 {
@@ -154,7 +161,11 @@ int main(int argc, char** argv)
       nh.serviceClient<std_srvs::SetBool>("/trajectory_done_srv");
 
   ros::Subscriber slam_lost_sub = 
-		nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+	  nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+
+  ros::Subscriber future_col_sub =
+      nh.subscribe<std_msgs::Bool>("/col_coming", 1, future_col_callback);
+
   profile_manager::start_profiling_srv start_profiling_srv_inst;
   start_profiling_srv_inst.request.key = "";
   std_srvs::SetBool trajectory_done_srv_inst;
@@ -329,8 +340,8 @@ int main(int argc, char** argv)
   for (int ctr = 0; ctr < 7; ctr++) {
       samples_array.points.clear();
       auto cur_pos = drone.position();
-      trajectory_point.position_W.x() = cur_pos.x - 1;
-      trajectory_point.position_W.y() = cur_pos.y ;
+      trajectory_point.position_W.x() = cur_pos.x;
+      trajectory_point.position_W.y() = cur_pos.y;
       trajectory_point.position_W.z() = cur_pos.z;
 
       first_z = cur_pos.z;
@@ -467,6 +478,14 @@ int main(int argc, char** argv)
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = g_iteration;
     planSrv.request.header.frame_id = "world";
+
+    if (g_future_col) {
+        ROS_WARN("follow_trajectory: future collision acknowledged");
+        planSrv.request.exact_root = false;
+        g_future_col = false;
+    } else {
+        planSrv.request.exact_root = true;
+    }
   
     //determine the distance between the setout goal and distance traveled 
     //this will determine the replanning
@@ -527,6 +546,7 @@ int main(int argc, char** argv)
             samples_array.header.seq = n_seq;
 
             samples_array.header.stamp = ros::Time::now();
+            samples_array.header.seq = g_future_col_seq;
             samples_array.header.frame_id = "world";
             //samples_array.points.clear();
             tf::Pose pose;

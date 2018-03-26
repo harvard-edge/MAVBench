@@ -313,7 +313,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
             auto pos = drone.position();
             v_x += 0.2*(p.x-pos.x);
             v_y += 0.2*(p.y-pos.y);
-            v_z += 0.1*(p.z-pos.z);
+            v_z += 0.5*(p.z-pos.z);
             /* 
             if (distance(p.x-pos.y, p.y-pos.y, p.z-pos.z)>2) {
                 ROS_ERROR_STREAM("distance greater than 2"); 
