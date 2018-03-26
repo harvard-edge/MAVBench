@@ -72,7 +72,7 @@
       <arg name="z" value="0.1"/>
       <!--arg name="tf_prefix" default="$(arg mav_name)$(arg subscript)"/-->
      
-      <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">  
+      <node name="nbvPlanner" pkg="nbvplanner" type="nbvPlanner" output="screen">
           <!--param name="tf_frame" type="string" value="$(arg tf_frame)" /-->
           <param name="DEBUG" value="$(arg DEBUG)"/> 
           <param name="update_coverage_freq" value="$(arg update_coverage_freq)"/> 

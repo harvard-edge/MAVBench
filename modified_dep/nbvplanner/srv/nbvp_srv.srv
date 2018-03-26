@@ -1,4 +1,5 @@
 Header header
+bool exact_root
 -------
 geometry_msgs/Pose[] path
 float64 coverage

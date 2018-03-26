@@ -15,6 +15,8 @@
 #include <profile_manager/profiling_data_srv.h>
 #include <profile_manager/start_profiling_srv.h>
 #include <std_srvs/SetBool.h>
+#include <package_delivery/multiDOF.h>
+#include <package_delivery/multiDOF_array.h>
 
 using namespace std;
 bool slam_lost = false;
@@ -22,6 +24,7 @@ float g_localization_status = 1.0;
 std::string g_supervisor_mailbox; //file to write to when completed
 float g_v_max;
 double g_fly_trajectory_time_out;
+bool g_future_col = false;
 long long g_planning_time_including_ros_overhead_acc  = 0;
 
 float g_max_yaw_rate;
@@ -29,6 +32,7 @@ float g_max_yaw_rate_during_flight;
 bool g_trajectory_done = false;
 bool should_panic = false;
 geometry_msgs::Vector3 panic_velocity;
+unsigned int g_future_col_seq = 0;
 
 //bool g_dummy = false;
 
@@ -56,12 +60,39 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     slam_lost = msg->data;
 }
 
+void future_col_callback (const std_msgs::Bool::ConstPtr& msg) {
+    g_future_col = msg->data;
+    g_future_col_seq++;
+}
+
 /*
 void dummy_cb(const std_msgs::Bool::ConstPtr& msg) {
     g_dummy = msg->data; 
     //slam_lost = msg->data;
 }
 */
+
+package_delivery::multiDOF_array next_steps_msg(const trajectory_t& traj) {
+    package_delivery::multiDOF_array array_of_point_msg;
+
+    for (const auto& point : traj){
+        package_delivery::multiDOF point_msg;
+        point_msg.x = point.x;
+        point_msg.y = point.y;
+        point_msg.z = point.z;
+        point_msg.vx = point.vx;
+        point_msg.vy = point.vy;
+        point_msg.vz = point.vz;
+        point_msg.ax = point.ax;
+        point_msg.ay = point.ay;
+        point_msg.az = point.az;
+        point_msg.yaw = point.yaw;
+        point_msg.duration = point.duration;
+        array_of_point_msg.points.push_back(point_msg); 
+    }
+
+    return array_of_point_msg;
+}
 
 multiDOFpoint current_point(Drone& drone){
     multiDOFpoint result;
@@ -95,6 +126,8 @@ multiDOFpoint current_point(Drone& drone){
 void callback_trajectory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg, Drone * drone, trajectory_t * normal_traj)
 {
     if (msg->points.empty())
+        return;
+    else if (msg->header.seq < g_future_col_seq)
         return;
 
     g_trajectory_done = false;
@@ -138,6 +171,7 @@ void callback_trajectory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPt
     }
         
     //after correction, now push the new points 
+    bool newt = true;
     for (const auto& p : msg->points) {
         if (normal_traj->size() == 0) {
             
@@ -146,7 +180,11 @@ void callback_trajectory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPt
             mdp_prev = normal_traj->back();
         }
 
-        mdp_next.x = p.transforms[0].translation.x;
+        if (newt) {
+            mdp_next.x = p.transforms[0].translation.x;
+            newt = false;
+        } else
+            mdp_next.x = p.transforms[0].translation.x;
         mdp_next.y = p.transforms[0].translation.y;
         mdp_next.z = p.transforms[0].translation.z;
         //mdp_next.yaw = YAW_UNCHANGED;
@@ -235,9 +273,14 @@ int main(int argc, char **argv){
 
     
     ros::ServiceServer trajectory_done_service = n.advertiseService("trajectory_done_srv", trajectory_done_srv_cb);
+
     ros::Subscriber panic_sub =  n.subscribe<std_msgs::Bool>("panic_topic", 1, panic_callback);
     ros::Subscriber panic_velocity_sub = 
         n.subscribe<geometry_msgs::Vector3>("panic_velocity", 1, panic_velocity_callback);
+    ros::Subscriber future_col_sub =
+        n.subscribe<std_msgs::Bool>("/col_coming", 1, future_col_callback);
+
+    ros::Publisher next_steps_pub = n.advertise<package_delivery::multiDOF_array>("/next_steps", 1);
     std::string topic_name =  mav_name + "/" + mav_msgs::default_topics::COMMAND_TRAJECTORY;
     
     Drone drone(ip_addr.c_str(), port, localization_method,
@@ -258,7 +301,7 @@ int main(int argc, char **argv){
         trajectory_t * forward_traj = nullptr;
         trajectory_t * rev_traj = nullptr;
         bool check_position = true;
-        yaw_strategy_t yaw_strategy = follow_yaw;
+        yaw_strategy_t yaw_strategy = face_forward; // follow_yaw;
 
         if (should_panic) {
             ROS_DEBUG("Panicking!");
@@ -279,6 +322,12 @@ int main(int argc, char **argv){
         } else {
             slam_loss_traj.clear();
             created_slam_loss_traj = false;
+        }
+
+        if (g_future_col) {
+            ROS_WARN("follow_trajectory: future collision acknowledged");
+            normal_traj.clear();
+            g_future_col = false;
         }
 
         if (!panic_traj.empty()) {
@@ -319,11 +368,15 @@ int main(int argc, char **argv){
         if(app_started){
             follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy,
                     check_position, g_v_max, g_fly_trajectory_time_out);
+
+            if (forward_traj->size() > 0)
+                next_steps_pub.publish(next_steps_msg(*forward_traj));
         }
 
         if(forward_traj->size() != 0) {
             last_time = ros::Time::now();
         }
+
         if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)){
             ROS_ERROR("Slam lost without recovery");
             log_data_before_shutting_down();
