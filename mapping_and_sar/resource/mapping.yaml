@@ -9,7 +9,7 @@ system/camera/vertical: [90.0]
 system/bbx/x: 3 
 system/bbx/y: 3 
 system/bbx/z: 1
-system/bbx/overshoot: 0.5
+system/bbx/overshoot: 1
 
 nbvp/gain/free: 0.05
 nbvp/gain/occupied: 0.0

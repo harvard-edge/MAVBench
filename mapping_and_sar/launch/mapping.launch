@@ -5,11 +5,14 @@
   <arg name="log_file" default="$(arg mav_name)" />
   
   <!-- important params affecting performance -->
+  <!-- arg name="v_max" default="3.4"/-->
   <arg name="v_max" default="1"/>
-  <arg name="nbvp/gain/range" default="4"/>
-  <arg name="nbvp/tree/extension_range" default="4.5"/>
-  <arg name="sensor_max_range" default="6" />
-  <arg name="planning_resolution" default=".45"/>
+
+
+  <arg name="nbvp/gain/range" default="6"/>
+  <arg name="nbvp/tree/extension_range" default="6.5"/>
+  <arg name="sensor_max_range" default="7" />
+  <arg name="planning_resolution" default=".5"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
   <arg name="distance_from_goal_threshold" default=".4" />
@@ -22,13 +25,13 @@
   
   <!-- localization method -->
   <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
-  <arg name="localization_method" value="ground_truth" />
+  <!-- arg name="localization_method" value="ground_truth" /-->
   <!--arg name="localization_method" value="gps" /-->
-  <!--arg name="localization_method" value="vins_mono"/-->
+  <arg name="localization_method" value="vins_mono"/>
 
   <!--- set according to the localizat5ion method--> 
-  <arg name="max_yaw_rate" default="90"/>
-  <arg name="max_yaw_rate_during_flight" default="90"/>
+  <arg name="max_yaw_rate" default="10"/>
+  <arg name="max_yaw_rate_during_flight" default="10"/>
   <arg name="system/dyaw_max" default="$(eval arg('max_yaw_rate_during_flight') * 3.14159265359 / 180.0)"/>
   <param name="v_max" value="$(arg v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
@@ -37,6 +40,12 @@
   
   <!--- note that time is pretty important since it determines the hz of the thread it runs in --> 
   <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>
+
+
+  <!-- only for to octomap and pt cloud--> 
+  <arg name="data_collection_iteration_freq" value="300" />
+  <param name="data_collection_iteration_freq_ptCld" value="$(eval 5*arg('data_collection_iteration_freq'))"/>
+
 
 
   <!-- termination criteria-->
@@ -48,6 +57,8 @@
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />
   <param name="status_monitor_rate" value="100" />
+  <param name="DEBUG"  value="$(arg DEBUG)" />
+  <param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
 
 
   <!--node pkg="tf" type="static_transform_publisher" name="tf_53" args="0 0 0 0 0 0 world world 100" /-->
@@ -67,44 +78,45 @@
   <param name="/ip_addr" value="$(arg host_ip)" />
 
 
-
-    <group if="$(arg CLCT_DATA)">
-        <param name="enable_statistics" value="true"/>
-        <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
-        <param name="/ip_addr" value="$(arg host_ip)" />
-        </node>
-    </group> 
-    <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
-    <arg name="DEBUG" value="$(arg DEBUG)"/> 
-    <arg name="nbvp/gain/range" value="$(arg nbvp/gain/range)"/>
-    <arg name="system/v_max" value="$(arg v_max)"/>
-    <arg name="system/dyaw_max" value="$(arg system/dyaw_max)"/>
-
-    <arg name="nbvp/tree/extension_range" value="$(arg nbvp/tree/extension_range)"/>
-    <arg name="update_coverage_freq" value="3"/> 
-    <arg name="coverage_threshold" value="$(arg coverage_threshold)"/> 
-    <arg name="max_yaw_rate" value="$(arg max_yaw_rate)"/> 
-    <arg name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/> 
-    <arg name="app_name" value="mapping" />
-    <arg name="mav_name" value="$(arg mav_name)" />
-    <arg name="host_ip" value="$(arg host_ip)"/>
-    <arg name="distance_from_goal_threshold" value="$(arg distance_from_goal_threshold)"/>
-    <arg name="localization_method" value="$(arg localization_method)"/>
-    <arg name="waypoint_x" value="0.0" />
-    <arg name="waypoint_y" value="0.0" />
-    <arg name="waypoint_z" value="1.0" />
-    <arg name="param_file" value="$(find mapping_and_sar)/resource/mapping.yaml" />
-    <arg name="enable_logging" value="$(arg enable_logging)" />
-    <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
-    <arg name="log_file" value="$(arg log_file)" />
-    <!-- the following is for octomap --> 
-    <arg name="tf_frame" value="world" />
-    <arg name="pcl_topic" value="/points" />
-    <arg name="resolution" value="$(arg planning_resolution)" />
-    <arg name="visualize_max_z" value="10" />
-    <arg name="sensor_max_range" value="$(arg sensor_max_range)"/>
+  <group if="$(arg CLCT_DATA)">
+  <param name="enable_statistics" value="true"/>
+  <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
+  <param name="/ip_addr" value="$(arg host_ip)" />
+  </node>
+  </group> 
   
+  <include file="$(find mapping_and_sar)/launch/mav_inspector.launch">
+  <arg name="DEBUG" value="$(arg DEBUG)"/> 
+  <arg name="nbvp/gain/range" value="$(arg nbvp/gain/range)"/>
+  <arg name="system/v_max" value="$(arg v_max)"/>
+  <arg name="system/dyaw_max" value="$(arg system/dyaw_max)"/>
+
+  <arg name="nbvp/tree/extension_range" value="$(arg nbvp/tree/extension_range)"/>
+  <arg name="update_coverage_freq" value="3"/> 
+  <arg name="coverage_threshold" value="$(arg coverage_threshold)"/> 
+  <arg name="max_yaw_rate" value="$(arg max_yaw_rate)"/> 
+  <arg name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/> 
+  <arg name="app_name" value="mapping" />
+  <arg name="mav_name" value="$(arg mav_name)" />
+  <arg name="host_ip" value="$(arg host_ip)"/>
+  <arg name="distance_from_goal_threshold" value="$(arg distance_from_goal_threshold)"/>
+  <arg name="localization_method" value="$(arg localization_method)"/>
+  <arg name="waypoint_x" value="0.0" />
+  <arg name="waypoint_y" value="0.0" />
+  <arg name="waypoint_z" value="1.0" />
+  <arg name="param_file" value="$(find mapping_and_sar)/resource/mapping.yaml" />
+  <arg name="enable_logging" value="$(arg enable_logging)" />
+  <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+  <arg name="log_file" value="$(arg log_file)" />
+  <!-- the following is for octomap --> 
+  <arg name="tf_frame" value="world" />
+  <arg name="pcl_topic" value="/points" />
+  <arg name="resolution" value="$(arg planning_resolution)" />
+  <arg name="visualize_max_z" value="10" />
+  <arg name="sensor_max_range" value="$(arg sensor_max_range)"/>
+
   </include>
+  <comment>
   <!--comment -->
   <!-- point cloud and pose -->
   <include file="$(find mapping_and_sar)/launch/point_cloud_and_pose.launch">
@@ -112,66 +124,140 @@
   <arg name="localization_method" value="$(arg localization_method)"/>
   <arg name="host_ip" value="$(arg host_ip)"/>
   </include>
+  </comment> 
+  
   <!--/comment-->
+  
+  <!-- img_publisher point cloud /-->
+  <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
 
-    <!--- get rid of this if you wan to directly use octomap_world octomap/-->
-    <!--- octomap for planning-->
-    <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
-        <param name="resolution" value="$(arg planning_resolution)" />
-		
-		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="world" />
-		
-		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
+  <!-- IP of the Airsim computer -->
+  <param name="all_front" value="$(arg all_front)"/>	
+  <param name="localization_method" value="$(arg localization_method)" />
+  <param name="Airsim_ip" value="$(arg host_ip)" />
 
-		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points" />
+  <param name="loop_rate" value="20" />
 
-		<!-- Filter ground for binary occupancy map -->
-		<param name="base_frame_id" value="world" />
-		<!-- <param name="filter_ground" value="false" />
-		<param name="ground_filter_plane_distance" value="1.00" />
-		<param name="ground_filter/distance" value="0.50" /> -->
-	    <param name="pointcloud_min_z" type="double" value="-2.0" />
-	    <param name="pointcloud_max_z" type="double" value="10.0" />
-	    <param name="occupancy_min_z" type="double" value="-2.00" />
-	    <param name="occupancy_max_z" type="double" value="10.0" />
-        <!-- <param name="ground_filter_plane_distance" value="0.07" />
-		<param name="ground_filter/distance" value="0.04" />
-		<param name="ground_filter/angle" value="0.4" /> -->
-	</node>
-    <comment>
-    <node pkg="octomap_server" type="octomap_server_node" name="octomap_server_2">
-        <param name="resolution" value="$(arg mapping_resolution)" />
-		
-		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="world" />
-		
-		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="6" />
+  <!-- Port of the Airsim computer (this is default, do not change!) -->
+  <param name="Airsim_port" value="41451"/>
 
-		<!-- data source to integrate (PointCloud2) -->
-		<remap from="cloud_in" to="/points" />
-		<!-- Filter ground for binary occupancy map -->
-		
-		<param name="sensor_model/min" value=".8" />
-        <param name="base_frame_id" value="world" />
-		<!-- <param name="filter_ground" value="true" />
-		<param name="ground_filter_plane_distance" value="1.00" />
-		<param name="ground_filter/distance" value="0.50" /> -->
-	    <param name="pointcloud_min_z" type="double" value="-2.0" />
-	    <param name="pointcloud_max_z" type="double" value="10.0" />
-	    <param name="occupancy_min_z" type="double" value="-2.00" />
-	    <param name="occupancy_max_z" type="double" value="10.0" />
-	    <remap from="octomap_binary" to="/octomap_binary2_2"/>	
-	    <remap from="occupied_cells_vis_array" to="/occupied_cells_vis_array_2"/>	
-        <!-- <param name="ground_filter_plane_distance" value="0.07" />
-		<param name="ground_filter/distance" value="0.04" />
-		<param name="ground_filter/angle" value="0.4" /> -->
-	</node>
-    </comment>
+  <!-- RGB camera parameters (parameters when calibrated) -->
+  <param name="Fx" value="256"/>
+  <param name="Fy" value="256"/>
+  <param name="cx" value="256"/>
+  <param name="cy" value="144"/>
+  <param name="scale_x" value="512"/>  <!-- Width when calibrated!-->
+  <param name="scale_y" value="288"/> <!-- Height when calibrated!-->
+  <param name="width" value="512"/>  <!-- Width when calibrated!-->
+  <param name="height" value="288"/> <!-- Height when calibrated!-->
+
+  <comment> 
+  <param name="Fx" value="200"/>
+  <param name="Fy" value="200"/>
+  <param name="cx" value="200"/>
+  <param name="cy" value="150"/>
+  <param name="scale_x" value="400"/>  <!-- Width when calibrated!-->
+  <param name="scale_y" value="300"/> <!-- Height when calibrated!-->
+  <param name="width" value="400"/>  <!-- Width when calibrated!-->
+  <param name="height" value="300"/> <!-- Height when calibrated!-->
+  </comment>
+
+  <param name="maxDist" value="50.0"/> 
+  <!-- Depth baseline -->
+  <param name="Tx" value="0.14"/>
+  <param name="scale" value="0.38"/> 
+
+  <!-- Topic with odometry information for the vehicle (used to create tf tree) -->
+  <!-- we are not using the odomTopic since arisim is not providing it at themoment -->	
+  <param name="odomTopic" value="/mavros/local_position/odom"/>
+  </node>
+
+  <!-- publishing pose values --> 
+  <node pkg="mapping_and_sar" type="publish_pose" name="publish_pose" output="screen">
+  <param name="localization_method" value="$(arg localization_method)"/>
+  <param name="ip_addr" value="$(arg host_ip)"/>
+  </node>
+  
+  <!-- /group --> 
+  <!-- Nodelet manager for this pipeline -->
+  <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager" output="screen">
+  <remap from="/points" to="/cloud_in" />
+  </node>
+
+  <!-- Convert to point cloud -->
+  <node pkg="nodelet" type="nodelet" name="cloudify"
+  args="load depth_image_proc/point_cloud_xyz depth_transforms_manager --no-bond" output="screen">
+
+  <!-- Input: Camera calibration and metadata.  (sensor_msgs/CameraInfo) -->
+  <remap from="rgb/camera_info" to="/Airsim/camera_info"/> 
+  <!-- Input: Rectified depth image -->
+  <remap from="image_rect" to="/Airsim/depth_front"/>
+
+  </node>
+
+
+
+  <!--- get rid of this if you wan to directly use octomap_world octomap/-->
+  <!--- octomap for planning-->
+   <node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager" output="screen">
+  <!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" -->
+  <param name="resolution" value="$(arg planning_resolution)" />
+  <param name="data_collection_iteration_freq_OM" value="$(arg data_collection_iteration_freq)"/>
+
+  <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+  <param name="frame_id" type="string" value="world" />
+
+  <!-- maximum range to integrate (speedup!) -->
+  <param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
+
+  <!-- data source to integrate (PointCloud2) -->
+  <remap from="cloud_in" to="/points" />
+
+  <!-- Filter ground for binary occupancy map -->
+  <param name="base_frame_id" value="world" />
+  <!-- <param name="filter_ground" value="false" />
+  <param name="ground_filter_plane_distance" value="1.00" />
+  <param name="ground_filter/distance" value="0.50" /> -->
+  <param name="pointcloud_min_z" type="double" value="-2.0" />
+  <param name="pointcloud_max_z" type="double" value="10.0" />
+  <param name="occupancy_min_z" type="double" value="-2.00" />
+  <param name="occupancy_max_z" type="double" value="10.0" />
+  <!-- <param name="ground_filter_plane_distance" value="0.07" />
+  <param name="ground_filter/distance" value="0.04" />
+  <param name="ground_filter/angle" value="0.4" /> -->
+  </node>
+  <comment>
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_server_2">
+  <param name="resolution" value="$(arg mapping_resolution)" />
+
+  <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+  <param name="frame_id" type="string" value="world" />
+
+  <!-- maximum range to integrate (speedup!) -->
+  <param name="sensor_model/max_range" value="6" />
+
+  <!-- data source to integrate (PointCloud2) -->
+  <remap from="cloud_in" to="/points" />
+  <!-- Filter ground for binary occupancy map -->
+
+  <param name="sensor_model/min" value=".8" />
+  <param name="base_frame_id" value="world" />
+  <!-- <param name="filter_ground" value="true" />
+  <param name="ground_filter_plane_distance" value="1.00" />
+  <param name="ground_filter/distance" value="0.50" /> -->
+  <param name="pointcloud_min_z" type="double" value="-2.0" />
+  <param name="pointcloud_max_z" type="double" value="10.0" />
+  <param name="occupancy_min_z" type="double" value="-2.00" />
+  <param name="occupancy_max_z" type="double" value="10.0" />
+  <remap from="octomap_binary" to="/octomap_binary2_2"/>	
+  <remap from="occupied_cells_vis_array" to="/occupied_cells_vis_array_2"/>	
+  <!-- <param name="ground_filter_plane_distance" value="0.07" />
+  <param name="ground_filter/distance" value="0.04" />
+  <param name="ground_filter/angle" value="0.4" /> -->
+  </node>
+  </comment>
   <arg name="param_file" value="$(find mapping_and_sar)/resource/mapping.yaml" />
+  
   <!-- following the tejactory --> 
   <!-- group ns="$(arg mav_name)" -->
   <node pkg="mapping_and_sar" type="follow_trajectory" name="follow_trajectory" output="screen">
@@ -180,35 +266,35 @@
   <!-- param name="yaw_t" value=".75"/ -->
   <param name="ip_addr" value="$(arg host_ip)"/>
   <param name="segment_dedicated_time" value="1.0"/>
-   <param name="localization_method" type="string" value="$(arg localization_method)"/>
+  <param name="localization_method" type="string" value="$(arg localization_method)"/>
   </node>
 
-    
-	
-  <group if="$(eval localization_method == 'orb_slam2_rgbd')">
-    <!-- orb slam location--> 
-    <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
-    <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" />
+
+  <group if="$(eval localization_method == 'orb_slam2_rgbd')">
+  <!-- orb slam location--> 
+  <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
+
+  <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" />
   </group>
 
   <group if="$(eval localization_method == 'vins_mono')">
-      <node pkg="timed_roslaunch" type="timed_roslaunch.sh" args="4 vins_estimator airsim.launch" name="timed_roslaunch" />
+  <node pkg="timed_roslaunch" type="timed_roslaunch.sh" args="4 vins_estimator airsim.launch" name="timed_roslaunch" />
   </group>
 
   <group if="$(eval localization_method == 'gps')">
-     <node pkg="gps_publisher" type="gps_publisher" name="gps_publisher" />
+  <node pkg="gps_publisher" type="gps_publisher" name="gps_publisher" />
   </group>
 
   <node pkg="publish_imu" type="publish_imu" name="publish_imu"> 
-		<param name="loop_rate" value="150"/>
+  <param name="loop_rate" value="150"/>
   </node>
 
   <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
-		<param name="panic_distance" value="3"/>
+  <param name="panic_distance" value="3"/>
   </node>
 
-
+  <node pkg="mapping_and_sar" type="future_collision" name="future_collision" output="screen" />
 
   <!--comment-->
   <!-- rviz -->
@@ -216,4 +302,4 @@
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find mapping_and_sar)/extras/rvizConfig.rviz"/>
   </group>
 
-</launch>
+  </launch>
