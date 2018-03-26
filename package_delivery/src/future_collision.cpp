@@ -142,8 +142,7 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
     }
     if (CLCT_DATA){ 
         g_pt_cloud_header = msg.header.stamp; 
-        //ROS_INFO_STREAM("ok now"<<(ros::Time::now()- g_pt_cloud_header).toSec());
-        //g_pt_cloud_header = ros::Time::now(); 
+        
         g_pt_cloud_future_collision_acc += (ros::Time::now() - g_pt_cloud_header).toSec()*1e9;
         g_octomap_rcv_ctr++;
     }

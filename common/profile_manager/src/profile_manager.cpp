@@ -46,6 +46,9 @@ bool g_start_profiling_data = false;
 static int total_cores=0,total_packages=0;
 static int package_map[MAX_PACKAGES];
 
+float g_worst_case_power;
+
+
 
 /* TODO: on Skylake, also may support  PSys "platform" domain,    */
 /* the whole SoC not just the package.                */
@@ -376,12 +379,20 @@ void output_flight_summary(void){
     stats_ss << "\t\"rotor energy consumed \": " << g_end_stats.energy_consumed - g_init_stats.energy_consumed << ","<<endl; 
 
     // the rest of metrics 
-    for (auto result_el: g_highlevel_application_stats) {
+    /* 
+    //the follow is only for the compute subsystem, so it doesn not include memory
+    //also, I think for dekstop it doesn't include the platform only gather processor data
+       for (auto result_el: g_highlevel_application_stats) {
         stats_ss<<  "\t\""<< result_el.key<<'"' <<": " << result_el.value<<"," << endl;
+        
+        // only processor
         if(result_el.key == "gpu_compute_energy" || result_el.key == "cpu_compute_energy"){
             total_energy_consumed += result_el.value; 
         }
     }
+    */ 
+    
+    total_energy_consumed += ((g_end_stats.flight_time - g_init_stats.flight_time)*g_worst_case_power)
     total_energy_consumed +=  (g_end_stats.energy_consumed - g_init_stats.energy_consumed);
     stats_ss << "\t\"" <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
     // topic rates
@@ -429,7 +440,7 @@ bool start_profiling_cb(profile_manager::start_profiling_srv::Request &req, prof
 
 bool record_profiling_data_cb(profile_manager::profiling_data_srv::Request &req, profile_manager::profiling_data_srv::Response &res)
 {
-    //ROS_ERROR_STREAM("inside the call back"); 
+    ROS_ERROR_STREAM("inside the call back"); 
     if (g_drone == NULL) {
         ROS_ERROR_STREAM("drone object is not initialized");
         return false; 
@@ -494,6 +505,7 @@ int main(int argc, char **argv)
 		nh.subscribe<rosgraph_msgs::TopicStatistics>("/statistics", 20, topic_statistics_cb);
     g_drone = new Drone(g_ip_addr.c_str(), g_port);
 
+    
 #ifdef USE_NVML
     if (nvmlInit() != NVML_SUCCESS) {
         std::cout << "nvmlInit() failed.\n";

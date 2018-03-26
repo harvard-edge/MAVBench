@@ -76,6 +76,7 @@ void col_coming_callback(const package_delivery::BoolPlusHeader::ConstPtr& msg) 
     col_coming = msg->data;
     if (CLCT_DATA){ 
         col_coming_time_stamp = msg->header.stamp;
+        //col_coming_time_stamp = ros::Time::now();
         g_pt_cld_to_pkg_delivery_commun_acc += (ros::Time::now() - msg->header.stamp).toSec()*1e9;
         g_col_com_ctr++;
     }
@@ -370,7 +371,7 @@ int main(int argc, char **argv)
     twist.linear.x = twist.linear.y = twist.linear.z = 1;
     geometry_msgs::Twist acceleration;
     acceleration.linear.x = acceleration.linear.y = acceleration.linear.z = 1; 
-	ros::Rate pub_rate(30);
+	ros::Rate pub_rate(80);
     for (State state = setup; ros::ok(); ) {
 		pub_rate.sleep();
         ros::spinOnce();
@@ -429,6 +430,8 @@ int main(int argc, char **argv)
             
             if (!clcted_col_coming_data){ 
                 array_of_point_msg.header.stamp = col_coming_time_stamp;//ros::Time::now();
+                //ROS_INFO_STREAM("diff "<<(ros::Time::now() - col_coming_time_stamp).toSec() << " " <<(end_hook_t - start_hook_t)); 
+                //array_of_point_msg.header.stamp = ros::Time::now();
                 clcted_col_coming_data = true; 
             }else{
                 ros::Time temp(0,0); 
@@ -475,7 +478,11 @@ int main(int argc, char **argv)
                next_state = failed;
                }
                */
+            //ros::Time start__t = ros::Time::now(); 
             srv_call_status = follow_trajectory_status_client.call(follow_trajectory_status_srv_inst);
+            //ros::Time end__t = ros::Time::now(); 
+
+            //ROS_INFO_STREAM("diff "<<(end__t - start__t)); 
             if(!srv_call_status){
                 ROS_INFO_STREAM("could not make a service all to trajectory done");
                 next_state = flying;
@@ -501,7 +508,7 @@ int main(int argc, char **argv)
             fail_ctr = normal_traj.empty() ? fail_ctr+1 : 0; 
             
             if (normal_traj.empty()){
-                std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
             if (fail_ctr >fail_threshold) {
                 next_state = failed;

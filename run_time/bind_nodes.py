@@ -18,6 +18,8 @@ def bind(node_pic_dic):
             os.system("taskset -p -c " + " 1 " + str(node_pic_dic[node]))
         elif node == "/rviz":
             os.system("taskset -p -c " + " 2 " + str(node_pic_dic[node]))
+        elif node == "/profile_manager":
+            os.system("taskset -p -c " + " 2 " + str(node_pic_dic[node]))
         else:
             os.system("taskset -p -c " + "0,3,4,5 " + str(node_pic_dic[node]))
 

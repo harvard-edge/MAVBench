@@ -118,7 +118,6 @@ void PointCloudXyzNodelet::onInit()
       return ;
   }
   
-  
   pt_cld_ctr = 0;
   pt_cld_generation_acc = 0;
   img_to_pt_cloud_acc = 0;
@@ -189,7 +188,7 @@ void PointCloudXyzNodelet::depthCb(const sensor_msgs::ImageConstPtr& depth_msg,
                                    const sensor_msgs::CameraInfoConstPtr& info_msg)
 {
   PointCloud::Ptr cloud_msg(new PointCloud);
-  
+
   ros::Time start_hook_t = ros::Time::now();
   
   img_to_pt_cloud_acc += (start_hook_t - depth_msg->header.stamp).toSec()*1e9;
@@ -240,6 +239,7 @@ void PointCloudXyzNodelet::depthCb(const sensor_msgs::ImageConstPtr& depth_msg,
     
   }
  
+  //cloud_msg->header.stamp = ros::Time::now();
   pub_point_cloud_.publish (cloud_msg);
 
 }
