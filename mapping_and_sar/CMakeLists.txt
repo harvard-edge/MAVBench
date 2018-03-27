@@ -61,6 +61,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   sensor_msgs
+  octomap_server
   pcl_conversions
   pcl_ros
   tf
