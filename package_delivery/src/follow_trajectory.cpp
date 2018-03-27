@@ -369,7 +369,7 @@ int main(int argc, char **argv){
                 follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy, 
                     check_position, g_v_max, g_fly_trajectory_time_out);
             else {
-                ROS_ERROR("New SLAMING BREAKS YO");
+                //ROS_ERROR("New SLAMING BREAKS YO");
                 follow_trajectory(drone, &rev_normal_traj, nullptr, face_backward, true, 1, g_fly_trajectory_time_out);
             }
 

@@ -16,7 +16,7 @@ find_package(Eigen3 QUIET)
 set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
 set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
 
-set (blah /home/wcui/catkin_ws/devel/include)
+set (blah /home/nvidia/catkin_ws/devel/include)
 message(STATUS ${common_utility_include})
 message(STATUS ${catkin_INCLUDE_DIRS})
 
