@@ -173,7 +173,7 @@ template<typename stateVec>
 float nbvInspection::nbvPlanner<stateVec>::update_coverage(int update_coverage_freq){
     if (coverage_ctr_ % update_coverage_freq == 0) { 
         coverage_ =  tree_->coverage();
-        ROS_INFO_STREAM("coverage so far" << coverage_ << "%"); 
+        //ROS_INFO_STREAM("coverage so far" << coverage_ << "%"); 
     }
     coverage_ctr_++;
     return coverage_;
@@ -238,6 +238,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
       origin_destList_text = visualization_msgs::MarkerArray();
    }
   tree_->clear();
+  tree_->setParams(params_);
   tree_->initialize();
   vector_t path;
   // Iterate the tree construction method.
@@ -275,7 +276,7 @@ bool nbvInspection::nbvPlanner<stateVec>::plannerCallback(nbvplanner::nbvp_srv::
     segment.poses.push_back(res.path.back());
   }
   evadePub_.publish(segment);
-  ROS_INFO_STREAM("Path computation lasted"<<(ros::Time::now() - computationTime).toSec()<<"s");
+  //ROS_INFO_STREAM("Path computation lasted"<<(ros::Time::now() - computationTime).toSec()<<"s");
   res.coverage = update_coverage(update_coverage_freq); 
   res.path_computation_time =  (ros::Time::now() - computationTime).toSec();
   return true;

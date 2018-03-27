@@ -467,7 +467,7 @@ int main(int argc, char** argv)
   bool srv_call_status = false;
   int srv_call_status_ctr = 0;
   ros::Time start_hook_t, end_hook_t;
-
+  int path_zero_ctr = 0;
   while (ros::ok()) {
     loop_start_t = ros::Time::now();
     ros::spinOnce(); 
@@ -482,7 +482,7 @@ int main(int argc, char** argv)
         // break;
     }
     
-    ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
+    //ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = g_iteration;
@@ -508,16 +508,18 @@ int main(int argc, char** argv)
                 drone.pose().position.y - last_trajectory_point.position_W.y(),
                 0);
     
-    while ((distance_from_immediate_goal > (1-distance_from_goal_threshold)*g_sensor_max_range) && time_out_ctr < time_out_ctr_threshold){
-        distance_from_immediate_goal = distance(drone.pose().position.x - last_trajectory_point.position_W.x(),
-                drone.pose().position.y - last_trajectory_point.position_W.y(),
-                0);
-        time_out_ctr +=1; 
-        ros::Duration(.5).sleep();
+    if (!planSrv.request.exact_root){  //only if no future collision
+        while ((distance_from_immediate_goal > (1-distance_from_goal_threshold)*g_sensor_max_range) && time_out_ctr < time_out_ctr_threshold){
+            distance_from_immediate_goal = distance(drone.pose().position.x - last_trajectory_point.position_W.x(),
+                    drone.pose().position.y - last_trajectory_point.position_W.y(),
+                    0);
+            time_out_ctr +=1; 
+            ros::Duration(.5).sleep();
+        }
+        //ROS_INFO_STREAM("time out ctr"<<time_out_ctr); 
+        time_out_ctr = 0;
     }
-    ROS_INFO_STREAM("time out ctr"<<time_out_ctr); 
-    time_out_ctr = 0;
-
+    
     do{
         start_hook_t = ros::Time::now();
         srv_call_status = nbvplanner_client.call(planSrv);
@@ -533,6 +535,9 @@ int main(int argc, char** argv)
     if (!srv_call_status) {
         log_data_before_shutting_down();
         ros::shutdown();
+    }else if(path_zero_ctr > 20) {
+        log_data_before_shutting_down();
+        ros::shutdown();
     }
     else{
         g_motion_planning_plus_srv_call_acc += (end_hook_t -start_hook_t).toSec()*1e9;
@@ -540,7 +545,10 @@ int main(int argc, char** argv)
         n_seq++;
         if (planSrv.response.path.size() == 0) {
             ROS_ERROR("path size is zero");
+            path_zero_ctr++; 
             ros::Duration(1.0).sleep();
+        }else{
+            path_zero_ctr = 0;
         }
         for (int i = 0; i < planSrv.response.path.size(); i++) {
             if(i ==  planSrv.response.path.size() - 1) { 

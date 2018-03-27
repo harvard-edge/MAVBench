@@ -366,7 +366,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         double scaled_flight_time = flight_time / scale;
 
         // Fly for flight_time seconds
-        //ROS_ERROR_STREAM("---"<<v_x<< " "<< v_y << " " <<v_z);
+        //ROS_ERROR_STREAM("Vs to send out"<<v_x<< " "<< v_y << " " <<v_z);
         auto segment_start_time = std::chrono::system_clock::now();
         drone.fly_velocity(v_x, v_y, v_z, yaw, scaled_flight_time); 
         
@@ -381,8 +381,10 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
 
         // Update trajectory
         traj->front().duration -= flight_time;
-        if (traj->front().duration <= 0)
+        if (traj->front().duration <= 0){
+            //ROS_INFO_STREAM("pop a command"<< traj->front().x<< " " << traj->front().y<< " "<<traj->front().z); 
             traj->pop_front();
+        }
 
         time -= flight_time;
     }

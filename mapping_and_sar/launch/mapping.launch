@@ -10,16 +10,16 @@
 
 
   <arg name="nbvp/gain/range" default="6"/>
-  <arg name="nbvp/tree/extension_range" default="6.5"/>
+  <arg name="nbvp/tree/extension_range" default="4"/>
   <arg name="sensor_max_range" default="7" />
   <arg name="planning_resolution" default=".15"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
-  <arg name="distance_from_goal_threshold" default=".5" />
+  <arg name="distance_from_goal_threshold" default=".7" />
 
  
 
-  <arg name="fly_trajectory_time_out" default=".1"/> 
+  <arg name="fly_trajectory_time_out" default=".01"/> 
 
   <!-- sensors /-->
   <arg name="all_front" default="true"/>	
@@ -299,9 +299,11 @@
   <param name="loop_rate" value="150"/>
   </node>
 
+  <comment>
   <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
   <param name="panic_distance" value="3"/>
   </node>
+  </comment>
 
   <node pkg="mapping_and_sar" type="future_collision" name="future_collision" output="screen"> 
   <!--remap from="/points" to="cloud_in" /-->

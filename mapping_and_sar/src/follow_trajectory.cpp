@@ -42,7 +42,8 @@ int g_col_ctr = 0;
 ros::Time g_future_col_time;
 
 void panic_callback(const std_msgs::Bool::ConstPtr& msg) {
-    should_panic = msg->data;
+    should_panic = false;
+    //should_panic = msg->data;
 }
 
 void panic_velocity_callback(const geometry_msgs::Vector3::ConstPtr& msg) {
@@ -75,7 +76,9 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 }
 
 void future_col_callback (const package_delivery::BoolPlusHeader::ConstPtr& msg){
-    g_future_col = msg->data;
+    //g_future_col = msg->data;
+    g_future_col = false;
+    
     g_future_col_time = msg->header.stamp; 
     g_future_col_seq++;
 }
@@ -140,6 +143,7 @@ multiDOFpoint current_point(Drone& drone){
 
 void callback_trajectory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg, Drone * drone, trajectory_t * normal_traj)
 {
+    //ROS_INFO_STREAM("got new traj" << " size is "<< msg->points.size());  
     if (msg->points.empty())
         return;
     else if (msg->header.seq < g_future_col_seq)
@@ -319,7 +323,7 @@ int main(int argc, char **argv){
         yaw_strategy_t yaw_strategy = face_forward; // follow_yaw;
 
         if (should_panic) {
-            ROS_DEBUG("Panicking!");
+            ROS_INFO_STREAM("Panicking!");
             panic_traj = create_panic_trajectory(drone, panic_velocity);
             normal_traj.clear(); // Replan a path once we're done
         } else {
@@ -343,7 +347,7 @@ int main(int argc, char **argv){
             ROS_WARN("follow_trajectory: future collision acknowledged");
             normal_traj.clear();
             g_future_col = false;
-            ROS_INFO_STREAM("g_future_collision"<< g_future_col_time); 
+            //ROS_INFO_STREAM("g_future_collision"<< g_future_col_time); 
             g_img_to_follow_traj_acc += (ros::Time::now() - g_future_col_time).toSec()*1e9;
             ROS_INFO_STREAM("image_to_folllow"<<ros::Time::now() - g_future_col_time);
             g_col_ctr++;
@@ -387,9 +391,16 @@ int main(int argc, char **argv){
         if(app_started){
             follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy,
                     check_position, g_v_max, g_fly_trajectory_time_out);
-
+            
+            /* 
+            //ROS_INFO_STREAM("---");
+            for (auto point : *forward_traj){
+                ROS_INFO_STREAM("traj"<< point.x<<" " << point.y<<" " << point.z);
+            }
+            */
             if (forward_traj->size() > 0)
                 next_steps_pub.publish(next_steps_msg(*forward_traj));
+                //ROS_INFO_STREAM("publish the next step"); 
         }
 
         if(forward_traj->size() != 0) {

@@ -171,9 +171,11 @@
 
     </node>
     
+    <comment> 
     <node pkg="package_delivery" type="panic_pcl" name="panic_pcl" output="screen">
 		<param name="panic_distance" value=".1"/>
     </node>
+    </comment>
     
     <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
 	<!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"-->

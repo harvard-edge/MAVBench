@@ -1,5 +1,5 @@
 #!/bin/bash
-sleep 5
+sleep 10
 echo f 0 0 1 3
 sleep 5
 echo c
