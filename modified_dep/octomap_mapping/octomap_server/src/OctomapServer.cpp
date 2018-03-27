@@ -288,7 +288,7 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
        pt_cld_octomap_commun_overhead_acc +=  (start_time - cloud->header.stamp).toSec()*1e9;
        octomap_ctr++;
    }
-   
+   rcvd_point_cld_time_stamp = cloud->header.stamp;
    ros::WallTime startTime = ros::WallTime::now();
   
    //
