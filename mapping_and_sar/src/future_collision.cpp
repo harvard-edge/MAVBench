@@ -26,6 +26,11 @@
 #include <package_delivery/BoolPlusHeader.h>
 #include <package_delivery/multiDOF_array.h>
 
+// Octomap server headers
+#include <octomap_server/OctomapServer.h>
+
+using namespace octomap_server;
+
 // Typedefs
 typedef package_delivery::multiDOF_array traj_msg_t;
 typedef std::chrono::system_clock sys_clock;
@@ -44,6 +49,9 @@ bool DEBUG = false;
 ros::Time g_pt_cloud_header; //this is used to figure out the octomap msg that 
 						  //collision was detected in
 
+long long g_pt_cloud_future_collision_acc = 0;
+int g_octomap_rcv_ctr = 0;
+
 ros::Duration g_pt_cloud_to_future_collision_t; 
 
 bool g_got_new_traj = false;
@@ -56,6 +64,15 @@ std::string ip_addr__global;
 std::string localization_method;
 double drone_height__global;
 double drone_radius__global;
+
+
+//Profiling
+int g_main_loop_ctr = 0;
+long long g_accumulate_loop_time = 0; //it is in ms
+long long g_pt_cld_to_octomap_commun_olverhead_acc = 0;
+
+long long octomap_integration_acc = 0;
+int octomap_ctr = 0;
 
 template <class T>
 bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
@@ -263,6 +280,18 @@ void log_data_before_shutting_down(){
         }
     }
 
+    /* 
+    ROS_INFO_STREAM("done with the first");
+    profiling_data_srv_inst.request.key = "img_to_futureCol_commun_t";
+    profiling_data_srv_inst.request.value = (((double)g_pt_cloud_future_collision_acc)/1e9)/g_octomap_rcv_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+    */
+
     profiling_data_srv_inst.request.key = "future_collision_main_loop";
     profiling_data_srv_inst.request.value = (((double)g_future_collision_main_loop)/1e9)/g_check_collision_ctr;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
@@ -271,6 +300,26 @@ void log_data_before_shutting_down(){
             ros::shutdown();
         }
     }
+
+    profiling_data_srv_inst.request.key = "img_to_octomap_commun_t";
+    profiling_data_srv_inst.request.value = ((double)g_pt_cld_to_octomap_commun_olverhead_acc/1e9)/octomap_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager using octomap");
+            ros::shutdown();
+        }
+    }
+    
+    profiling_data_srv_inst.request.key = "octomap_integration";
+    profiling_data_srv_inst.request.value = (((double)octomap_integration_acc)/1e9)/octomap_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager using octomap");
+            ros::shutdown();
+        }
+    }
+
+    ROS_INFO_STREAM("done with the octomap profiles");
 }
 
 void sigIntHandlerPrivate(int signo){
@@ -284,7 +333,8 @@ void sigIntHandlerPrivate(int signo){
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "future_collision");
-    ros::NodeHandle nh;
+    ros::NodeHandle nh("~");
+    std::string mapFilename(""), mapFilenameParam("");
     signal(SIGINT, sigIntHandlerPrivate);
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
@@ -307,21 +357,36 @@ int main(int argc, char** argv)
 
     std::string topic_name =  mav_name + "/" + mav_msgs::default_topics::COMMAND_TRAJECTORY;
 
-    ros::Subscriber octomap_sub = nh.subscribe("octomap_binary", 1, pull_octomap);
+    // ros::Subscriber octomap_sub = nh.subscribe("/octomap_binary", 1, pull_octomap);
     ROS_ERROR_STREAM("New traj: " << topic_name);
     ros::Subscriber new_traj_sub = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>(topic_name, 1, new_traj);
-    ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("next_steps", 1, boost::bind(pull_traj, boost::ref(drone), _1));
+    ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("/next_steps", 1, boost::bind(pull_traj, boost::ref(drone), _1));
 
-    ros::Publisher col_coming_pub = nh.advertise<package_delivery::BoolPlusHeader>("col_coming", 1);
-    ros::Publisher col_imminent_pub = nh.advertise<std_msgs::Bool>("col_imminent", 1);
-
-	// for profiling
-    ros::Publisher octomap_header_pub = nh.advertise<std_msgs::Int32>("octomap_header_col_detected", 1);
+    ros::Publisher col_coming_pub = nh.advertise<package_delivery::BoolPlusHeader>("/col_coming", 1);
 
     State state, next_state;
     next_state = state = checking_for_collision;
     //profiling variables
     ros::Time main_loop_start_hook_t, main_loop_end_hook_t;
+
+    // Create an octomap server
+    OctomapServer server;
+    octree = server.tree_ptr();
+
+    if (nh.getParam("map_file", mapFilenameParam)) {
+        if (mapFilename != "") {
+            ROS_WARN("map_file is specified by the argument '%s' and rosparam '%s'. now loads '%s'", mapFilename.c_str(), mapFilenameParam.c_str(), mapFilename.c_str());
+        } else {
+            mapFilename = mapFilenameParam;
+        }
+    }
+
+    if (mapFilename != "") {
+        if (!server.openFile(mapFilename)){
+            ROS_ERROR("Could not open file %s", mapFilename.c_str());
+            exit(1);
+        }
+    }
     
     //----------------------------------------------------------------- 
     // *** F:DN BODY
@@ -332,6 +397,13 @@ int main(int argc, char** argv)
         main_loop_start_hook_t = ros::Time::now();
         
         ros::spinOnce();
+        
+        if (CLCT_DATA){ 
+            g_pt_cloud_header = server.rcvd_point_cld_time_stamp; 
+            octomap_ctr = server.octomap_ctr;
+            octomap_integration_acc = server.octomap_integration_acc; 
+            g_pt_cld_to_octomap_commun_olverhead_acc = server.pt_cld_octomap_commun_overhead_acc;
+        }
         
         if (state == checking_for_collision) {
             collision_coming = check_for_collisions(drone, time_to_warn);
