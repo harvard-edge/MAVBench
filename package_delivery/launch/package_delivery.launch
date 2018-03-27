@@ -4,11 +4,13 @@
   <arg name="host_ip" default="10.157.90.51" />
   <!--arg name="host_ip" default="169.254.153.158" /-->
   <!-- Hasans's workstation ip --> 
-  <!--arg name="host_ip" default="10.157.90.49" /-->
+  <!-- arg name="host_ip" default="10.157.90.49" /-->
   <!-- Hasans's direct connection ip --> 
   <!-- arg name="host_ip" default="169.254.250.191" /-->
   <!--Wenzhi's workstation ip-->
   <!--arg name="host_ip" default="10.157.90.62" /-->
+  <!-- Sri's workstation ip --> 
+  <!-- arg name="host_ip" default="10.157.90.132" /-->
   <param name="/ip_addr" value="$(arg host_ip)" />
 
   <!-- Drone's physical characteristics /-->
@@ -19,7 +21,7 @@
   <arg name="planner_drone_radius" default="2"/>
   <arg name="planner_drone_height" default="0.6"/>
   
-  <arg name="planning_resolution" default=".5"/>
+  <arg name="planning_resolution" default=".15"/>
   <arg name="sensor_max_range" default="7" />
   <arg name="fly_trajectory_time_out" default=".1"/> 
   <arg name="planning_budget" default=".3"/>
@@ -51,7 +53,7 @@
 
   <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
   <!-- also planning to prevent stdio stuff(if they really matter)-->
-  <arg name="DEBUG" default="false" />
+  <arg name="DEBUG" default="true" />
   <arg name="CLCT_DATA" value="true" />
   <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
   <param name="DEBUG"  value="$(arg DEBUG)" />
@@ -80,7 +82,7 @@
   </node>
 
 
-  <!--comment-->
+  <comment>
     <!-- Octomap -->
     <node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager" output="screen">
 	<!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"-->
@@ -110,6 +112,7 @@
 		<param name="ground_filter/distance" value="0.04" />
 		<param name="ground_filter/angle" value="0.4" /> -->
 	</node>
+    </comment>
 
     <comment>
 	<node pkg="octomap_world" type="octomap_manager" name="octomap_manager">
@@ -154,7 +157,7 @@
 
 	<!-- Nodelet manager for this pipeline -->
     <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager" output="screen">
-        <remap from="/points" to="/cloud_in" />
+        <!-- remap from="/points" to="/cloud_in" / -->
     </node>
 
 	<!-- Convert to point cloud -->
@@ -173,6 +176,32 @@
     </node>
     
     <node pkg="package_delivery" type="future_collision" name="future_collision" output="screen">
+	<!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"-->
+        <param name="resolution" value="$(arg planning_resolution)" />
+		
+		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+		<param name="frame_id" type="string" value="world" />
+		
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
+		<param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
+        <param name="data_collection_iteration_freq_OM" value="$(arg data_collection_iteration_freq)"/>
+        
+        <!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/points" />
+
+		<!-- Filter ground for binary occupancy map -->
+		<param name="base_frame_id" value="world" />
+		<!-- <param name="filter_ground" value="true" />
+		<param name="ground_filter_plane_distance" value="1.00" />
+		<param name="ground_filter/distance" value="0.50" /> -->
+	    <param name="pointcloud_min_z" type="double" value="-2.0" />
+	    <param name="pointcloud_max_z" type="double" value="100.0" />
+	    <param name="occupancy_min_z" type="double" value="-2.00" />
+	    <param name="occupancy_max_z" type="double" value="100.0" />
+		<!-- <param name="ground_filter_plane_distance" value="0.07" />
+		<param name="ground_filter/distance" value="0.04" />
+		<param name="ground_filter/angle" value="0.4" /> -->
     </node>
     
     <?ignore 

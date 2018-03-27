@@ -80,6 +80,7 @@ public:
  long long octomap_integration_acc;
  long long pt_cld_octomap_commun_overhead_acc; 
  int octomap_ctr;
+ ros::Time rcvd_point_cld_time_stamp;
 
  //void log_data_before_shutting_down();
  void sigIntHandlerPrivate(int);
@@ -97,6 +98,8 @@ public:
 #endif
   typedef octomap_msgs::GetOctomap OctomapSrv;
   typedef octomap_msgs::BoundingBoxQuery BBXSrv;
+
+  OcTreeT *tree_ptr() const { return m_octree; }
 
   OctomapServer(ros::NodeHandle private_nh_ = ros::NodeHandle("~"));
   virtual ~OctomapServer();
