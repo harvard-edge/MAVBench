@@ -108,7 +108,7 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
 
 				if (octree->castRay(start, direction, end, true, distance)) {
-                    ROS_INFO_STREAM("true done");
+                    //ROS_INFO_STREAM("true done");
                     return true;
 				}
 			}
@@ -157,7 +157,7 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
     }
     g_pt_cloud_header = msg.header.stamp; 
 	//LOG_ELAPSED(future_collision_pull);
-    g_ctr++;
+    //g_ctr++;
 }
 
 void new_traj(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg) {
@@ -166,6 +166,7 @@ void new_traj(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg) {
 
 void pull_traj(Drone& drone, const traj_msg_t::ConstPtr& msg)
 {
+    //ROS_INFO_STREAM("pulling trajs"); 
     auto pos = drone.position();
     const auto& traj_front = msg->points.front();
     double x_offset = pos.x - traj_front.x;
@@ -191,7 +192,7 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
     start_hook_chk_col_t = ros::Time::now();
 
     //RESET_TIMER();
-
+    //ROS_INFO_STREAM("octomap_ctr before"<<octomap_ctr);
     const double min_dist_from_collision = 100.0;
     const std::chrono::milliseconds grace_period(1500);
 
@@ -201,7 +202,7 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
     }
     
     bool col = false;
-
+    //ROS_INFO_STREAM("octomap_ctr in fc"<<octomap_ctr);
     for (int i = 0; i < traj.points.size() - 1; ++i) {
         auto& pos1 = traj.points[i]; 
         auto& pos2 = traj.points[i+1]; 
@@ -219,11 +220,12 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
     g_checking_collision_kernel_acc += ((end_hook_chk_col_t - start_hook_chk_col_t).toSec()*1e9);
     g_check_collision_ctr++;
      
-    if (g_ctr % 10 == 0) {
+    /*
+    if ((octomap_ctr+1) % 10 == 0) {
         ROS_INFO_STREAM("----- send out"); 
         col = true; 
     }
-     
+    */
     return col;
 }
 
@@ -345,12 +347,12 @@ int main(int argc, char** argv)
     std_msgs::Bool col_imminent_msg;
     std::string mav_name;
 
-    ros::param::get("/follow_trajectory/mav_name", mav_name);
+//    ros::param::get("/follow_trajectory/mav_name", mav_name);
 
-    std::string topic_name =  mav_name + "/" + mav_msgs::default_topics::COMMAND_TRAJECTORY;
+    std::string topic_name =  "/airsim_qc/command/trajectory";
 
     // ros::Subscriber octomap_sub = nh.subscribe("/octomap_binary", 1, pull_octomap);
-    ROS_ERROR_STREAM("New traj: " << topic_name);
+    //ROS_INFO_STREAM("New traj: " << topic_name);
     ros::Subscriber new_traj_sub = nh.subscribe<trajectory_msgs::MultiDOFJointTrajectory>(topic_name, 1, new_traj);
     ros::Subscriber traj_sub = nh.subscribe<traj_msg_t>("/next_steps", 1, boost::bind(pull_traj, boost::ref(drone), _1));
 
@@ -395,9 +397,11 @@ int main(int argc, char** argv)
             octomap_ctr = server.octomap_ctr;
             octomap_integration_acc = server.octomap_integration_acc; 
             g_pt_cld_to_octomap_commun_olverhead_acc = server.pt_cld_octomap_commun_overhead_acc;
+            //ROS_ERROR_STREAM("octomap_ctr"<<octomap_ctr); 
         }
         
         if (state == checking_for_collision) {
+            //ROS_INFO_STREAM("beg of check_fo_collisoin"); 
             collision_coming = check_for_collisions(drone, time_to_warn);
             if (collision_coming) {
                 ROS_WARN("future_collision: sending out warning");
@@ -417,7 +421,9 @@ int main(int argc, char** argv)
                     //ROS_INFO_STREAM("collision detection time in future_collision"<<g_checking_collision_t);
                 }
             }
+            //ROS_INFO_STREAM("end of check_fo_collisoin"); 
         }else if (state == waiting_for_response) {
+            //ROS_INFO_STREAM("in wait response"); 
             if (g_got_new_traj){
                 next_state = checking_for_collision;
             }

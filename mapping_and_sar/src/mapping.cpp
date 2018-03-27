@@ -592,6 +592,7 @@ int main(int argc, char** argv)
             if(!srv_call_status){
                 ROS_INFO_STREAM("could not make a service all to trajectory done");
             }else if (!trajectory_done_srv_inst.response.success) {
+                ; 
                 ROS_INFO_STREAM("havn't finished last path");
             }
             ros::Duration(.2).sleep();     

@@ -186,7 +186,7 @@
   <!-- /group --> 
   <!-- Nodelet manager for this pipeline -->
   <node pkg="nodelet" type="nodelet" args="manager" name="depth_transforms_manager" output="screen">
-  <remap from="/points" to="/cloud_in" />
+  <!--remap from="/points" to="/cloud_in" /-->
   </node>
 
   <!-- Convert to point cloud -->
@@ -201,7 +201,7 @@
   </node>
 
 
-
+  <comment>
   <!--- get rid of this if you wan to directly use octomap_world octomap/-->
   <!--- octomap for planning-->
    <node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager" output="screen">
@@ -231,6 +231,10 @@
   <param name="ground_filter/distance" value="0.04" />
   <param name="ground_filter/angle" value="0.4" /> -->
   </node>
+  </comment> 
+  
+  
+  
   <comment>
   <node pkg="octomap_server" type="octomap_server_node" name="octomap_server_2">
   <param name="resolution" value="$(arg mapping_resolution)" />
@@ -299,8 +303,36 @@
   <param name="panic_distance" value="3"/>
   </node>
 
-  <node pkg="mapping_and_sar" type="future_collision" name="future_collision" output="screen"/> 
+  <node pkg="mapping_and_sar" type="future_collision" name="future_collision" output="screen"> 
+  <!--remap from="/points" to="cloud_in" /-->
+  <param name="resolution" value="$(arg planning_resolution)" />
+  <param name="data_collection_iteration_freq_OM" value="$(arg data_collection_iteration_freq)"/>
+  <param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
 
+
+  <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+  <param name="frame_id" type="string" value="world" />
+
+  <!-- maximum range to integrate (speedup!) -->
+  <param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
+
+  <!-- data source to integrate (PointCloud2) -->
+  <remap from="cloud_in" to="/points" />
+
+  <!-- Filter ground for binary occupancy map -->
+  <param name="base_frame_id" value="world" />
+  <!-- <param name="filter_ground" value="false" />
+  <param name="ground_filter_plane_distance" value="1.00" />
+  <param name="ground_filter/distance" value="0.50" /> -->
+  <param name="pointcloud_min_z" type="double" value="-2.0" />
+  <param name="pointcloud_max_z" type="double" value="10.0" />
+  <param name="occupancy_min_z" type="double" value="-2.00" />
+  <param name="occupancy_max_z" type="double" value="10.0" />
+  <!-- <param name="ground_filter_plane_distance" value="0.07" />
+  <param name="ground_filter/distance" value="0.04" />
+  <param name="ground_filter/angle" value="0.4" /> -->
+  </node>
+  
   <!--comment-->
   <!-- rviz -->
   <group if="$(arg DEBUG)">
