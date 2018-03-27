@@ -40,6 +40,7 @@
 #include "Drone.h"
 #include "control_drone.h"
 #include "common.h"
+#include <package_delivery/BoolPlusHeader.h>
 
 visualization_msgs::Marker path_to_follow_marker;
 std::string g_stats_file_addr;
@@ -137,11 +138,19 @@ void sigIntHandlerPrivate(int signo){
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     g_slam_lost = msg->data;
 }
-
+/*
 void future_col_callback (const std_msgs::Bool::ConstPtr& msg) {
     g_future_col = msg->data;
     g_future_col_seq++;
 }
+*/
+void future_col_callback (const package_delivery::BoolPlusHeader::ConstPtr& msg){
+    g_future_col = msg->data;
+    //g_future_col_time = msg->header.stamp; 
+    g_future_col_seq++;
+}
+
+
 
 int main(int argc, char** argv)
 {
@@ -164,7 +173,7 @@ int main(int argc, char** argv)
 	  nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
 
   ros::Subscriber future_col_sub =
-      nh.subscribe<std_msgs::Bool>("/col_coming", 1, future_col_callback);
+      nh.subscribe<package_delivery::BoolPlusHeader>("/col_coming", 1, future_col_callback);
 
   profile_manager::start_profiling_srv start_profiling_srv_inst;
   start_profiling_srv_inst.request.key = "";

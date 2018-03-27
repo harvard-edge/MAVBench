@@ -6,38 +6,43 @@
   
   <!-- important params affecting performance -->
   <!-- arg name="v_max" default="3.4"/-->
-  <arg name="v_max" default="1"/>
+  <arg name="v_max" default="3.4"/>
 
 
   <arg name="nbvp/gain/range" default="6"/>
   <arg name="nbvp/tree/extension_range" default="6.5"/>
   <arg name="sensor_max_range" default="7" />
-  <arg name="planning_resolution" default=".5"/>
+  <arg name="planning_resolution" default=".15"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
-  <arg name="distance_from_goal_threshold" default=".4" />
+  <arg name="distance_from_goal_threshold" default=".5" />
 
+ 
 
-  <arg name="fly_trajectory_time_out" default=".3"/> 
+  <arg name="fly_trajectory_time_out" default=".1"/> 
 
   <!-- sensors /-->
   <arg name="all_front" default="true"/>	
   
   <!-- localization method -->
   <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
-  <!-- arg name="localization_method" value="ground_truth" /-->
+  <arg name="localization_method" value="ground_truth" />
   <!--arg name="localization_method" value="gps" /-->
-  <arg name="localization_method" value="vins_mono"/>
+  <!--arg name="localization_method" value="vins_mono"/-->
 
   <!--- set according to the localizat5ion method--> 
-  <arg name="max_yaw_rate" default="10"/>
-  <arg name="max_yaw_rate_during_flight" default="10"/>
+  <arg name="max_yaw_rate" default="90"/>
+  <arg name="max_yaw_rate_during_flight" default="90"/>
   <arg name="system/dyaw_max" default="$(eval arg('max_yaw_rate_during_flight') * 3.14159265359 / 180.0)"/>
   <param name="v_max" value="$(arg v_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
   
-  
+  <arg name="future_col_drone_radius" default="1.5"/>
+  <arg name="future_col_drone_height" default="0.6"/>
+  <param name="drone_radius" value="$(arg future_col_drone_radius)"/>
+  <param name="drone_height" value="$(arg future_col_drone_height)"/>
+
   <!--- note that time is pretty important since it determines the hz of the thread it runs in --> 
   <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>
 
@@ -294,7 +299,7 @@
   <param name="panic_distance" value="3"/>
   </node>
 
-  <node pkg="mapping_and_sar" type="future_collision" name="future_collision" output="screen" />
+  <node pkg="mapping_and_sar" type="future_collision" name="future_collision" output="screen"/> 
 
   <!--comment-->
   <!-- rviz -->

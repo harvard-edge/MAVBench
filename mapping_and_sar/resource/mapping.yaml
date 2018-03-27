@@ -43,7 +43,7 @@ bbx/minY: -28.0
 bbx/minZ: 3.0
 bbx/maxX: 30.0
 bbx/maxY: 28.0
-bbx/maxZ: 5.0
+bbx/maxZ: 6.0
 bbx/softBounds: false
 
 #bbx/minX: -2.0

@@ -17,6 +17,7 @@
 #include <std_srvs/SetBool.h>
 #include <package_delivery/multiDOF.h>
 #include <package_delivery/multiDOF_array.h>
+#include <package_delivery/BoolPlusHeader.h>
 
 using namespace std;
 bool slam_lost = false;
@@ -35,6 +36,10 @@ geometry_msgs::Vector3 panic_velocity;
 unsigned int g_future_col_seq = 0;
 
 //bool g_dummy = false;
+//Profiling
+long long g_img_to_follow_traj_acc = 0;
+int g_col_ctr = 0;
+ros::Time g_future_col_time;
 
 void panic_callback(const std_msgs::Bool::ConstPtr& msg) {
     should_panic = msg->data;
@@ -54,14 +59,24 @@ void log_data_before_shutting_down(){
             ros::shutdown();
         }
     }
+    
+    profiling_data_srv_inst.request.key = "image_to_follow_time";
+    profiling_data_srv_inst.request.value = ((double)g_img_to_follow_traj_acc/1e9)/g_col_ctr;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
 }
 
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     slam_lost = msg->data;
 }
 
-void future_col_callback (const std_msgs::Bool::ConstPtr& msg) {
+void future_col_callback (const package_delivery::BoolPlusHeader::ConstPtr& msg){
     g_future_col = msg->data;
+    g_future_col_time = msg->header.stamp; 
     g_future_col_seq++;
 }
 
@@ -149,7 +164,7 @@ void callback_trajectory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPt
     float correction_in_y = msg->points[0].transforms[0].translation.y - mdp_prev.y;
     float correction_in_z =  msg->points[0].transforms[0].translation.z - mdp_prev.z;
     float first_yaw = yawFromQuat(msg->points[0].transforms[0].rotation);
-    ROS_INFO_STREAM("correction values"<<correction_in_x << " " <<correction_in_y << " "<<correction_in_z);
+    //ROS_INFO_STREAM("correction values"<<correction_in_x << " " <<correction_in_y << " "<<correction_in_z);
     double disc = min((dt * g_v_max) / 
         distance(mdp_prev.x - msg->points[0].transforms[0].translation.x,
                 mdp_prev.y - msg->points[0].transforms[0].translation.y,
@@ -278,7 +293,7 @@ int main(int argc, char **argv){
     ros::Subscriber panic_velocity_sub = 
         n.subscribe<geometry_msgs::Vector3>("panic_velocity", 1, panic_velocity_callback);
     ros::Subscriber future_col_sub =
-        n.subscribe<std_msgs::Bool>("/col_coming", 1, future_col_callback);
+        n.subscribe<package_delivery::BoolPlusHeader>("/col_coming", 1, future_col_callback);
 
     ros::Publisher next_steps_pub = n.advertise<package_delivery::multiDOF_array>("/next_steps", 1);
     std::string topic_name =  mav_name + "/" + mav_msgs::default_topics::COMMAND_TRAJECTORY;
@@ -328,6 +343,10 @@ int main(int argc, char **argv){
             ROS_WARN("follow_trajectory: future collision acknowledged");
             normal_traj.clear();
             g_future_col = false;
+            ROS_INFO_STREAM("g_future_collision"<< g_future_col_time); 
+            g_img_to_follow_traj_acc += (ros::Time::now() - g_future_col_time).toSec()*1e9;
+            ROS_INFO_STREAM("image_to_folllow"<<ros::Time::now() - g_future_col_time);
+            g_col_ctr++;
         }
 
         if (!panic_traj.empty()) {

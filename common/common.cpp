@@ -299,6 +299,8 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
     
     ros::Time start_hook_t;
     while (time > 0 && traj->size() > 0) {
+         
+        
         start_hook_t = ros::Time::now();  
         multiDOFpoint p = traj->front();
 
@@ -306,7 +308,7 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         double v_x = p.vx;
         double v_y = p.vy;
         double v_z = p.vz;
-        //ROS_ERROR_STREAM("before before speed scaling"<<v_x<< " "<< v_y << " " <<v_z);
+        //ROS_ERROR_STREAM("point "<<p.x<< " "<< p.y<< " " <<p.z);
         //ROS_ERROR_STREAM("before correction"<<v_x<< " "<< v_y << " " <<v_z);
          
         if (check_position) {

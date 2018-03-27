@@ -33,7 +33,9 @@ typedef std::chrono::time_point<sys_clock> sys_clock_time_point;
 static const sys_clock_time_point never = sys_clock_time_point::min();
 
 // Profiling variables
-ros::Time start_hook_chk_col_t, end_hook_chk_col_t;                                          
+ros::Time start_hook_chk_col_t, end_hook_chk_col_t;                                   
+int g_ctr = 0;
+
 long long g_checking_collision_kernel_acc = 0;
 ros::Time g_checking_collision_t;
 long long g_future_collision_main_loop = 0;
@@ -77,6 +79,11 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 
 	octomap::point3d direction(dx, dy, dz);
 	octomap::point3d end;
+    if (n1.x == n2.x && n1.y == n2.y && n1.z == n2.z) { 
+        //this situation should never occur but in mapping for error correction it
+        //might
+        return false;
+    }
 
 	for (double h = -height/2; h <= height/2; h += height_step) {
 		for (double r = 0; r <= radius; r += radius_step) {
@@ -84,12 +91,12 @@ bool collision(octomap::OcTree * octree, const T& n1, const T& n2)
 				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
 
 				if (octree->castRay(start, direction, end, true, distance)) {
-					return true;
+                    ROS_INFO_STREAM("true done");
+                    return true;
 				}
 			}
 		}
-	}
-
+    }
 	return false;
 }
 
@@ -120,7 +127,7 @@ bool in_safe_zone(const T& start, const T& pos) {
 void pull_octomap(const octomap_msgs::Octomap& msg)
 {
     //ROS_INFO_STREAM("now octo"); 
-    RESET_TIMER();
+    //RESET_TIMER();
     if (octree != nullptr) {
         delete octree;
     }
@@ -132,7 +139,8 @@ void pull_octomap(const octomap_msgs::Octomap& msg)
         ROS_ERROR("Octree could not be pulled.");
     }
     g_pt_cloud_header = msg.header.stamp; 
-	LOG_ELAPSED(future_collision_pull);
+	//LOG_ELAPSED(future_collision_pull);
+    g_ctr++;
 }
 
 void new_traj(const trajectory_msgs::MultiDOFJointTrajectory::ConstPtr& msg) {
@@ -165,7 +173,7 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
 
     start_hook_chk_col_t = ros::Time::now();
 
-    RESET_TIMER();
+    //RESET_TIMER();
 
     const double min_dist_from_collision = 100.0;
     const std::chrono::milliseconds grace_period(1500);
@@ -174,60 +182,44 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
         //ROS_INFO_STREAM("shouldn't be here"); 
         return false;
     }
-    //ROS_INFO_STREAM("now check for colision");
-    // auto& start = traj.points[0].transforms[0].translation;
-
+    
     bool col = false;
 
     for (int i = 0; i < traj.points.size() - 1; ++i) {
-        auto& pos1 = traj.points[i]; // .transforms[0].translation;
-        auto& pos2 = traj.points[i+1]; // .transforms[0].translation;
-
-        // We ignore possible at the beginning of the journey
-        // if (in_safe_zone(start, pos1))
-        //     continue;
-
+        auto& pos1 = traj.points[i]; 
+        auto& pos2 = traj.points[i+1]; 
         if (collision(octree, pos1, pos2)) {
             col = true;
-
-            // Check whether the drone is very close to the point of collision
-            auto now = sys_clock::now();
-            if (dist_to_collision(drone, pos1) < min_dist_from_collision){
-                time_to_warn = now;
-               	if(CLCT_DATA){ 
-                    g_distance_to_collision_first_realized = dist_to_collision(drone, pos1);
-				}
-            }
-            // Otherwise, give the drone a grace period to continue along its
-            // path. Don't update the time_to_warn if it's already been set to
-            // some time in the future
-            else if (time_to_warn == never) {
-                time_to_warn = now + grace_period;
-                // ROS_ERROR("now: %d", seconds(now));
-                //  ROS_ERROR("time_to_warn: %d", seconds(time_to_warn));
-            }
-
             break;
         }
     }
 
     if (!col)
         time_to_warn = never;
-
-    LOG_ELAPSED(future_collision);
     
     end_hook_chk_col_t = ros::Time::now(); 
     g_checking_collision_t = end_hook_chk_col_t;
     g_checking_collision_kernel_acc += ((end_hook_chk_col_t - start_hook_chk_col_t).toSec()*1e9);
     g_check_collision_ctr++;
+     
+    if (g_ctr % 10 == 0) {
+        ROS_INFO_STREAM("----- send out"); 
+        col = true; 
+    }
+     
     return col;
 }
 
 
 void future_collision_initialize_params()
 {
-    ros::param::get("/drone_radius", drone_radius__global);
-    ros::param::get("/drone_height", drone_height__global);
+    if(!ros::param::get("/drone_radius", drone_radius__global)){
+        ROS_FATAL("Could not start future_collision. drone_radius address parameter missing!");
+    }
+    
+    if(!ros::param::get("/drone_height", drone_height__global)){
+        ROS_FATAL("Could not start future_collision. drone_height address parameter missing!");
+    }
 
     if(!ros::param::get("/ip_addr",ip_addr__global)){
         ROS_FATAL("Could not start future_collision. IP address parameter missing!");
