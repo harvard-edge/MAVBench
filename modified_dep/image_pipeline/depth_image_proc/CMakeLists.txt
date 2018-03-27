@@ -16,7 +16,7 @@ find_package(Eigen3 QUIET)
 set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
 set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
 
-set (blah /home/nvidia/catkin_ws/devel/include)
+set (blah /home/wcui/catkin_ws/devel/include)
 message(STATUS ${common_utility_include})
 message(STATUS ${catkin_INCLUDE_DIRS})
 
@@ -26,7 +26,7 @@ if(NOT EIGEN3_FOUND)
 endif()
 find_package(OpenCV REQUIRED)
 include_directories(include ${BOOST_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} 
-   ${blah} ${common_utility_include}  ${EIGEN3_INCLUDE_DIRS})
+   ${blah} ${common_utility_include}  ${EIGEN3_INCLUDE_DIRS} )
 
 add_library(${PROJECT_NAME} src/nodelets/convert_metric.cpp
                              src/nodelets/crop_foremost.cpp

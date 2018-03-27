@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   octomap_ros
   octomap_msgs
+  octomap_server
   message_generation
   trajectory_msgs
   mav_trajectory_generation
