@@ -392,7 +392,7 @@ void output_flight_summary(void){
     }
     */ 
     
-    total_energy_consumed += ((g_end_stats.flight_time - g_init_stats.flight_time)*g_worst_case_power)
+    //total_energy_consumed += ((g_end_stats.flight_time - g_init_stats.flight_time)*g_worst_case_power)
     total_energy_consumed +=  (g_end_stats.energy_consumed - g_init_stats.energy_consumed);
     stats_ss << "\t\"" <<"total_energy_consumed"<<'"'<<":" << total_energy_consumed << "," << endl;
     // topic rates

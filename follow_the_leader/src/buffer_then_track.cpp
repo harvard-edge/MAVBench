@@ -77,13 +77,6 @@ bool tracking_cb(follow_the_leader::cmd_srv::Request &req,
     //moddify the state 
     if (req.cmd == "start_buffering") {
         state = buffer;
-        if (start_hook_t.toSec() != 0) {  //ignore the first round
-            end_hook_t = ros::Time::now(); 
-            g_tracking_time_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
-            g_tracking_ctr++;
-        }
-        else{
-        }
     }else if (req.cmd == "start_tracking_for_buffered") {
         state = trk_buff_imgs;
         start_hook_t = ros::Time::now();
@@ -146,7 +139,21 @@ void tracking_buffered(ros::ServiceClient &resume_detection_client, ros::Publish
         tracker_defined = false; 
         img_queue = std::queue<cv_bridge::CvImage>();
         frame_to_process_left = frame_to_process_upper_bound;
-        resume_detection_client.call(resume_detection_obj);
+        bool srv_call_status; 
+        do {
+            srv_call_status = resume_detection_client.call(resume_detection_obj);
+            if (!srv_call_status) {
+                ROS_INFO_STREAM("resume detection service not connected");
+            } 
+        }while(!srv_call_status);
+        if (start_hook_t.toSec() != 0) {  //ignore the first round
+            end_hook_t = ros::Time::now(); 
+            g_tracking_time_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
+            //ROS_INFO_STREAM("track buffer took"<< (end_hook_t - start_hook_t).toSec());
+            g_tracking_ctr++;
+        }
+        else{
+        }
         state = waiting_for_main; 
         if(!((bb.conf < min_allowed_tracking_treshold) || (strike > max_strike))) {
             follow_the_leader::bounding_box_msg bb_msg;

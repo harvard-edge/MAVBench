@@ -33,6 +33,11 @@
     <param name="ros_DEBUG" type="bool" value="$(arg DEBUG)" />
     <param name="frame_to_process_upper_bound" type="int" value="2"/> 
     
+    <!-- sensors /-->
+    <arg name="all_front" default="true"/>	
+    <param name="loop_rate" value="150"/>
+    
+    <comment>
     <!--img publisher node--> 
     <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
     <!-- IP of the Airsim computer -->
@@ -75,7 +80,56 @@
     <param name="localization_method" value="$(arg localization_method)" />
 
     </node>
+    </comment> 
     
+    
+    <!-- img_publisher point cloud /-->
+    <node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
+
+    <!-- IP of the Airsim computer -->
+    <param name="all_front" value="$(arg all_front)"/>	
+    <param name="localization_method" value="$(arg localization_method)" />
+    <param name="Airsim_ip" value="$(arg host_ip)" />
+
+    <param name="loop_rate" value="20" />
+
+    <!-- Port of the Airsim computer (this is default, do not change!) -->
+    <param name="Airsim_port" value="41451"/>
+
+    <!-- RGB camera parameters (parameters when calibrated) -->
+    <param name="Fx" value="256"/>
+    <param name="Fy" value="256"/>
+    <param name="cx" value="256"/>
+    <param name="cy" value="144"/>
+    <param name="scale_x" value="512"/>  <!-- Width when calibrated!-->
+    <param name="scale_y" value="288"/> <!-- Height when calibrated!-->
+    <param name="width" value="512"/>  <!-- Width when calibrated!-->
+    <param name="height" value="288"/> <!-- Height when calibrated!-->
+
+    <comment> 
+    <param name="Fx" value="200"/>
+    <param name="Fy" value="200"/>
+    <param name="cx" value="200"/>
+    <param name="cy" value="150"/>
+    <param name="scale_x" value="400"/>  <!-- Width when calibrated!-->
+    <param name="scale_y" value="300"/> <!-- Height when calibrated!-->
+    <param name="width" value="400"/>  <!-- Width when calibrated!-->
+    <param name="height" value="300"/> <!-- Height when calibrated!-->
+    </comment>
+
+    <param name="maxDist" value="50.0"/> 
+    <!-- Depth baseline -->
+    <param name="Tx" value="0.14"/>
+    <param name="scale" value="0.38"/> 
+
+    <!-- Topic with odometry information for the vehicle (used to create tf tree) -->
+    <!-- we are not using the odomTopic since arisim is not providing it at themoment -->	
+    <param name="odomTopic" value="/mavros/local_position/odom"/>
+  </node>
+
+
+
+
     <include file="$(find follow_the_leader)/launch/detection_node.launch"/>
     <include file="$(find follow_the_leader)/launch/tracking_node.launch"/>
 

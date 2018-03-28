@@ -37,7 +37,7 @@ while(True and timeout_ctr < 20):
         time.sleep(1)
         timeout_ctr+=1;
 
-print "noooooooooooooooooooods" + str(node_list)
+print "nodes" + str(node_list)
 node_pid_dic = get_pids(node_list)
 bind(node_pid_dic)
 

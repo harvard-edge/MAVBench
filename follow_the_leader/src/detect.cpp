@@ -89,6 +89,7 @@ bool detection_cb(follow_the_leader::cmd_srv::Request &req,
     end_hook_t =  ros::Time::now(); 
     g_obj_detection_ctr++;
     g_obj_detection_time_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
+    //ROS_INFO_STREAM("detection took"<<(end_hook_t - start_hook_t).toSec());
 
     cv::Mat img_cpy_2 = img_cpy; 
     cv::rectangle(img_cpy_2, cv::Point(bb.x, bb.y), cv::Point(bb.x+bb.w, bb.y+bb.h), cv::Scalar(255,255,0)); //yellow

@@ -317,7 +317,7 @@ int main(int argc, char **argv)
     ros::Time start_hook_t, end_hook_t;                                          
     // *** F:DN subscribers,publishers,servers,clients
 	ros::ServiceClient get_trajectory_client = 
-        nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv", true);
+        nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
 	ros::ServiceClient record_profiling_data_client = 
         nh.serviceClient<profile_manager::profiling_data_srv>("record_profiling_data");
         ros::Subscriber slam_lost_sub = nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);

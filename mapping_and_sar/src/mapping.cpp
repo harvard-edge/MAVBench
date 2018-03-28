@@ -444,7 +444,7 @@ int main(int argc, char** argv)
   g_iteration = 0;
   multiagent_collision_check::Segment dummy_seg;
   ros::ServiceClient nbvplanner_client= 
-        nh.serviceClient<nbvplanner::nbvp_srv>("nbvplanner", true);
+        nh.serviceClient<nbvplanner::nbvp_srv>("nbvplanner");
   
   ros::Time loop_start_t(0,0); 
   ros::Time loop_end_t(0,0); //if zero, it's not valid
@@ -535,11 +535,11 @@ int main(int argc, char** argv)
     if (!srv_call_status) {
         log_data_before_shutting_down();
         ros::shutdown();
-    }else if(path_zero_ctr > 20) {
+    }else if(path_zero_ctr > 10) {
         log_data_before_shutting_down();
+        signal_supervisor(g_supervisor_mailbox, "kill"); 
         ros::shutdown();
-    }
-    else{
+    }else{
         g_motion_planning_plus_srv_call_acc += (end_hook_t -start_hook_t).toSec()*1e9;
 
         n_seq++;

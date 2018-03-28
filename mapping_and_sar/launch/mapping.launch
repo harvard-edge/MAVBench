@@ -28,7 +28,7 @@
   <!--arg name="localization_method" value="orb_slam2_rgbd" /-->
   <arg name="localization_method" value="ground_truth" />
   <!--arg name="localization_method" value="gps" /-->
-  <!--arg name="localization_method" value="vins_mono"/-->
+  <!-- arg name="localization_method" value="vins_mono"/-->
 
   <!--- set according to the localizat5ion method--> 
   <arg name="max_yaw_rate" default="90"/>

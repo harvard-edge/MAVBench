@@ -152,8 +152,8 @@ int main(int argc, char** argv)
     ros::ServiceClient track_client = 
         nh.serviceClient<follow_the_leader::cmd_srv>("track");
 
-    ros::ServiceClient shutdown_client = 
-        nh.serviceClient<follow_the_leader::shut_down>("shutdown_topic");
+    //ros::ServiceClient shutdown_client = 
+    //    nh.serviceClient<follow_the_leader::shut_down>("shutdown_topic");
 
     ros::ServiceServer resume_detection_server  = 
         nh.advertiseService("resume_detection", resume_detection_server_cb);
@@ -194,7 +194,12 @@ int main(int argc, char** argv)
         //call detection to detect
         cmd_srv_inst.request.cmd = "start_detecting";
         start_hook_t = ros::Time::now();
-        call_service_succesfull =  detect_client.call(cmd_srv_inst);
+        do {
+            call_service_succesfull =  detect_client.call(cmd_srv_inst);
+            if (!call_service_succesfull) {
+                ROS_INFO_STREAM("detection service not connected");
+            }
+        }while(!call_service_succesfull);
         end_hook_t = ros::Time::now(); 
         g_obj_detection_time_including_ros_over_head_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
         g_obj_detection_ctr++; 

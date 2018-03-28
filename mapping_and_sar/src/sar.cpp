@@ -343,7 +343,7 @@ int main(int argc, char** argv)
   g_iteration = 0;
   multiagent_collision_check::Segment dummy_seg;
   ros::ServiceClient nbvplanner_client= 
-        nh.serviceClient<nbvplanner::nbvp_srv>("nbvplanner", true);
+        nh.serviceClient<nbvplanner::nbvp_srv>("nbvplanner");
   
   ros::Time loop_start_t(0,0); 
   ros::Time loop_end_t(0,0); //if zero, it's not valid
