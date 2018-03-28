@@ -15,7 +15,7 @@
   <arg name="planning_resolution" default=".15"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
-  <arg name="distance_from_goal_threshold" default=".7" />
+  <arg name="distance_from_goal_threshold" default=".85" />
 
  
 

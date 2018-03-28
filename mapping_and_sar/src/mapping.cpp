@@ -508,7 +508,7 @@ int main(int argc, char** argv)
                 drone.pose().position.y - last_trajectory_point.position_W.y(),
                 0);
     
-    if (!planSrv.request.exact_root){  //only if no future collision
+    if (planSrv.request.exact_root){  //only if no future collision
         while ((distance_from_immediate_goal > (1-distance_from_goal_threshold)*g_sensor_max_range) && time_out_ctr < time_out_ctr_threshold){
             distance_from_immediate_goal = distance(drone.pose().position.x - last_trajectory_point.position_W.x(),
                     drone.pose().position.y - last_trajectory_point.position_W.y(),
