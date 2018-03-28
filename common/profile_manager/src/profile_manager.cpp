@@ -379,18 +379,18 @@ void output_flight_summary(void){
     stats_ss << "\t\"rotor energy consumed \": " << g_end_stats.energy_consumed - g_init_stats.energy_consumed << ","<<endl; 
 
     // the rest of metrics 
-    /* 
+     
     //the follow is only for the compute subsystem, so it doesn not include memory
     //also, I think for dekstop it doesn't include the platform only gather processor data
-       for (auto result_el: g_highlevel_application_stats) {
-        stats_ss<<  "\t\""<< result_el.key<<'"' <<": " << result_el.value<<"," << endl;
-        
-        // only processor
+    for (auto result_el: g_highlevel_application_stats) {
+        // only processor/device energy (not the whole platform)
         if(result_el.key == "gpu_compute_energy" || result_el.key == "cpu_compute_energy"){
+            continue; 
             total_energy_consumed += result_el.value; 
         }
+        stats_ss<<  "\t\""<< result_el.key<<'"' <<": " << result_el.value<<"," << endl;
     }
-    */ 
+     
     
     //total_energy_consumed += ((g_end_stats.flight_time - g_init_stats.flight_time)*g_worst_case_power)
     total_energy_consumed +=  (g_end_stats.energy_consumed - g_init_stats.energy_consumed);
