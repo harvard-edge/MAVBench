@@ -340,7 +340,7 @@ int main(int argc, char** argv)
      return -1; 
     }
   
-  spin_around(drone);
+  //spin_around(drone);
   
   // Move back a little bit
   //int ctr =0; 

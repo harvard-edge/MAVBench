@@ -34,7 +34,7 @@ using namespace std;
 
 // Profiling
 //global variable to log in stats manager
-std::string g_mission_status = "failed";
+std::string g_mission_status = "time_out";
 ros::Time col_coming_time_stamp; 
 long long g_pt_cld_to_pkg_delivery_commun_acc = 0;
 int g_col_com_ctr = 0;
@@ -90,7 +90,14 @@ void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
     
     profiling_data_srv_inst.request.key = "mission_status";
-    profiling_data_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
+    if (g_mission_status == "time_out") {
+        profiling_data_srv_inst.request.value = 0;
+    }else if (g_mission_status == "completed") {
+        profiling_data_srv_inst.request.value = 1;
+    }else {
+        profiling_data_srv_inst.request.value = 2;
+    }
+
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -312,7 +319,7 @@ int main(int argc, char **argv)
    package_delivery::follow_trajectory_status_srv follow_trajectory_status_srv_inst;
 
    int fail_ctr = 0;
-   int fail_threshold = 15;
+   int fail_threshold = 50;
 
     ros::Time start_hook_t, end_hook_t;                                          
     // *** F:DN subscribers,publishers,servers,clients
@@ -352,7 +359,7 @@ int main(int argc, char **argv)
     ros::Time panic_realization_start_t;
     ros::Time panic_realization_end_t;
     msr::airlib::FlightStats init_stats, end_stats;
-    std::string mission_status;
+    std::string mission_status = "time_out";
     //----------------------------------------------------------------- 
 	// *** F:DN Body
 	//----------------------------------------------------------------- 
@@ -512,7 +519,7 @@ int main(int argc, char **argv)
             }
             if (fail_ctr >fail_threshold) {
                 next_state = failed;
-
+                mission_status = "planning_failed_too_many_times";
             }else if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
                 mission_status = "completed"; 
@@ -536,7 +543,7 @@ int main(int argc, char **argv)
         }
         else if (state == failed) {
             ROS_ERROR("Failed to reach destination");
-            mission_status = "failed"; 
+            //mission_status = "time_out"; 
             g_mission_status = mission_status;            
             log_data_before_shutting_down();
             signal_supervisor(g_supervisor_mailbox, "kill"); 
