@@ -36,7 +36,9 @@ void control_drone(Drone& drone)
 	cout << "\tt h: takeoff to h m\n";
 	cout << "\tl: land\n";
 	cout << "\tf x y z d: fly at (x,y,z) m/s for d s\n";
+	cout << "\tfz x y z d: fly at (x,y) m/s for d s, holding height z m\n";
 	cout << "\ty x: set yaw to x\n";
+	cout << "\tyz x z: set yaw to x degrees, holding height z m\n";
 	cout << "\tp: print pitch, roll, yaw, height\n";
 	cout << "\tc: complete drone setup and continue\n";
 	cout << "\ts: sleep for 5 seconds\n";
@@ -75,10 +77,18 @@ void control_drone(Drone& drone)
 			double x,y,z,d;
 			cin >> x >> y >> z >> d;
 			drone.fly_velocity(x, y, z, YAW_UNCHANGED, d);
+        } else if (cmd == "fz") {
+			double x,y,z,d;
+			cin >> x >> y >> z >> d;
+			drone.fly_velocity_at_z(x, y, z, YAW_UNCHANGED, d);
 		} else if (cmd == "y") {
 			double x;
 			cin >> x;
 			drone.set_yaw(x);
+		} else if (cmd == "yz") {
+			double y, z;
+			cin >> y >> z;
+			drone.set_yaw_at_z(y, z);
 		} else if (cmd == "p") {
 			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
