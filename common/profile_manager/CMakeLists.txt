@@ -76,7 +76,7 @@ add_definitions(-DUSE_INTEL -DUSE_NVML)
 add_executable(profile_manager src/profile_manager.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Profiling.cpp  ${common_utility_src}/timer.cpp)
 target_link_libraries(profile_manager  ${catkin_LIBRARIES}  AirLib MavLinkCom rpc pthread nvidia-ml)
 else(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
-add_executable(profile_manager src/profile_manager.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Profiling.cpp ${common_utility_src}/timer.cpp)
+add_executable(profile_manager src/profile_manager.cpp src/slam_profiler.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Profiling.cpp ${common_utility_src}/timer.cpp)
 target_link_libraries(profile_manager  ${catkin_LIBRARIES}  AirLib MavLinkCom rpc pthread)
 endif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
 
