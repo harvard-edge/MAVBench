@@ -158,7 +158,7 @@ bool Drone::set_yaw_at_z (int y, double z)
 
         auto t = std::chrono::system_clock::now();
         auto end_t = t + std::chrono::milliseconds(int(duration*1000));
-        const double t_step = 0.05;
+        const double t_step = 0.05; // 50 ms
         const auto t_step_ms = std::chrono::milliseconds(int(t_step*1000));
 
         for (; t < end_t; t += t_step_ms) {
@@ -324,6 +324,28 @@ bool Drone::fly_velocity(double vx, double vy, double vz, float yaw, double dura
 	}
 
 	return true;
+}
+
+bool Drone::fly_velocity_at_z(double vx, double vy, double z, float yaw, double duration)
+{
+    auto t = std::chrono::system_clock::now();
+    auto end_t = t + std::chrono::milliseconds(int(duration*1000));
+    const double t_step = 0.05; // 50 ms
+    const auto t_step_ms = std::chrono::milliseconds(int(t_step*1000));
+
+    for (; t < end_t; t += t_step_ms) {
+        double current_z = pose().position.z;
+        double vz = (z - current_z) * 0.5;
+
+        if (!fly_velocity(vx, vy, vz, yaw, duration))
+            return false;
+
+        std::this_thread::sleep_until(t);
+    }
+
+    fly_velocity(0, 0, 0);
+
+    return true;
 }
 
 bool Drone::land()

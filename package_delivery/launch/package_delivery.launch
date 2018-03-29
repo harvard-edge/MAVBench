@@ -1,7 +1,7 @@
 <launch>
   <!-- args and params --> 
   <!-- Behzad's workstation ip --> 
-  <arg name="host_ip" default="10.157.90.51" />
+  <!--arg name="host_ip" default="10.157.90.51" /-->
   <!--arg name="host_ip" default="169.254.153.158" /-->
   <!-- Hasans's workstation ip --> 
   <!-- arg name="host_ip" default="10.157.90.49" /-->
@@ -10,7 +10,7 @@
   <!--Wenzhi's workstation ip-->
   <!--arg name="host_ip" default="10.157.90.62" /-->
   <!-- Sri's workstation ip --> 
-  <!-- arg name="host_ip" default="10.157.90.132" /-->
+  <arg name="host_ip" default="10.157.90.132" />
   <param name="/ip_addr" value="$(arg host_ip)" />
 
   <!-- Drone's physical characteristics /-->
@@ -42,10 +42,12 @@
   <arg name="all_front" default="true"/>	
 
   <!-- Set the localization method /-->
-  <!--arg name="localization_method" default="orb_slam2_rgbd" /-->
+  <!--arg name="localization_method" default="orb_slam2_rgbd"/-->
   <!--arg name="localization_method" default="vins_mono" /-->
   <!--arg name="localization_method" default="gps" /-->
   <arg name="localization_method" default="ground_truth" />
+
+  <param name="localization_method" value="$(arg localization_method)" />
 
   <!-- stat file-->
   <param name="stats_file_addr" value="$(find package_delivery)/../data/package_delivery/stats.json" />
