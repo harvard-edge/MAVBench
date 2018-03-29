@@ -385,7 +385,7 @@ void output_flight_summary(void){
     for (auto result_el: g_highlevel_application_stats) {
         // only processor/device energy (not the whole platform)
         if(result_el.key == "gpu_compute_energy" || result_el.key == "cpu_compute_energy"){
-            continue; 
+            //continue; 
             total_energy_consumed += result_el.value; 
         }
         stats_ss<<  "\t\""<< result_el.key<<'"' <<": " << result_el.value<<"," << endl;

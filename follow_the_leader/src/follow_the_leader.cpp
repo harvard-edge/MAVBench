@@ -55,6 +55,15 @@ void log_data_before_shutting_down(){
     std::string ns = ros::this_node::getName();
     profile_manager::profiling_data_srv profiling_data_srv_inst;
 
+    profiling_data_srv_inst.request.key = "error";
+    profiling_data_srv_inst.request.value = ((double)g_error_accumulate/g_error_ctr)/1000;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+    
     profiling_data_srv_inst.request.key = "object_detection_plus_srv_call";
     profiling_data_srv_inst.request.value = ((double)g_obj_detection_time_including_ros_over_head_acc/g_obj_detection_ctr)/1e9;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
@@ -81,16 +90,6 @@ void log_data_before_shutting_down(){
             ros::shutdown();
         }
     }
-
-    profiling_data_srv_inst.request.key = "error";
-    profiling_data_srv_inst.request.value = ((double)g_error_accumulate/g_error_ctr)/1000;
-    if (ros::service::waitForService("/record_profiling_data", 10)){ 
-        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
-            ROS_ERROR_STREAM("could not probe data using stats manager");
-            ros::shutdown();
-        }
-    }
-
 }
 
 void sigIntHandlerPrivate(int signo){
@@ -177,8 +176,9 @@ int main(int argc, char** argv)
         }
     }
 
+     
     following_start_t =  ros::Time::now(); 
-
+    ROS_INFO_STREAM("stared following"); 
     while (ros::ok() && (detec_fail_ctr < g_detec_fail_ctr_threshold)) {
         if (state != "resume_detection") {
             ros::spinOnce();
@@ -234,11 +234,11 @@ int main(int argc, char** argv)
             detec_fail_ctr++;
         }
         ros::spinOnce();
+        following_end_t =  ros::Time::now(); 
     }
 
     if (detec_fail_ctr >= g_detec_fail_ctr_threshold) {
         g_mission_status = "failed";
-        following_end_t =  ros::Time::now(); 
     
     }
     log_data_before_shutting_down();
