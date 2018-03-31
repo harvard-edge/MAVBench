@@ -286,6 +286,7 @@ double read_gpu_power_sample(xpu_sample_stat *s = nullptr) {
     f1.close();
 
 #ifdef USE_NVML
+    //ROS_INFO_STREAM("using NVML");
     unsigned int num_devices = 0;
     if (nvmlDeviceGetCount(&num_devices) != NVML_SUCCESS) {
         std::cout << nvmlDeviceGetCount(&num_devices) << "nvmlDeviceGetCount() failed.\n";
@@ -324,7 +325,7 @@ double read_cpu_power_sample(xpu_sample_stat *s = nullptr) {
     std::ifstream f1("/sys/devices/3160000.i2c/i2c-0/0-0041/iio_device/in_power1_input");
     if (f1.good()) {
         f1 >> cpu_power_mwatts;
-        // std::cout << "CPU Power (tx2): " << cpu_power_mwatts << " mWatt\n";
+         //std::cout << "CPU Power (tx2): " << cpu_power_mwatts << " mWatt\n";
     }
     f1.close();
 
@@ -544,6 +545,7 @@ int main(int argc, char **argv)
 
         read_gpu_power_sample(&xs_gpu);
         #ifndef USE_INTEL
+        //ROS_INFO_STREAM("using nvidia"); 
         read_cpu_power_sample(&xs_cpu);
         #endif // NOT USE_INTEL
         

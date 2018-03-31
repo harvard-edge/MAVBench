@@ -54,7 +54,7 @@
 
 
   <!-- termination criteria-->
-  <arg name="coverage_threshold" default="85"/>
+  <arg name="coverage_threshold" default="30"/>
 
   <!-- DEBUGING-data collection params--> 
   <arg name="DEBUG" value="false" />

@@ -76,8 +76,8 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 }
 
 void future_col_callback (const package_delivery::BoolPlusHeader::ConstPtr& msg){
-    //g_future_col = msg->data;
-    g_future_col = false;
+    g_future_col = msg->data;
+    //g_future_col = false;
     
     g_future_col_time = msg->header.stamp; 
     g_future_col_seq++;
@@ -344,12 +344,12 @@ int main(int argc, char **argv){
         }
 
         if (g_future_col) {
-            ROS_WARN("follow_trajectory: future collision acknowledged");
-            normal_traj.clear();
+            //ROS_WARN("follow_trajectory: future collision acknowledged");
+            //normal_traj.clear();
             g_future_col = false;
             //ROS_INFO_STREAM("g_future_collision"<< g_future_col_time); 
             g_img_to_follow_traj_acc += (ros::Time::now() - g_future_col_time).toSec()*1e9;
-            ROS_INFO_STREAM("image_to_folllow"<<ros::Time::now() - g_future_col_time);
+            //ROS_INFO_STREAM("image_to_folllow"<<ros::Time::now() - g_future_col_time);
             g_col_ctr++;
         }
 

@@ -509,7 +509,7 @@ int main(int argc, char** argv)
     planSrv.request.header.frame_id = "world";
 
     if (g_future_col) {
-        ROS_WARN("follow_trajectory: future collision acknowledged");
+        //ROS_WARN("follow_trajectory: future collision acknowledged");
         planSrv.request.exact_root = false;
         g_future_col = false;
     } else {
