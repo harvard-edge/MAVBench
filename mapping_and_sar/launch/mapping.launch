@@ -12,10 +12,10 @@
   <arg name="nbvp/gain/range" default="6"/>
   <arg name="nbvp/tree/extension_range" default="4"/>
   <arg name="sensor_max_range" default="7" />
-  <arg name="planning_resolution" default=".30"/>
+  <arg name="planning_resolution" default=".15"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
-  <arg name="distance_from_goal_threshold" default=".85" />
+  <arg name="distance_from_goal_threshold" default=".30" />
 
  
 
@@ -54,7 +54,7 @@
 
 
   <!-- termination criteria-->
-  <arg name="coverage_threshold" default="80"/>
+  <arg name="coverage_threshold" default="85"/>
 
   <!-- DEBUGING-data collection params--> 
   <arg name="DEBUG" value="false" />

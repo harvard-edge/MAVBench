@@ -47,6 +47,8 @@ std::string g_stats_file_addr;
 bool g_slam_lost = false;
 
 //profiling variables
+int g_reached_time_out = 0;
+long g_time_out_ctr_acc = 0;
 std::string g_mission_status = "failed";
 float g_coverage = 0 ;
 float g_path_computation_time = 0;
@@ -82,6 +84,24 @@ void log_data_before_shutting_down(){
 
     profiling_data_srv_inst.request.key = "motion_planning_plus_srv_call";
     profiling_data_srv_inst.request.value = (((double)g_motion_planning_plus_srv_call_acc)/1e9)/g_iteration;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    profiling_data_srv_inst.request.key = "reached_time_out_ctr";
+    profiling_data_srv_inst.request.value = (g_reached_time_out);
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    profiling_data_srv_inst.request.key = "time_out_ctr_avg";
+    profiling_data_srv_inst.request.value = (g_time_out_ctr_acc)/g_iteration;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -461,7 +481,7 @@ int main(int argc, char** argv)
   last_position_before_planning.position_W.z() = drone.pose().position.z;
 
 
-  int time_out_ctr_threshold = 20; 
+  int time_out_ctr_threshold = 10; 
   const float goal_s_error_margin = 3.0; //ok distance to be away from the goal.
   int time_out_ctr = 0;
   bool srv_call_status = false;
@@ -516,6 +536,11 @@ int main(int argc, char** argv)
             time_out_ctr +=1; 
             ros::Duration(.5).sleep();
         }
+        if (time_out_ctr == time_out_ctr_threshold) {
+            g_reached_time_out++;
+        
+        }
+        g_time_out_ctr_acc +=time_out_ctr;
         //ROS_INFO_STREAM("time out ctr"<<time_out_ctr); 
         time_out_ctr = 0;
     }
