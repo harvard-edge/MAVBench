@@ -168,13 +168,7 @@ int main(int argc, char** argv)
     control_drone(drone);
 
     profile_manager::profiling_data_srv profiling_data_srv_inst;
-    profiling_data_srv_inst.request.key = "start_profiling";
-    if (ros::service::waitForService("/record_profiling_data", 10)){ 
-        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
-            ROS_ERROR_STREAM("could not probe data using stats manager");
-            ros::shutdown();
-        }
-    }
+    bool first_object = true;
 
      
     following_start_t =  ros::Time::now(); 
@@ -210,7 +204,17 @@ int main(int argc, char** argv)
 
         //if detected, call buff_track to track  
         if (state == "obj_detected"){
-            
+            if (first_object) {
+                profiling_data_srv_inst.request.key = "start_profiling";
+                if (ros::service::waitForService("/record_profiling_data", 10)){ 
+                    if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+                        ROS_ERROR_STREAM("could not probe data using stats manager");
+                        ros::shutdown();
+                    }
+                }
+                first_object = false; 
+            }
+            ROS_INFO_STREAM("object detect"); 
             bounding_box bb;
             bb.x = cmd_srv_inst.response.bb.x;
             bb.y = cmd_srv_inst.response.bb.y;
@@ -219,6 +223,8 @@ int main(int argc, char** argv)
             bb.conf  = cmd_srv_inst.response.bb.conf;
             error error_inst(bb, image_h__global, 
                     image_w__global, height_ratio);
+            
+            //ROS_INFO_STREAM("error is "<<error_inst.full); 
             g_error_accumulate +=  (error_inst.full)*1000;
             g_error_ctr +=1;
             

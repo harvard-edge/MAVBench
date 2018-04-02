@@ -144,7 +144,9 @@
 	</group>
 
     <node pkg="follow_the_leader" type="pid_node" name="pid_node" output="screen">
-        <param name="vx__P__global" value=".08"/>
+        <!--param name="vx__P__global" value=".08"/-->
+        <param name="vx__P__global" value=".03"/>
+        
         <param name="vy__P__global" value="5"/>
 
         <param name="vz__P__global" value=".03"/>

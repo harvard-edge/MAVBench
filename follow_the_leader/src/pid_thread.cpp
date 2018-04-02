@@ -116,7 +116,7 @@ void fly_towards_target(Drone& drone, const bounding_box& bb,
     double img__cntr =  img_width / 2;
     double vy = pid_vy.calculate(height_ratio, bb.h/img_height,  dt); 
     double vx = pid_vx.calculate(bb.x + bb.w/2, img_width/2, dt); 
-    double vz = pid_vz.calculate(3*(double)img_height/4, bb.y + bb.h/2, dt); 
+    double vz = pid_vz.calculate(1*(double)img_height/2, bb.y + bb.h/2, dt); 
     //double vz = pid_vz.calculate(drone.pose().position.z, hover_height, dt); //for hovering at the same point
     
     //error error_inst(bb, img_height, img_width, height_ratio);

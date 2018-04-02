@@ -36,8 +36,9 @@ error::error(bounding_box bb, int img_height, int img_width, double height_ratio
     //double bb__cntr__z =  bb.y; 
     this->x = (bb__cntr__x - img_width/2)/(img_width/2);
     this->z = (bb__cntr__z - img_height/2)/(img_height/2);
+    //ROS_INFO_STREAM("z error"<< this->z); 
     this->y = (bb.h/img_height - height_ratio);
-    this->full = pow(pow(this->x,2) + pow(this->y,2) + pow(this->z,2),.5)/3;
+    this->full = pow(pow(this->x,2)+ pow(this->z,2), .5)/2; //+ pow(this->z,2),.5)/3;
     
        
     /*    
