@@ -63,7 +63,7 @@ void initialize_params() {
         return; 
     }
     if(!ros::param::get("/scanning/localization_method",localization_method)){
-        ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
+        ROS_FATAL("Could not start scanning. Parameter missing! Looking for %s", 
                 (ns + "/localization_method").c_str());
         return; 
     }

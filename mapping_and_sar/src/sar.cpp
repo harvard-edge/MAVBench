@@ -27,11 +27,11 @@
 #include <ros/package.h>
 #include <tf/tf.h>
 #include <std_srvs/Empty.h>
+#include <std_srvs/SetBool.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <multiagent_collision_check/Segment.h>
 #include <profile_manager/profiling_data_srv.h>
 #include <profile_manager/start_profiling_srv.h>
-#include <mapping_and_sar/OD.h>
 #include <mav_msgs/conversions.h>
 #include <mav_msgs/default_topics.h>
 #include <nbvplanner/nbvp_srv.h>
@@ -40,12 +40,15 @@
 #include "Drone.h"
 #include "control_drone.h"
 #include "common.h"
-
+#include <package_delivery/BoolPlusHeader.h>
+#include <mapping_and_sar/OD.h>
 visualization_msgs::Marker path_to_follow_marker;
 std::string g_stats_file_addr;
 bool g_slam_lost = false;
 
 //profiling variables
+int g_reached_time_out = 0;
+long g_time_out_ctr_acc = 0;
 std::string g_mission_status = "failed";
 float g_coverage = 0 ;
 float g_path_computation_time = 0;
@@ -55,11 +58,16 @@ int g_iteration = 0;
 long long g_accumulate_loop_time = 0; //it is in ms
 int g_loop_ctr = 0; 
 bool g_start_profiling = false; 
+bool g_future_col = false;
 long long g_motion_planning_plus_srv_call_acc = 0;
+
 
 std::string g_supervisor_mailbox; //file to write to when completed
 float g_max_yaw_rate;
 float g_max_yaw_rate_during_flight;
+float g_sensor_max_range;
+double g_fly_trajectory_time_out;
+unsigned int g_future_col_seq = 0;
 
 void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
@@ -76,6 +84,24 @@ void log_data_before_shutting_down(){
 
     profiling_data_srv_inst.request.key = "motion_planning_plus_srv_call";
     profiling_data_srv_inst.request.value = (((double)g_motion_planning_plus_srv_call_acc)/1e9)/g_iteration;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    profiling_data_srv_inst.request.key = "reached_time_out_ctr";
+    profiling_data_srv_inst.request.value = (g_reached_time_out);
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
+
+    profiling_data_srv_inst.request.key = "time_out_ctr_avg";
+    profiling_data_srv_inst.request.value = (g_time_out_ctr_acc)/g_iteration;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -132,6 +158,17 @@ void sigIntHandlerPrivate(int signo){
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     g_slam_lost = msg->data;
 }
+/*
+void future_col_callback (const std_msgs::Bool::ConstPtr& msg) {
+    g_future_col = msg->data;
+    g_future_col_seq++;
+}
+*/
+void future_col_callback (const package_delivery::BoolPlusHeader::ConstPtr& msg){
+    g_future_col = msg->data;
+    //g_future_col_time = msg->header.stamp; 
+    g_future_col_seq++;
+}
 
 void OD_callback(const mapping_and_sar::OD::ConstPtr& msg){
     if(msg->found){
@@ -150,6 +187,8 @@ int main(int argc, char** argv)
   signal(SIGINT, sigIntHandlerPrivate);
   ros::Publisher trajectory_pub = nh.advertise < trajectory_msgs::MultiDOFJointTrajectory
       > (mav_msgs::default_topics::COMMAND_TRAJECTORY, 5);
+  
+
   ros::Subscriber obj_det_sub = nh.subscribe <mapping_and_sar::OD>("/OD_topic", 2, OD_callback);
   ros::ServiceClient record_profiling_data_client = 
       nh.serviceClient<profile_manager::profiling_data_srv>("/record_profiling_data");
@@ -157,53 +196,76 @@ int main(int argc, char** argv)
   ros::ServiceClient start_profiling_client = 
       nh.serviceClient<profile_manager::start_profiling_srv>("/start_profiling");
   
+  ros::ServiceClient trajectory_done_client = 
+      nh.serviceClient<std_srvs::SetBool>("/trajectory_done_srv");
+
   ros::Subscriber slam_lost_sub = 
-		nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+	  nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+
+  ros::Subscriber future_col_sub =
+      nh.subscribe<package_delivery::BoolPlusHeader>("/col_coming", 1, future_col_callback);
+
   profile_manager::start_profiling_srv start_profiling_srv_inst;
   start_profiling_srv_inst.request.key = "";
+  std_srvs::SetBool trajectory_done_srv_inst;
+
   bool clct_data = true;
   uint16_t port = 41451;
   std::string ip_addr__global;
   std::string localization_method; 
   std::string ns = ros::this_node::getName();
+  double distance_from_goal_threshold = 0;
   if (!ros::param::get("/ip_addr", ip_addr__global)) {
     ROS_FATAL("Could not start sar. Parameter missing! Looking for %s",
               (ns + "/ip_addr").c_str());
     return -1;
   }
+  
+  if (!ros::param::get("/sensor_max_range", g_sensor_max_range)) {
+    ROS_FATAL("Could not start sar. Parameter missing! Looking for %s",
+              (ns + "/sensor_max_range").c_str());
+    return -1;
+  }
+
+  if (!ros::param::get("/distance_from_goal_threshold", distance_from_goal_threshold)) {
+    ROS_FATAL("Could not start sar. Parameter missing! Looking for %s",
+              (ns + "/distance_from_goal_threshold").c_str());
+    return -1;
+  }
+  
   if(!ros::param::get("/localization_method",localization_method))  {
-      ROS_FATAL_STREAM("Could not start sar cause localization_method not provided");
-    return -1; 
-  }
-  
-  
-  if(!ros::param::get("/stats_file_addr",g_stats_file_addr)){
-      ROS_FATAL("Could not start sar. Parameter missing! Looking for %s", 
-              (ns + "/stats_file_addr").c_str());
-  }
-  /* 
+      ROS_FATAL_STREAM("Could not start sar.localization_method not provided");
+      return -1;
+    }
+
+    if(!ros::param::get("/stats_file_addr",g_stats_file_addr)){
+        ROS_FATAL("Could not start sar. Parameter missing! Looking for %s", 
+                (ns + "/g_stats_file_addr").c_str());
+    }
+
   float coverage_threshold;
   if (!ros::param::get("/coverage_threshold", coverage_threshold)) {
-    ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
+    ROS_FATAL("Could not start sar. Parameter missing! Looking for %s",
               (ns + "/coverage_threshold").c_str());
     return -1;
   }
- */
+
   if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
-      ROS_FATAL_STREAM("Could not start mapping supervisor_mailbox not provided");
+      ROS_FATAL_STREAM("Could not start sar.supervisor_mailbox not provided");
       return -1;
   }
 
   if(!ros::param::get("/max_yaw_rate",g_max_yaw_rate))  {
-      ROS_FATAL_STREAM("Could not start mapping, max_yaw_rate not provided");
+      ROS_FATAL_STREAM("Could not start sar, max_yaw_rate not provided");
       return -1;
   }
 
   if(!ros::param::get("/max_yaw_rate_during_flight",g_max_yaw_rate_during_flight))  {
-      ROS_FATAL_STREAM("Could not start mapping,  max_yaw_rate_during_flight not provided");
+      ROS_FATAL_STREAM("Could not start sar,  max_yaw_rate_during_flight not provided");
       return -1;
   }
 
+  //ROS_INFO_STREAM("distance_from_goal_threshold******************"<<distance_from_goal_threshold); 
   //behzad change for visualization purposes
   ros::Publisher path_to_follow_marker_pub = nh.advertise<visualization_msgs::Marker>("path_to_follow_topic", 1000);
   geometry_msgs::Point p_marker;
@@ -213,10 +275,9 @@ int main(int argc, char** argv)
   path_to_follow_marker.scale.x = 0.3;
 
 
-  //ROS_INFO_STREAM("ip address is"<<ip_addr__global); 
-  //ROS_ERROR_STREAM("blah"<<ip_addr__global);
   Drone drone(ip_addr__global.c_str(), port, localization_method,
               g_max_yaw_rate, g_max_yaw_rate_during_flight);
+
   
   //dummy segment publisher
   ros::Publisher seg_pub = nh.advertise <multiagent_collision_check::Segment>("evasionSegment", 1);
@@ -225,26 +286,8 @@ int main(int argc, char** argv)
   //bool unpaused = ros::service::call("/gazebo/unpause_physics", srv);
   unsigned int i = 0;
 
-  // Trying to unpause Gazebo for 10 seconds.
-  /* 
-  while (i <= 10 && !unpaused) {
-    ROS_INFO("Wait for 1 second before trying to unpause Gazebo again.");
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    unpaused = ros::service::call("/gazebo/unpause_physics", srv);
-    ++i;
-  }
-
-  if (!unpaused) {
-    ROS_FATAL("Could not wake up Gazebo.");
-    return -1;
-  } else {
-    ROS_INFO("Unpaused the Gazebo simulation.");
-  }
-  */
-  
   double dt; //= 1.0;
   double yaw_t; 
-  //std::string ns = ros::this_node::getName();
   if (!ros::param::get(ns + "/nbvp/dt", dt)) {
     ROS_FATAL("Could not start sar. Parameter missing! Looking for %s",
               (ns + "/nbvp/dt").c_str());
@@ -266,7 +309,8 @@ int main(int argc, char** argv)
   }
 
   // Wait for the localization method to come online
-  waitForLocalization(localization_method);
+  // waitForLocalization(localization_method);
+  waitForLocalization("ground_truth");
 
   double segment_dedicated_time = yaw_t + dt;
   control_drone(drone);
@@ -284,7 +328,7 @@ int main(int argc, char** argv)
   // of initial paths.
   //ROS_INFO("Starting the planner: Performing initialization motion");
 
-  /*
+ /* 
   for (double i = 0; i <= 1.0; i = i + 0.25) {
     
       
@@ -319,25 +363,112 @@ int main(int argc, char** argv)
          ros::shutdown();
      }
   }
-  spin_around(drone);
+  
+  
+  if(!ros::param::get("/fly_trajectory_time_out", g_fly_trajectory_time_out)){
+        ROS_FATAL("Could not start follow_thrajectory. Parameter missing! fly_trajectory_time_out is not provided"); 
+     return -1; 
+    }
+  
+  //spin_around(drone);
+  
   // Move back a little bit
-  int ctr =0; 
-  while(ctr < 10) { 
+  //int ctr =0; 
+  /*
+  float first_z;
+  for (int ctr = 0; ctr < 7; ctr++) {
+      samples_array.points.clear();
       auto cur_pos = drone.position();
-      trajectory_point.position_W.x() = cur_pos.x - .2;
-      trajectory_point.position_W.y() = cur_pos.y - .2;
+      trajectory_point.position_W.x() = cur_pos.x;
+      trajectory_point.position_W.y() = cur_pos.y;
       trajectory_point.position_W.z() = cur_pos.z;
+
+      first_z = cur_pos.z;
       samples_array.header.seq = n_seq;
       samples_array.header.stamp = ros::Time::now();
-      samples_array.points.clear();
       n_seq++;
       mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
       samples_array.points.push_back(trajectory_point_msg);
       trajectory_pub.publish(samples_array);
-      ros::Duration(1).sleep();
-      ctr++;
+      ros::Duration(.5).sleep();
   }
+  spin_around(drone);
+  */
 
+  /*
+  for (int ctr = 0; ctr < 7; ctr++) {
+      samples_array.points.clear();
+      auto cur_pos = drone.position();
+      trajectory_point.position_W.x() = cur_pos.x;
+      trajectory_point.position_W.y() = cur_pos.y - 1;
+      trajectory_point.position_W.z() = cur_pos.z;
+      samples_array.header.seq = n_seq;
+      samples_array.header.stamp = ros::Time::now();
+      n_seq++;
+      mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+      samples_array.points.push_back(trajectory_point_msg);
+      trajectory_pub.publish(samples_array);
+      //std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      ros::Duration(.5).sleep();
+  }
+  spin_around(drone);
+  */
+
+  /*
+  for (int ctr = 0; ctr < 7; ctr++) {
+      samples_array.points.clear();
+      auto cur_pos = drone.position();
+      trajectory_point.position_W.x() = cur_pos.x + 1;
+      trajectory_point.position_W.y() = cur_pos.y ;
+      trajectory_point.position_W.z() = cur_pos.z;
+      samples_array.header.seq = n_seq;
+      samples_array.header.stamp = ros::Time::now();
+      n_seq++;
+      mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+      samples_array.points.push_back(trajectory_point_msg);
+      trajectory_pub.publish(samples_array);
+      //std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      ros::Duration(.5).sleep();
+  }
+  spin_around(drone);
+  */
+
+  /*
+  for (int ctr = 0; ctr < 7; ctr++) {
+      samples_array.points.clear();
+      auto cur_pos = drone.position();
+      trajectory_point.position_W.x() = cur_pos.x;
+      trajectory_point.position_W.y() = cur_pos.y + 1;
+      trajectory_point.position_W.z() = cur_pos.z;
+      samples_array.header.seq = n_seq;
+      samples_array.header.stamp = ros::Time::now();
+      n_seq++;
+      mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+      samples_array.points.push_back(trajectory_point_msg);
+      trajectory_pub.publish(samples_array);
+      //std::this_thread::sleep_for(std::chrono::milliseconds(200));
+      ros::Duration(.5).sleep();
+  }
+  spin_around(drone);
+  */
+
+  /*
+  for (int ctr = 0; ctr < 7; ctr++) {
+      samples_array.points.clear();
+      auto cur_pos = drone.position();
+      trajectory_point.position_W.x() = cur_pos.x ;
+      trajectory_point.position_W.y() = cur_pos.y ;
+      trajectory_point.position_W.z() = first_z ;
+      samples_array.header.seq = n_seq;
+      samples_array.header.stamp = ros::Time::now();
+      n_seq++;
+      mav_msgs::msgMultiDofJointTrajectoryPointFromEigen(trajectory_point, &trajectory_point_msg);
+      samples_array.points.push_back(trajectory_point_msg);
+      trajectory_pub.publish(samples_array);
+      ros::Duration(.5).sleep();
+      //std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  }
+  */
 
   // Start planning: The planner is called and the computed path sent to the controller.
   g_iteration = 0;
@@ -348,39 +479,82 @@ int main(int argc, char** argv)
   ros::Time loop_start_t(0,0); 
   ros::Time loop_end_t(0,0); //if zero, it's not valid
   mav_msgs::EigenTrajectoryPoint last_trajectory_point;
+  mav_msgs::EigenTrajectoryPoint last_position_before_planning;
+
+
   last_trajectory_point.position_W.x() = drone.pose().position.x;
   last_trajectory_point.position_W.y() = drone.pose().position.y;
   last_trajectory_point.position_W.z() = drone.pose().position.z;
   
-  int time_out_ctr_threshold = 20; 
+  last_position_before_planning.position_W.x() = drone.pose().position.x;
+  last_position_before_planning.position_W.y() = drone.pose().position.y;
+  last_position_before_planning.position_W.z() = drone.pose().position.z;
+
+
+  int time_out_ctr_threshold = 10; 
   const float goal_s_error_margin = 3.0; //ok distance to be away from the goal.
   int time_out_ctr = 0;
   bool srv_call_status = false;
   int srv_call_status_ctr = 0;
   ros::Time start_hook_t, end_hook_t;
-
+  int path_zero_ctr = 0;
   while (ros::ok()) {
     loop_start_t = ros::Time::now();
     ros::spinOnce(); 
     
     if (g_slam_lost) { //skip the iteration
         continue;
+        // ROS_ERROR("Slam lost! Giving up!");
+        // g_mission_status = "failed";
+        // log_data_before_shutting_down();
+        // signal_supervisor(g_supervisor_mailbox, "kill"); 
+        // ros::shutdown(); 
+        // break;
     }
     
-    ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
+    //ROS_INFO_THROTTLE(0.5, "Planning iteration %i", g_iteration);
     nbvplanner::nbvp_srv planSrv;
     planSrv.request.header.stamp = ros::Time::now();
     planSrv.request.header.seq = g_iteration;
     planSrv.request.header.frame_id = "world";
-  
-    while ( (distance(drone.pose().position.x - last_trajectory_point.position_W.x(),
-                drone.pose().position.y - last_trajectory_point.position_W.y(),
-                0) > goal_s_error_margin) && time_out_ctr < time_out_ctr_threshold ){
-        time_out_ctr +=1; 
-        ros::Duration(.3).sleep();
-    }
-    time_out_ctr = 0;
 
+    if (g_future_col) {
+        ROS_WARN("follow_trajectory: future collision acknowledged");
+        planSrv.request.exact_root = false;
+        g_future_col = false;
+    } else {
+        planSrv.request.exact_root = true;
+    }
+  
+    //determine the distance between the setout goal and distance traveled 
+    //this will determine the replanning
+    
+    //double distance_to_travel_goal = distance(last_position_before_planning.position_W.x() - last_trajectory_point.position_W.x(),
+    //             last_position_before_planning.position_W.y() - last_trajectory_point.position_W.y(),
+    //            0);
+
+
+    double distance_from_immediate_goal = distance(drone.pose().position.x - last_trajectory_point.position_W.x(),
+                drone.pose().position.y - last_trajectory_point.position_W.y(),
+                0);
+    
+    if (planSrv.request.exact_root){  //only if no future collision
+        while ((distance_from_immediate_goal > (1-distance_from_goal_threshold)*g_sensor_max_range) && time_out_ctr < time_out_ctr_threshold){
+            distance_from_immediate_goal = distance(drone.pose().position.x - last_trajectory_point.position_W.x(),
+                    drone.pose().position.y - last_trajectory_point.position_W.y(),
+                    0);
+            time_out_ctr +=1; 
+            ros::Duration(.5).sleep();
+        }
+        if (time_out_ctr == time_out_ctr_threshold) {
+            g_reached_time_out++;
+        
+        }
+        g_time_out_ctr_acc +=time_out_ctr;
+        //ROS_INFO_STREAM("time out ctr"<<time_out_ctr); 
+        time_out_ctr = 0;
+    }
+    
     do{
         start_hook_t = ros::Time::now();
         srv_call_status = nbvplanner_client.call(planSrv);
@@ -388,7 +562,6 @@ int main(int argc, char** argv)
         if (!srv_call_status) { 
             ROS_WARN_THROTTLE(1, "Planner not reachable");
             ros::Duration(.5).sleep();           
-            //ros::Duration(t_offset + segment_dedicated_time).sleep(); //changed, make sure segmentation time is smaller
         }
         srv_call_status_ctr++; 
     }while (!srv_call_status && srv_call_status_ctr <= 5);
@@ -397,26 +570,37 @@ int main(int argc, char** argv)
     if (!srv_call_status) {
         log_data_before_shutting_down();
         ros::shutdown();
-    }
-    else{
+    }else if(path_zero_ctr > 10) {
+        log_data_before_shutting_down();
+        signal_supervisor(g_supervisor_mailbox, "kill"); 
+        ros::shutdown();
+    }else{
         g_motion_planning_plus_srv_call_acc += (end_hook_t -start_hook_t).toSec()*1e9;
 
         n_seq++;
         if (planSrv.response.path.size() == 0) {
             ROS_ERROR("path size is zero");
+            path_zero_ctr++; 
             ros::Duration(1.0).sleep();
+        }else{
+            path_zero_ctr = 0;
         }
         for (int i = 0; i < planSrv.response.path.size(); i++) {
             if(i ==  planSrv.response.path.size() - 1) { 
                 last_trajectory_point.position_W.x() = planSrv.response.path[i].position.x;
                 last_trajectory_point.position_W.y() = planSrv.response.path[i].position.y;
                 last_trajectory_point.position_W.z() = planSrv.response.path[i].position.z;
+                last_position_before_planning.position_W.x() = drone.pose().position.x;
+                last_position_before_planning.position_W.y() = drone.pose().position.y;
+                last_position_before_planning.position_W.z() = drone.pose().position.z;
             }
 
             samples_array.header.seq = n_seq;
+
             samples_array.header.stamp = ros::Time::now();
+            samples_array.header.seq = g_future_col_seq;
             samples_array.header.frame_id = "world";
-            samples_array.points.clear();
+            //samples_array.points.clear();
             tf::Pose pose;
             tf::poseMsgToTF(planSrv.response.path[i], pose);
             double yaw = tf::getYaw(pose.getRotation());
@@ -441,10 +625,26 @@ int main(int argc, char** argv)
             path_to_follow_marker_pub.publish(path_to_follow_marker);
 
             samples_array.points.push_back(trajectory_point_msg);
-            trajectory_pub.publish(samples_array);
-        }
 
-        //profiling_probes 
+        }
+        
+        //make sure previous plann has been accomplished before pushing the new plan
+        //otherwise it can get really messy with path correction
+        do{
+            srv_call_status = trajectory_done_client.call(trajectory_done_srv_inst);
+            if(!srv_call_status){
+                ROS_INFO_STREAM("could not make a service all to trajectory done");
+            }else if (!trajectory_done_srv_inst.response.success) {
+                ; 
+                ROS_INFO_STREAM("havn't finished last path");
+            }
+            ros::Duration(.2).sleep();     
+        }while(!srv_call_status|| !trajectory_done_srv_inst.response.success);
+
+        trajectory_pub.publish(samples_array);
+        samples_array.points.clear();
+
+        //profiling probes
         loop_end_t = ros::Time::now(); 
         if (clct_data) {
             if(!g_start_profiling) { 
@@ -469,6 +669,15 @@ int main(int argc, char** argv)
         g_coverage =  planSrv.response.coverage;
         g_path_computation_time = planSrv.response.path_computation_time; 
         g_path_computation_time_acc += g_path_computation_time;    
-    } 
+        /* 
+        if(g_coverage > coverage_threshold){
+            g_mission_status = "completed";
+            log_data_before_shutting_down();
+            signal_supervisor(g_supervisor_mailbox, "kill"); 
+            ros::shutdown(); 
+        }
+        */
+    }     
   }
 }
+

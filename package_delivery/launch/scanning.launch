@@ -17,12 +17,11 @@
 
     <arg name="v_max" default="6.0"/> 
     <arg name="a_max" default="8"/> 
-    
     <!-- Set the localization method -->
     <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
-    <!-- arg name="localization_method" value="ground_truth" /-->
-    <arg name="localization_method" value="gps" />
-
+    <arg name="localization_method" value="ground_truth" />
+    <!--arg name="localization_method" value="gps" /-->
+    <param name="localization_method" value="$(arg localization_method)" />
     <!-- setting DEBUG to false prevents publishing and subscribing to rviz /--> 
     <!-- also planning to prevent stdio stuff(if they really matter)--> 
     <arg name="DEBUG" value="true" /> 
@@ -39,18 +38,25 @@
     
     <group if="$(arg CLCT_DATA)">
     <param name="enable_statistics" value="true"/>
+    
+    
     </group> 
+    <arg name="planning_budget" default=".3"/>
+    <param name="planning_budget" value="$(arg planning_budget)"/>
+
 
 
     <!-- starting nodes --> 
     <node pkg="profile_manager" type="profile_manager" name="profile_manager" output="screen">
     <param name="/ip_addr" value="$(arg host_ip)" />
     </node>
-
+    <arg name="all_front" default="true"/>	
 
 	<!-- Point-cloud publisher -->
  	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher">
-		<!-- IP of the Airsim computer -->
+		<param name="loop_rate" value="25"/>
+	    <param name="all_front" value="$(arg all_front)"/>	
+        <!-- IP of the Airsim computer -->
 		<param name="Airsim_ip" value="$(arg host_ip)" />
 
 		<!-- Port of the Airsim computer (this is default, do not change!) -->
