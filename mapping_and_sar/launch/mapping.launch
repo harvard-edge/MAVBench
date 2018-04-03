@@ -5,8 +5,8 @@
   <arg name="log_file" default="$(arg mav_name)" />
   
   <!-- important params affecting performance -->
-  <!-- arg name="v_max" default="3.4"/-->
-  <arg name="v_max" default="3.4"/>
+  <!-- arg name="v_max" default="1.5"/-->
+  <arg name="v_max" default="1.5"/>
 
 
   <arg name="nbvp/gain/range" default="6"/>
@@ -15,7 +15,7 @@
   <arg name="planning_resolution" default=".15"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
-  <arg name="distance_from_goal_threshold" default=".30" />
+  <arg name="distance_from_goal_threshold" default=".85" />
 
  
 
@@ -54,10 +54,10 @@
 
 
   <!-- termination criteria-->
-  <arg name="coverage_threshold" default="30"/>
+  <arg name="coverage_threshold" default="70"/>
 
   <!-- DEBUGING-data collection params--> 
-  <arg name="DEBUG" value="false" />
+  <arg name="DEBUG" value="true" />
   <arg name="CLCT_DATA" value="true" />
   <param name="stats_file_addr" value="$(find mapping_and_sar)/../data/mapping/stats.json" />
   <param name="supervisor_mailbox" value="$(find mapping_and_sar)/../data/mapping/supervisor_mailbox.txt" />

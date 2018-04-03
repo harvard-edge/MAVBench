@@ -6,8 +6,8 @@
 system/camera/pitch: [0.0]
 system/camera/horizontal: [90.0]
 system/camera/vertical: [90.0]
-system/bbx/x: 3 
-system/bbx/y: 3 
+system/bbx/x: 1.0
+system/bbx/y: 1.0 
 system/bbx/z: 1
 system/bbx/overshoot: 1
 
@@ -55,25 +55,29 @@ nbvp/log/on: true
 #bbx/softBounds: false
 #
 
+#-- tight room
 bbx/minX: -14.0
 bbx/minY: -19.0
 bbx/minZ: 3.0
 bbx/maxX: 14
 bbx/maxY: 19.0
 bbx/maxZ: 6.0
-#
 
+#-- room for solution (big portion)
+#bbx/minX: -11.5
+#bbx/minY: -20.5
+#bbx/minZ: 4.5
+#bbx/maxX: 11.5
+#bbx/maxY: 20.5
+#bbx/maxZ: 6.0
 
-#bbx/minX: -2.0
-#bbx/minY: -2.0
-#bbx/minZ: -0.0
-#bbx/maxX: 2.0
-#bbx/maxY: 2.0
-#bbx/maxZ: 2.0
-#bbx/softBounds: false
-
-
-
+#-- room for solution (small portion)
+#bbx/minX: -6.0
+#bbx/minY: -10.5
+#bbx/minZ: 4.5
+#bbx/maxX: 17
+#bbx/maxY: 22.5
+#bbx/maxZ: 6.0
 
 pcl_throttle: 0
 inspection_throttle: 0.5

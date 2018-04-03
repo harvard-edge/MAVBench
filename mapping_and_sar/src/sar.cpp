@@ -569,6 +569,7 @@ int main(int argc, char** argv)
 
     if (!srv_call_status) {
         log_data_before_shutting_down();
+        signal_supervisor(g_supervisor_mailbox, "kill"); 
         ros::shutdown();
     }else if(path_zero_ctr > 10) {
         log_data_before_shutting_down();
