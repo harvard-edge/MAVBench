@@ -158,65 +158,62 @@ void callback_trajectory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPt
                 (ns + "/nbvp/dt").c_str());
     }
 
-    //--first correct  
-    bool correct = false; //only used for the first point
     multiDOFpoint mdp_prev; 
     multiDOFpoint mdp_next;
     mdp_prev = current_point(*drone);
     
+    // Correct our current position if we drifted too far off mark
     float correction_in_x = msg->points[0].transforms[0].translation.x - mdp_prev.x;
     float correction_in_y = msg->points[0].transforms[0].translation.y - mdp_prev.y;
-    float correction_in_z =  msg->points[0].transforms[0].translation.z - mdp_prev.z;
-    float first_yaw = yawFromQuat(msg->points[0].transforms[0].rotation);
-    //ROS_INFO_STREAM("correction values"<<correction_in_x << " " <<correction_in_y << " "<<correction_in_z);
-    double disc = min((dt * g_v_max) / 
-        distance(mdp_prev.x - msg->points[0].transforms[0].translation.x,
-                mdp_prev.y - msg->points[0].transforms[0].translation.y,
-                mdp_prev.z - msg->points[0].transforms[0].translation.z), 1.0);
-    
-    for (double it = disc; it <= 1.0; it += disc) {
-        mdp_next.x = mdp_prev.x + disc*(correction_in_x);
-        mdp_next.y = mdp_prev.y + disc*correction_in_y;
-        mdp_next.z = mdp_prev.z + disc*correction_in_z;
-        mdp_next.yaw = YAW_UNCHANGED;
+    float correction_in_z = msg->points[0].transforms[0].translation.z - mdp_prev.z;
 
-        mdp_next.vx = (mdp_next.x - mdp_prev.x) / dt;
-        mdp_next.vy = (mdp_next.y - mdp_prev.y) / dt;
-        mdp_next.vz = (mdp_next.z - mdp_prev.z) / dt;
-        mdp_next.yaw = first_yaw;
-        mdp_next.duration = dt;
-        normal_traj->push_back(mdp_next);
-        mdp_prev = mdp_next;
+    float correction_distance = distance(correction_in_x, correction_in_y, correction_in_z);
+    const float correction_distance_threshold = 0.5;
+
+    if (correction_distance > correction_distance_threshold) {
+        float first_yaw = yawFromQuat(msg->points[0].transforms[0].rotation);
+        const float slow_v = 1;
+        double disc = min((dt * slow_v) / correction_distance, 1.0);
+
+        for (double it = disc; it <= 1.0; it += disc) {
+            mdp_next.x = mdp_prev.x + disc*correction_in_x;
+            mdp_next.y = mdp_prev.y + disc*correction_in_y;
+            mdp_next.z = mdp_prev.z + disc*correction_in_z;
+            // mdp_next.yaw = YAW_UNCHANGED;
+            mdp_next.yaw = first_yaw;
+
+            mdp_next.vx = (mdp_next.x - mdp_prev.x) / dt;
+            mdp_next.vy = (mdp_next.y - mdp_prev.y) / dt;
+            mdp_next.vz = (mdp_next.z - mdp_prev.z) / dt;
+
+            mdp_next.duration = dt;
+
+            normal_traj->push_back(mdp_next);
+            mdp_prev = mdp_next;
+        }
     }
-        
-    //after correction, now push the new points 
-    bool newt = true;
+
+    // After correction, now push the new points
     for (const auto& p : msg->points) {
         if (normal_traj->size() == 0) {
-            
             mdp_prev = current_point(*drone);
         } else{
             mdp_prev = normal_traj->back();
         }
 
-        if (newt) {
-            mdp_next.x = p.transforms[0].translation.x;
-            newt = false;
-        } else
-            mdp_next.x = p.transforms[0].translation.x;
+        mdp_next.x = p.transforms[0].translation.x;
         mdp_next.y = p.transforms[0].translation.y;
         mdp_next.z = p.transforms[0].translation.z;
         //mdp_next.yaw = YAW_UNCHANGED;
-
+        mdp_next.yaw = yawFromQuat(p.transforms[0].rotation);
 
         mdp_next.vx = (mdp_next.x - mdp_prev.x) / dt;
         mdp_next.vy = (mdp_next.y - mdp_prev.y) / dt;
         mdp_next.vz = (mdp_next.z - mdp_prev.z) / dt;
-        mdp_next.yaw = yawFromQuat(p.transforms[0].rotation);
+
         mdp_next.duration = dt;
+
         normal_traj->push_back(mdp_next);
-    
-        correct = false;
     }
 }
 
@@ -345,7 +342,7 @@ int main(int argc, char **argv){
 
         if (g_future_col) {
             //ROS_WARN("follow_trajectory: future collision acknowledged");
-            //normal_traj.clear();
+            normal_traj.clear();
             g_future_col = false;
             //ROS_INFO_STREAM("g_future_collision"<< g_future_col_time); 
             g_img_to_follow_traj_acc += (ros::Time::now() - g_future_col_time).toSec()*1e9;
@@ -398,9 +395,10 @@ int main(int argc, char **argv){
                 ROS_INFO_STREAM("traj"<< point.x<<" " << point.y<<" " << point.z);
             }
             */
-            if (forward_traj->size() > 0)
+            if (forward_traj->size() > 0) {
                 next_steps_pub.publish(next_steps_msg(*forward_traj));
                 //ROS_INFO_STREAM("publish the next step"); 
+            }
         }
 
         if(forward_traj->size() != 0) {

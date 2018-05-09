@@ -221,10 +221,10 @@ bool check_for_collisions(Drone& drone, sys_clock_time_point& time_to_warn)
     g_check_collision_ctr++;
      
     
-    if ((octomap_ctr+1) % 150 == 0) {
-        ROS_INFO_STREAM("----- send out"); 
-        col = true; 
-    }
+    // if ((octomap_ctr+1) % 150 == 0) {
+    //     ROS_INFO_STREAM("----- send out"); 
+    //     col = true; 
+    // }
     
     return col;
 }

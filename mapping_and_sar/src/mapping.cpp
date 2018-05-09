@@ -626,8 +626,7 @@ int main(int argc, char** argv)
             if(!srv_call_status){
                 ROS_INFO_STREAM("could not make a service all to trajectory done");
             }else if (!trajectory_done_srv_inst.response.success) {
-                ; 
-                ROS_INFO_STREAM("havn't finished last path");
+                // ROS_INFO_STREAM("havn't finished last path");
             }
             ros::Duration(.2).sleep();     
         }while(!srv_call_status|| !trajectory_done_srv_inst.response.success);
@@ -661,6 +660,7 @@ int main(int argc, char** argv)
         g_path_computation_time = planSrv.response.path_computation_time; 
         g_path_computation_time_acc += g_path_computation_time;    
         if(g_coverage > coverage_threshold){
+            std::cout << "\n\nCoverage: " << g_coverage << "\n\n";
             g_mission_status = "completed";
             log_data_before_shutting_down();
             signal_supervisor(g_supervisor_mailbox, "kill"); 
