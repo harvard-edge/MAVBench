@@ -111,6 +111,8 @@ void log_data_before_shutting_down(){
 
     profiling_data_srv_inst.request.key = "mission_status";
     profiling_data_srv_inst.request.value = (g_mission_status == "completed" ? 1.0: 0.0);
+    if (g_mission_status == "failed_to_start")
+        profiling_data_srv_inst.request.value = 4.0;
     if (ros::service::waitForService("/record_profiling_data", 10)){ 
         if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
             ROS_ERROR_STREAM("could not probe data using stats manager");
@@ -488,6 +490,7 @@ int main(int argc, char** argv)
   int srv_call_status_ctr = 0;
   ros::Time start_hook_t, end_hook_t;
   int path_zero_ctr = 0;
+  bool failed_to_start = true;
   while (ros::ok()) {
     loop_start_t = ros::Time::now();
     ros::spinOnce(); 
@@ -562,6 +565,9 @@ int main(int argc, char** argv)
         signal_supervisor(g_supervisor_mailbox, "kill"); 
         ros::shutdown();
     }else if(path_zero_ctr > 10) {
+        if (failed_to_start)
+            g_mission_status = "failed_to_start";
+
         log_data_before_shutting_down();
         signal_supervisor(g_supervisor_mailbox, "kill"); 
         ros::shutdown();
@@ -574,6 +580,7 @@ int main(int argc, char** argv)
             path_zero_ctr++; 
             ros::Duration(1.0).sleep();
         }else{
+            failed_to_start = false;
             path_zero_ctr = 0;
         }
         for (int i = 0; i < planSrv.response.path.size(); i++) {
