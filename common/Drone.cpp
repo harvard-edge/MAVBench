@@ -93,8 +93,9 @@ bool Drone::takeoff(double h)
     const double margin = 0.2;
 
     while (pos.z < h-margin || pos.z > h+margin) {
+        float p = 0.75, max_speed = 1;
+
         for (; pos.z < h-margin || pos.z > h+margin; pos = position()) {
-            const float p = 0.75, max_speed = 1;
             float dist = h - pos.z;
 
             float speed = dist*p;
@@ -103,7 +104,11 @@ bool Drone::takeoff(double h)
 
             fly_velocity(0, 0, speed);
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            p += 0.05;
+            max_speed += 0.1;
         }
+
         fly_velocity(0,0,0);
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
