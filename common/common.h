@@ -3,8 +3,6 @@
 
 #include <string>
 #include <limits>
-#include <trajectory_msgs/MultiDOFJointTrajectory.h>
-#include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
 #include <geometry_msgs/Vector3.h>
 #include "Profiling.h"
 #include "Drone.h"
@@ -100,15 +98,17 @@ void update_stats_file(const std::string& stats_file__addr, const std::string& c
 struct multiDOFpoint {
     double x, y, z;
     double vx, vy, vz;
-    double ax, ay, az;
+    double ax, ay, az; // Currently, the acceleration values are ignored
     double yaw;
+    bool blocking_yaw;
     double duration;
 };
 typedef std::deque<multiDOFpoint> trajectory_t;
 enum yaw_strategy_t { ignore_yaw, face_forward, face_backward, follow_yaw };
 
-trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory&, bool face_forward = false);
-trajectory_msgs::MultiDOFJointTrajectory create_trajectory_msg(const trajectory_t&);
+trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOGtrajectory&);
+mavbench_msgs::multiDOFtrajectory create_trajectory_msg(const trajectory_t&);
+trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second);
 
 void follow_trajectory(Drone& drone, trajectory_t * traj,
         trajectory_t * reverse_traj,
@@ -118,14 +118,9 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         //float max_speed = 3,
         float time = 2); 
 
-
 // Recovery methods
-trajectory_t create_panic_trajectory(Drone& drone, const geometry_msgs::Vector3& panic_dir);
-trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, double stopping_distance);
 trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj, const trajectory_t& rev_normal_traj);
-
 bool reset_slam(Drone& drone, const std::string& topic);
-
 
 // Spinning commands
 void spin_around(Drone &drone);

@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(follow_trajectory)
+project(mavbench_msgs)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11 -fno-omit-frame-pointer)
+# add_compile_options(-std=c++11 -fno-omit-frame-pointer)
 set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
 set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
+
 
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 ## Find catkin macros and libraries
@@ -16,7 +17,6 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   message_generation
   trajectory_msgs
-  mavbench_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -52,14 +52,16 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-# )
+add_message_files(
+  FILES
+  multiDOFpoint.msg
+  multiDOFtrajectory.msg
+  future_collision.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
 #   FILES
-#   follow_trajectory_status_srv.srv
 # )
 
 ## Generate actions in the 'action' folder
@@ -70,12 +72,12 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-#   geometry_msgs
-#   trajectory_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  geometry_msgs
+  trajectory_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -107,8 +109,6 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 
-find_package(Eigen3 REQUIRED)
-
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES mavbench
@@ -126,16 +126,7 @@ set (Airlib_addr  $ENV{HOME}/AirSim/AirLib)
 include_directories(
 # include
   ${catkin_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIR}
   ${common_utility_include} 
-  $ENV{HOME}/AirSim/AirLib/include
-)
-
-link_directories(
-  $ENV{HOME}/AirSim/AirLib/lib
-  $ENV{HOME}/AirSim/AirLib/deps/rpclib/lib
-  /usr/local/cuda/lib64  #added by Behzad (for Behzad)
-  ${Airlib_addr}/deps/MavLinkCom/lib  
 )
 
 ## Declare a C++ library
@@ -167,10 +158,6 @@ link_directories(
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-
-add_executable(follow_trajectory src/follow_trajectory.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Profiling.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
-# add_dependencies(follow_trajectory package_delivery_generate_messages_cpp)
-target_link_libraries(follow_trajectory ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread)
 
 #############
 ## Install ##

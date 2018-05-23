@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>follow_trajectory</name>
+  <name>mavbench_msgs</name>
   <version>0.0.0</version>
-  <description>MAV-Bench ROS packages</description>
+  <description>Common MAV-Bench messages</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -42,7 +42,6 @@
   <build_depend>tf</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>trajectory_msgs</build_depend>
-  <build_depend>mavbench_msgs</build_depend>
 
   <run_depend>roscpp</run_depend>
   <run_depend>std_msgs</run_depend>
@@ -50,7 +49,6 @@
   <run_depend>tf</run_depend>
   <run_depend>message_runtime</run_depend>
   <run_depend>trajectory_msgs</run_depend>
-  <run_depend>mavbench_msgs</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

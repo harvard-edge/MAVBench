@@ -20,7 +20,6 @@ using namespace std;
 
 static const int angular_vel = 15;
 
-static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second);
 static multiDOFpoint reverse_point(multiDOFpoint mdp);
 
 template <class T>
@@ -36,74 +35,12 @@ static T last_msg (std::string topic) {
 }
 
 
-
 void sigIntHandler(int sig)
 {
     //ros::shutdown();
     exit(0);
 }
 
-trajectory_t create_panic_trajectory(Drone& drone, const geometry_msgs::Vector3& panic_velocity)
-{
-    multiDOFpoint p;
-
-    p.yaw = drone.get_yaw();
-
-    p.vx = panic_velocity.x * std::cos(M_PI/90 - p.yaw*M_PI/180);
-    p.vy = panic_velocity.y * std::cos(p.yaw*M_PI/180);
-    p.vz = panic_velocity.z + 0.1; // Counter-act AirSim's slight downward drift
-
-    // p.vx = -std::sin(p.yaw*M_PI/180);
-    // p.vy = -std::cos(p.yaw*M_PI/180);
-    // p.vz = 0.1; // Counter-act AirSim's slight downward drift
-
-    p.duration = std::numeric_limits<double>::infinity();
-
-    trajectory_t result;
-    result.push_back(p);
-
-    return result;
-}
-
-
-trajectory_t create_future_col_trajectory(const trajectory_t& normal_traj, double stopping_distance)
-{
-    if (normal_traj.empty())
-        return trajectory_t();
-
-    trajectory_t result;
-
-    multiDOFpoint first_p = normal_traj.front();
-
-    double initial_velocity = magnitude(first_p.vx, first_p.vy, first_p.vz);
-    initial_velocity = std::max(initial_velocity, 1.0);
-    double distance_left = stopping_distance;
-
-    for (multiDOFpoint p : normal_traj) {
-        double v = magnitude(p.vx, p.vy, p.vz);
-        double max_v = initial_velocity * distance_left/stopping_distance;
-
-        if (v*p.duration > distance_left) {
-            p.duration = distance_left / v;
-        }
-
-        distance_left -= v*p.duration;
-        
-        double scale = v > max_v ? max_v/v : 1;
-
-        p.vx *= scale;
-        p.vy *= scale;
-        p.vz *= scale;
-        p.duration /= scale;
-
-        result.push_back(p);
-
-        if (distance_left <= 0)
-            break;
-    }
-
-    return result;
-}
 
 trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj, const trajectory_t& rev_normal_traj)
 {
@@ -276,31 +213,10 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         trajectory_t * reverse_traj, yaw_strategy_t yaw_strategy,
         bool check_position, float max_speed, float time){
 
-
     trajectory_t reversed_commands;
 
-    static double max_speed_so_far = 0;
-    static int ctr    = 0;
-    
-    
-    // if (traj->size() == 0) { //this is the scenario
-    //                          //when the planner fails
-    //                          //and an empty trajectory
-    //                          //is pushed
-    //     drone.fly_velocity(0,0,0);
-    //     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    //     // drone.fly_velocity(-2,-2,0, drone.get_yaw(),.5);
-    //     // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    //     //ros::sleep::Duration(.3); 
-    //     ROS_ERROR_STREAM("SLAMING ON BREAKS YO");
-    //     //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    //     return; 
-    // }
-    
     ros::Time start_hook_t;
     while (time > 0 && traj->size() > 0) {
-         
-        
         start_hook_t = ros::Time::now();  
         multiDOFpoint p = traj->front();
 
@@ -308,70 +224,47 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         double v_x = p.vx;
         double v_y = p.vy;
         double v_z = p.vz;
-        //ROS_ERROR_STREAM("point "<<p.x<< " "<< p.y<< " " <<p.z);
-        //ROS_ERROR_STREAM("before correction"<<v_x<< " "<< v_y << " " <<v_z);
          
         if (check_position) {
             auto pos = drone.position();
             v_x += 0.2*(p.x-pos.x);
             v_y += 0.2*(p.y-pos.y);
             v_z += 0.5*(p.z-pos.z);
-            /* 
-            if (distance(p.x-pos.y, p.y-pos.y, p.z-pos.z)>2) {
-                ROS_ERROR_STREAM("distance greater than 2"); 
-            }
-            else if (distance(p.x-pos.y, p.y-pos.y, p.z-pos.z)>1) {
-                ROS_ERROR_STREAM("distance greater than 1"); 
-            }
-            */
         }
         
-        //ROS_ERROR_STREAM("before scaling"<<v_x<< " "<< v_y << " " <<v_z);
         // Calculate the yaw we should be flying with
         float yaw = p.yaw;
         if (yaw_strategy == ignore_yaw)
             yaw = YAW_UNCHANGED;
         else if (yaw_strategy == face_forward)
             yaw = FACE_FORWARD;
-        else if (yaw_strategy == face_backward) {
+        else if (yaw_strategy == face_backward)
             yaw = FACE_BACKWARD;
-        }
+
+        // Check whether the yaw needs to be set before we fly
+        if (p.blocking_yaw)
+            drone.set_yaw(p.yaw);
 
         // Make sure we're not going over the maximum speed
         double speed = std::sqrt((v_x*v_x + v_y*v_y + v_z*v_z));
         double scale = 1;
-        //ROS_ERROR_STREAM("BEFORE speed scaling"<<v_x<< " "<< v_y << " " <<v_z);
         if (speed > max_speed) {
             scale = max_speed / speed;
-            //ROS_ERROR_STREAM("exceed max speed "<< "max_speed"<<max_speed<< " speed"<<speed<<"scael"<<scale);
             
             v_x *= scale;
             v_y *= scale;
             v_z *= scale;
-            //ROS_ERROR_STREAM("AFTER speed scaling"<<v_x<< " "<< v_y << " " <<v_z);
-           speed = std::sqrt((v_x*v_x + v_y*v_y + v_z*v_z));
+            speed = std::sqrt((v_x*v_x + v_y*v_y + v_z*v_z));
         }
-        /*
-        if(ctr %50 == 0) {
-            if (ctr %100 == 0) {
-                max_speed_so_far = 0; 
-            } 
-            max_speed_so_far = max(max_speed_so_far, speed);
-            ROS_ERROR_STREAM("max_speed_so_far "<<max_speed_so_far);
-        }
-        ctr++;
-        */
+
         // Calculate the time for which these flight commands should run
         double flight_time = p.duration <= time ? p.duration : time;
         double scaled_flight_time = flight_time / scale;
 
         // Fly for flight_time seconds
-        //ROS_ERROR_STREAM("Vs to send out"<<v_x<< " "<< v_y << " " <<v_z);
         auto segment_start_time = std::chrono::system_clock::now();
         drone.fly_velocity(v_x, v_y, v_z, yaw, scaled_flight_time); 
         
-       //ROS_ERROR_STREAM("fly with: "<<v_x<< " "<<v_y<<" " <<v_z);
-
         std::this_thread::sleep_until(segment_start_time + std::chrono::duration<double>(scaled_flight_time));
 
         // Push completed command onto reverse-command stack
@@ -382,13 +275,11 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         // Update trajectory
         traj->front().duration -= flight_time;
         if (traj->front().duration <= 0){
-            //ROS_INFO_STREAM("pop a command"<< traj->front().x<< " " << traj->front().y<< " "<<traj->front().z); 
             traj->pop_front();
         }
 
         time -= flight_time;
     }
-
 
     if (reverse_traj != nullptr)
         *reverse_traj = append_trajectory(reversed_commands, *reverse_traj);
@@ -424,42 +315,28 @@ float yawFromQuat(geometry_msgs::Quaternion q)
     return (yaw <= 180 ? yaw : yaw - 360);
 }
 
-/*
-void update_stats(Drone& drone, const std::string& fname, std::string state){
-    auto static profiling_data = drone.getFlightStats();
-
-}
-*/
-
-trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory& t, bool face_forward)
+trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOGtrajectory& t)
 {
     trajectory_t result;
-    for (auto it = t.points.begin(); it+1 != t.points.end(); ++it) {
+    for (const auto& mdp_msg : t.points) {
         multiDOFpoint mdp;
 
-        mdp.x = it->transforms[0].translation.x;
-        mdp.y = it->transforms[0].translation.y;
-        mdp.z = it->transforms[0].translation.z;
+        mdp.x = mdp_msg.x;
+        mdp.y = mdp_msg.y;
+        mdp.z = mdp_msg.z;
 
-        mdp.vx = it->velocities[0].linear.x;
-        mdp.vy = it->velocities[0].linear.y;
-        mdp.vz = it->velocities[0].linear.z;
+        mdp.vx = mdp_msg.vx;
+        mdp.vy = mdp_msg.vy;
+        mdp.vz = mdp_msg.vz;
 
-        mdp.ax = it->accelerations[0].linear.x;
-        mdp.ay = it->accelerations[0].linear.y;
-        mdp.az = it->accelerations[0].linear.z;
+        mdp.ax = mdp_msg.ax;
+        mdp.ay = mdp_msg.ay;
+        mdp.az = mdp_msg.az;
 
+        mdp.yaw = mdp_msg.yaw;
+        mdp.blocking_yaw = mdp_msg.blocking_yaw;
 
-        if (face_forward) {
-            if (mdp.vx == 0 && mdp.vy == 0)
-                mdp.yaw = YAW_UNCHANGED;
-            else
-                mdp.yaw = 90 - atan2(mdp.vy, mdp.vx)*180.0/3.14;
-        } else {
-            mdp.yaw = yawFromQuat(it->transforms[0].rotation);
-        }
-
-        mdp.duration = ((it+1)->time_from_start - it->time_from_start).toSec();
+        mdp.duration = mdp_msg.duration;
 
         result.push_back(mdp);
     }
@@ -467,56 +344,31 @@ trajectory_t create_trajectory(const trajectory_msgs::MultiDOFJointTrajectory& t
     return result;
 }
 
-trajectory_msgs::MultiDOFJointTrajectory create_trajectory_msg(const trajectory_t& t)
+mavbench_msgs::multiDOFtrajectory create_trajectory_msg(const trajectory_t& t)
 {
-    trajectory_msgs::MultiDOFJointTrajectory result;
+    mavbench_msgs::multiDOFtrajectory result;
+    for (const auto& mdp : t) {
+        multiDOFpoint mdp_msg;
 
-    double time_from_start = 0;
-    for (const multiDOFpoint& p : t) {
-        trajectory_msgs::MultiDOFJointTrajectoryPoint mdp;
+        mdp_msg.x = mdp.x;
+        mdp_msg.y = mdp.y;
+        mdp_msg.z = mdp.z;
 
-		geometry_msgs::Transform pos;
-		pos.translation.x = p.x;
-		pos.translation.y = p.y;
-		pos.translation.z = p.z;
+        mdp_msg.vx = mdp.vx;
+        mdp_msg.vy = mdp.vy;
+        mdp_msg.vz = mdp.vz;
 
-		geometry_msgs::Twist vel;
-		vel.linear.x = p.vx;
-		vel.linear.y = p.vy;
-		vel.linear.z = p.vz;
+        mdp_msg.ax = mdp.ax;
+        mdp_msg.ay = mdp.ay;
+        mdp_msg.az = mdp.az;
 
-		ros::Duration dur(time_from_start);
+        mdp_msg.yaw = mdp.yaw;
+        mdp_msg.blocking_yaw = mdp.blocking_yaw;
 
-		mdp.transforms.push_back(pos);
-		mdp.velocities.push_back(vel);
-		mdp.time_from_start = dur;
+        mdp_msg.duration = mdp_msg.duration;
 
-		result.points.push_back(mdp);
-
-        time_from_start += p.duration;
+        result.push_back(mdp_msg);
     }
-
-    // Add final point
-    multiDOFpoint last_p = t.back();
-    trajectory_msgs::MultiDOFJointTrajectoryPoint mdp;
-
-    geometry_msgs::Transform pos;
-    pos.translation.x = last_p.x + last_p.vx*last_p.duration;
-    pos.translation.y = last_p.y + last_p.vy*last_p.duration;
-    pos.translation.z = last_p.z + last_p.vz*last_p.duration;
-
-    geometry_msgs::Twist vel;
-    vel.linear.x = last_p.vx;
-    vel.linear.y = last_p.vy;
-    vel.linear.z = last_p.vz;
-
-    ros::Duration dur(time_from_start);
-
-    mdp.transforms.push_back(pos);
-    mdp.velocities.push_back(vel);
-    mdp.time_from_start = dur;
-
-    result.points.push_back(mdp);
 
     return result;
 }
@@ -535,3 +387,4 @@ void waitForLocalization(std::string method)
         }
     }
 }
+

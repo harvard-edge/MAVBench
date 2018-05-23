@@ -8,4 +8,5 @@ float64 ax
 float64 ay
 float64 az
 float64 yaw
+bool blocking_yaw
 float64 duration
