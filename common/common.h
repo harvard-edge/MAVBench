@@ -4,6 +4,8 @@
 #include <string>
 #include <limits>
 #include <geometry_msgs/Vector3.h>
+#include <mavbench_msgs/multiDOFpoint.h>
+#include <mavbench_msgs/multiDOFtrajectory.h>
 #include "Profiling.h"
 #include "Drone.h"
 
@@ -106,7 +108,7 @@ struct multiDOFpoint {
 typedef std::deque<multiDOFpoint> trajectory_t;
 enum yaw_strategy_t { ignore_yaw, face_forward, face_backward, follow_yaw };
 
-trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOGtrajectory&);
+trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOFtrajectory&);
 mavbench_msgs::multiDOFtrajectory create_trajectory_msg(const trajectory_t&);
 trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second);
 

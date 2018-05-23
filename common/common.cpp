@@ -297,7 +297,7 @@ static multiDOFpoint reverse_point(multiDOFpoint mdp) {
 }
 
 
-static trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second) {
+trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second) {
     first.insert(first.end(), second.begin(), second.end());
     return first;
 }
@@ -315,7 +315,7 @@ float yawFromQuat(geometry_msgs::Quaternion q)
     return (yaw <= 180 ? yaw : yaw - 360);
 }
 
-trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOGtrajectory& t)
+trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOFtrajectory& t)
 {
     trajectory_t result;
     for (const auto& mdp_msg : t.points) {
@@ -347,8 +347,12 @@ trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOGtrajectory&
 mavbench_msgs::multiDOFtrajectory create_trajectory_msg(const trajectory_t& t)
 {
     mavbench_msgs::multiDOFtrajectory result;
+
+    result.append = false;
+    result.reverse = false;
+
     for (const auto& mdp : t) {
-        multiDOFpoint mdp_msg;
+        mavbench_msgs::multiDOFpoint mdp_msg;
 
         mdp_msg.x = mdp.x;
         mdp_msg.y = mdp.y;
@@ -367,7 +371,7 @@ mavbench_msgs::multiDOFtrajectory create_trajectory_msg(const trajectory_t& t)
 
         mdp_msg.duration = mdp_msg.duration;
 
-        result.push_back(mdp_msg);
+        result.points.push_back(mdp_msg);
     }
 
     return result;

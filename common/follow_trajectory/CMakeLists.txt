@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
   trajectory_msgs
   mavbench_msgs
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
