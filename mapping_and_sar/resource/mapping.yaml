@@ -6,10 +6,10 @@
 system/camera/pitch: [0.0]
 system/camera/horizontal: [90.0]
 system/camera/vertical: [90.0]
-system/bbx/x: 1.0
-system/bbx/y: 1.0 
-system/bbx/z: 1
-system/bbx/overshoot: 1
+system/bbx/x: 2.0
+system/bbx/y: 2.0
+system/bbx/z: 1.5
+system/bbx/overshoot: 1.5
 
 nbvp/gain/free: 0.00
 nbvp/gain/occupied: 0.0

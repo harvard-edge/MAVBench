@@ -305,7 +305,8 @@ int main(int argc, char** argv)
   waitForLocalization("ground_truth");
 
   double segment_dedicated_time = yaw_t + dt;
-  control_drone(drone);
+  
+  bool initialized_correctly = control_drone(drone);
 
   static int n_seq = 0;
 
@@ -482,7 +483,6 @@ int main(int argc, char** argv)
   last_position_before_planning.position_W.y() = drone.pose().position.y;
   last_position_before_planning.position_W.z() = drone.pose().position.z;
 
-
   int time_out_ctr_threshold = 10; 
   const float goal_s_error_margin = 3.0; //ok distance to be away from the goal.
   int time_out_ctr = 0;
@@ -491,9 +491,27 @@ int main(int argc, char** argv)
   ros::Time start_hook_t, end_hook_t;
   int path_zero_ctr = 0;
   bool failed_to_start = true;
+
+  if (!initialized_correctly) {
+      g_mission_status = "failed_to_start";
+      log_data_before_shutting_down();
+      signal_supervisor(g_supervisor_mailbox, "kill"); 
+      ros::shutdown();
+  }
+
   while (ros::ok()) {
     loop_start_t = ros::Time::now();
     ros::spinOnce(); 
+
+    // Check whether we flew too high
+    // TODO: make it so this isn't necessary anymore
+    if (drone.position().z > 20) {
+        g_mission_status = "failed_to_start";
+        log_data_before_shutting_down();
+        signal_supervisor(g_supervisor_mailbox, "kill"); 
+        ros::shutdown();
+        break;
+    }
     
     if (g_slam_lost) { //skip the iteration
         continue;

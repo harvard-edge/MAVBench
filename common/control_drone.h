@@ -31,4 +31,5 @@
 #include <cstring>
 #include <string>
 
-void control_drone(Drone& drone);
+bool control_drone(Drone& drone);
+

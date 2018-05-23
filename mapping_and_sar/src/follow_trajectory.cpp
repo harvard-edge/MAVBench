@@ -172,7 +172,7 @@ void callback_trajectory(const trajectory_msgs::MultiDOFJointTrajectory::ConstPt
 
     if (correction_distance > correction_distance_threshold) {
         float first_yaw = yawFromQuat(msg->points[0].transforms[0].rotation);
-        const float slow_v = 1;
+        const float slow_v = std::min(g_v_max, 1.0f);
         double disc = min((dt * slow_v) / correction_distance, 1.0);
 
         for (double it = disc; it <= 1.0; it += disc) {

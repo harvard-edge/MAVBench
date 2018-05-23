@@ -28,7 +28,7 @@
 
 using namespace std;
 
-void control_drone(Drone& drone)
+bool control_drone(Drone& drone)
 {
 	cout << "Initialize drone:\n";
 	cout << "\ta: arm\n";
@@ -54,7 +54,7 @@ void control_drone(Drone& drone)
           cout << "bye~" << endl;
           ros::shutdown();
           exit(0);
-          return;
+          return true;
         }
 
 	    
@@ -69,8 +69,8 @@ void control_drone(Drone& drone)
 		} else if (cmd == "t") {
 			double height;
 			cin >> height;
-			cin.ignore(numeric_limits<streamsize>::max(), '\n');
-			drone.takeoff(height);
+			if (!drone.takeoff(height))
+                return false; // Take-off has failed
 		} else if (cmd == "l") {
 			drone.land();
 		} else if (cmd == "f") {
@@ -109,6 +109,8 @@ void control_drone(Drone& drone)
     } else {
         ROS_ERROR("No stats_file found");
     }
+
+    return true;
 }
 
 

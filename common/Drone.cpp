@@ -90,12 +90,14 @@ void Drone::disarm()
 bool Drone::takeoff(double h)
 {
     auto pos = position();
-    const double margin = 0.2;
+    const double small_margin = 0.2;
+    const double large_margin = 0.5;
+    int tries_left = 5;
 
-    while (pos.z < h-margin || pos.z > h+margin) {
+    while (pos.z < h-large_margin || pos.z > h+large_margin) {
         float p = 0.75, max_speed = 1;
 
-        for (; pos.z < h-margin || pos.z > h+margin; pos = position()) {
+        for (; pos.z < h-small_margin || pos.z > h+small_margin; pos = position()) {
             float dist = h - pos.z;
 
             float speed = dist*p;
@@ -111,6 +113,11 @@ bool Drone::takeoff(double h)
 
         fly_velocity(0,0,0);
         std::this_thread::sleep_for(std::chrono::seconds(2));
+        pos = position();
+
+        if (tries_left == 0)
+            return false;
+        tries_left--;
     }
 
     return true;
