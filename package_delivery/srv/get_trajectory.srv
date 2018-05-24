@@ -1,7 +1,5 @@
 geometry_msgs/Point start
 geometry_msgs/Point goal
-geometry_msgs/Twist twist
-geometry_msgs/Twist acceleration
 int32 length
 int32 width
 int32 n_pts_per_dir

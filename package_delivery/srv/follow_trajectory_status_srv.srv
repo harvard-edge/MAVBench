@@ -1,4 +1,0 @@
----
-geometry_msgs/Twist twist
-geometry_msgs/Twist acceleration
-std_msgs/Bool success

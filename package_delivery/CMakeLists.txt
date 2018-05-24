@@ -158,7 +158,7 @@ link_directories(
   $ENV{HOME}/AirSim/AirLib/deps/rpclib/lib
   /usr/local/cuda/lib64  #added by Behzad (for Behzad)
   ${Airlib_addr}/deps/MavLinkCom/lib  
-  )
+)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -199,41 +199,21 @@ add_executable(package_delivery ${common_utility_src}/Drone.cpp ${common_utility
 add_dependencies(package_delivery package_delivery_generate_messages_cpp)
 target_link_libraries(package_delivery ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
-
-#add_executable(panic src/panic.cpp)
-#target_link_libraries(panic ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
-
-add_executable(panic_pcl ${common_utility_src}/panic_pcl.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Profiling.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
-target_link_libraries(panic_pcl ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
-
-add_executable(future_collision src/future_collision ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
-target_link_libraries(future_collision ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
-
 add_executable(scanning ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 
     ${common_utility_src}/Profiling.cpp ${common_utility_src}/control_drone.cpp src/scanning.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(scanning package_delivery_generate_messages_cpp)
 target_link_libraries(scanning ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
-
-
-add_executable(follow_trajectory src/follow_trajectory.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Profiling.cpp ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
-add_dependencies(follow_trajectory package_delivery_generate_messages_cpp)
-target_link_libraries(follow_trajectory ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread)
-
 
 add_executable(obstacle_avoidance_test ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 
      ${common_utility_src}/Profiling.cpp ${common_utility_src}/control_drone.cpp src/obstacle_avoidance_test.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(obstacle_avoidance_test obstacle_avoidance_test_generate_messages_cpp)
 target_link_libraries(obstacle_avoidance_test ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
-
-#
-
 #add_executable(Drone_dummy_service_adv src/Drone_dummy_service_adv.cpp src/Drone.cpp)
 #target_link_libraries(Drone_dummy_service_adv ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
 #add_executable(Drone_dummy_client_adv src/Drone_dummy_client_adv.cpp src/Drone.cpp)
 #target_link_libraries(Drone_dummy_client_adv ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
-
 
 #############
 ## Install ##

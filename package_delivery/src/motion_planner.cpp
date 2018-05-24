@@ -85,7 +85,6 @@ float g_planning_budget;
 octomap::OcTree * octree = nullptr;
 trajectory_msgs::MultiDOFJointTrajectory traj_topic;
 ros::ServiceClient octo_client;
-bool g_requested_trajectory = false;
 bool path_found = false;
 
 
@@ -93,10 +92,8 @@ bool path_found = false;
 visualization_msgs::MarkerArray smooth_traj_markers;
 visualization_msgs::MarkerArray piecewise_traj_markers;
 octomap_msgs::Octomap omp;
-PointCloud::Ptr pcl_ptr{new pcl::PointCloud<pcl::PointXYZ>};
 visualization_msgs::Marker graph_conn_list;
 ros::Publisher graph_conn_pub;
-// #define INFLATE
 
 // *** F:DN calculating the distance between two nodes in the graph.
 double dist(const graph::node& n1, const graph::node& n2);
@@ -120,10 +117,6 @@ bool out_of_bounds(const graph::node& pos);
 
 // *** F:DN find all neighbours within "max_dist" meters of node
 std::vector<graph::node_id> nodes_in_radius(/*const*/ graph& g, graph::node_id n, double max_dist, octomap::OcTree * octree);
-
-
-// *** F:DN Request an octomap from the octomap_server
-void request_octomap();
 
 
 // *** F:DN Clear area in bounding box
@@ -180,19 +173,8 @@ void publish_graph(graph& g);
 void postprocess(piecewise_trajectory& path);
 
 
-//*** F:DN getting the smoothened trajectory
-bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
+bool MotionPlanner::plan_trajectory()
 {
-    g_requested_trajectory = true; 
-    auto hook_start_t = ros::Time::now();
-    x__low_bound__global = std::min(x__low_bound__global, req.start.x);
-    x__high_bound__global = std::max(x__high_bound__global, req.start.x);
-    y__low_bound__global = std::min(y__low_bound__global, req.start.y);
-    y__high_bound__global = std::max(y__high_bound__global, req.start.y);
-    z__low_bound__global = std::min(z__low_bound__global, req.start.z);
-    z__high_bound__global = std::max(z__high_bound__global, req.start.z);
-
-
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
@@ -203,40 +185,24 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     // *** F:DN Body 
     //----------------------------------------------------------------- 
 
-    //request_octomap();
     auto hook_end_t_2 = ros::Time::now(); 
-    if (motion_planning_core_str != "lawn_mower"){
-        if (octree == nullptr) {
-            ROS_ERROR("Octomap is not available.");
-            res.path_found = false;
-            return true;
-        }
-        // clear_octomap_bbx({req.start.x, req.start.y, req.start.z});
+    if (octree == nullptr && motion_planning_core_str != "lawn_mower"){
+        ROS_ERROR("Octomap is not available.");
+        res.path_found = false;
+        return;
     }
-    // octomap_msgs::binaryMapToMsg(*octree, omp);
-    //octree->writeBinary("/home/ubuntu/octomap.bt");
 
-    req.start.x += req.twist.linear.x*g_planning_budget;
-    req.start.y += req.twist.linear.y*g_planning_budget;
-    req.start.z += req.twist.linear.z*g_planning_budget;
-
-    
-    piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length ,req.n_pts_per_dir, octree);
+    piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length, req.n_pts_per_dir, octree);
 
     if (piecewise_path.size() == 0) {
         ROS_ERROR("Empty path returned");
         res.path_found = false;
-        path_found  = false; 
-        return true;
+        path_found = false; 
+        return;
     }
 
-    //ROS_INFO("Path size: %u. Now post-processing...", piecewise_path.size());
-
-    if (motion_planning_core_str != "lawn_mower") {
+    if (motion_planning_core_str != "lawn_mower")
         postprocess(piecewise_path);
-    }
-
-    //ROS_INFO("Path size: %u. Now smoothening...", piecewise_path.size());
 
     // Smoothen the path and build the multiDOFtrajectory response
     smooth_path = smoothen_the_shortest_path(piecewise_path, octree, 
@@ -259,6 +225,24 @@ bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_
     //ROS_INFO_STREAM("planning "<<(hook_end_t - hook_start_t).toSec());
     res.path_found = true; 
     path_found = true; 
+}
+
+
+//*** F:DN getting the smoothened trajectory
+bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
+{
+    auto hook_start_t = ros::Time::now();
+    x__low_bound__global = std::min(x__low_bound__global, req.start.x);
+    x__high_bound__global = std::max(x__high_bound__global, req.start.x);
+    y__low_bound__global = std::min(y__low_bound__global, req.start.y);
+    y__high_bound__global = std::max(y__high_bound__global, req.start.y);
+    z__low_bound__global = std::min(z__low_bound__global, req.start.z);
+    z__high_bound__global = std::max(z__high_bound__global, req.start.z);
+
+
+    g_start = req.start;
+    g_goal = req.goal;
+
     return true;
 }
 
@@ -351,89 +335,10 @@ void sigIntHandlerPrivate(int signo){
     exit(0);
 }
 
-int main(int argc, char ** argv)
-{
-    //----------------------------------------------------------------- 
-    // *** F:DN variables	
-    //----------------------------------------------------------------- 
-    ros::init(argc, argv, "motion_planner");
-    ros::NodeHandle nh;
-    motion_planning_initialize_params();
-    signal(SIGINT, sigIntHandlerPrivate);
-
-
-    // *** F:DN topics and services
-    ros::ServiceServer service = nh.advertiseService("get_trajectory_srv", get_trajectory_fun);
-    ros::Publisher smooth_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 1);
-    ros::Publisher piecewise_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
-    ros::Publisher traj_pub = nh.advertise<trajectory_msgs::MultiDOFJointTrajectory>("multidoftraj", 1);
-    ros::Publisher octo_pub = nh.advertise<octomap_msgs::Octomap>("omap", 1);
-    ros::Publisher pcl_pub = nh.advertise<PointCloud> ("graph", 1);
-    graph_conn_pub = nh.advertise<visualization_msgs::Marker>("graph_conns", 100);
-    ros::Subscriber octomap_sub = nh.subscribe("octomap_binary", 1, generate_octomap);
-    //octo_client = nh.serviceClient<octomap_msgs::GetOctomap>("octomap_binary");///, true);
-	
-    pcl_ptr->header.frame_id = graph_conn_list.header.frame_id = "world";
-    graph_conn_list.type = visualization_msgs::Marker::LINE_LIST;
-    graph_conn_list.action = visualization_msgs::Marker::ADD;
-    graph_conn_list.scale.x = 0.1;
-    graph_conn_list.pose.orientation.w = 1;
-    graph_conn_list.color.r = 1;
-    graph_conn_list.color.a = 1;
-
-    /* //TODO place a sanity check making sure that panic distance is smaller than halo
-    float panic_distance = ros::param::get("/panic_pcl/safe_distance",panic_distance);
-    float  
-    */
-
-    ros::Publisher dummy_pub;
-    dummy_pub= nh.advertise<std_msgs::Bool>("dummy_topic", 1);
-    std_msgs::Bool dummy_msg;
-    dummy_msg.data = false;
-    enum State {publish_trajectory, idle};
-    State state, next_state;
-    next_state = state = idle;
-    //----------------------------------------------------------------- 
-    // *** F:DN BODY
-    //----------------------------------------------------------------- 
-	ros::Rate pub_rate(30);
-	while (ros::ok())
-	{
-        if (state == idle){
-            ros::spinOnce();
-            if (g_requested_trajectory) {
-                next_state = publish_trajectory;
-            }
-        }else if (state == publish_trajectory){
-            if (path_found) { 
-                traj_pub.publish(traj_topic);
-            } 
-            g_requested_trajectory = false;
-            next_state = idle;
-        
-            if (DEBUG__global) { //if debug, publish markers to be seen by rviz
-                smooth_traj_vis_pub.publish(smooth_traj_markers);
-                piecewise_traj_vis_pub.publish(piecewise_traj_markers);
-                graph_conn_pub.publish(graph_conn_list);
-                octo_pub.publish(omp);
-                pcl_pub.publish(pcl_ptr);
-            }
-        }
-        state = next_state;
-	     
-        //dummy_pub.publish(dummy_msg);	
-		pub_rate.sleep();
-    }
-
-    return 0;
-}
-
-
 double dist(const graph::node& n1, const graph::node& n2)
 {
 	return std::sqrt((n1.x-n2.x)*(n1.x-n2.x) + (n1.y-n2.y)*(n1.y-n2.y) + (n1.z-n2.z)*(n1.z-n2.z));
 }
-
 
 bool occupied(octomap::OcTree * octree, double x, double y, double z)
 {
@@ -461,36 +366,6 @@ bool out_of_bounds(const graph::node& pos) {
 }
 
 
-#ifdef INFLATE
-bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2, graph::node * end_ptr)
-{
-    RESET_TIMER();
-    // First, check if anything goes underground
-    if (n1.z <= 0 || n2.z <= 0)
-        return true;
-            
-	double dx = n2.x - n1.x;
-	double dy = n2.y - n1.y;
-	double dz = n2.z - n1.z;
-
-	double distance = std::sqrt(dx*dx + dy*dy + dz*dz);
-
-    octomap::point3d start(n1.x, n1.y, n1.z);
-	octomap::point3d direction(dx, dy, dz);
-	octomap::point3d end;
-
-    bool collided = octree->castRay(start, direction, end, true, distance);
-
-    if (end_ptr != nullptr && collided) {
-        end_ptr->x = end.x();
-        end_ptr->y = end.y();
-        end_ptr->z = end.z();
-    }
-
-	//LOG_ELAPSED(motion_planner);
-	return collided;
-}
-#else
 bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2, graph::node * end_ptr)
 {
     if (motion_planning_core_str == "lawn_mower") {
@@ -547,7 +422,6 @@ bool collision(octomap::OcTree * octree, const graph::node& n1, const graph::nod
 	//LOG_ELAPSED(motion_planner);
 	return false;
 }
-#endif
 
 std::vector<graph::node_id> nodes_in_radius(/*const*/ graph& g, graph::node_id n, double max_dist, octomap::OcTree * octree)
 {
@@ -562,18 +436,6 @@ std::vector<graph::node_id> nodes_in_radius(/*const*/ graph& g, graph::node_id n
 	}
 
 	return result;
-}
-
-
-void request_octomap()
-{
-    octomap_msgs::GetOctomap srv;
-    auto hook_start_t = ros::Time::now();
-    if (octo_client.call(srv)){
-        generate_octomap(srv.response.map);
-    }
-    else
-        ROS_ERROR("Octomap service request failed");
 }
 
 
@@ -610,22 +472,7 @@ void generate_octomap(const octomap_msgs::Octomap& msg)
     auto hook_end_t = ros::Time::now();
     //ROS_INFO("Requesting octomap...");
 
-#ifdef INFLATE
-    // Inflate Octomap
-    ROS_INFO("Inflating..");
-    volumetric_mapping::OctomapWorld ocworld;
-    ocworld.setOctomapFromMsg(msg);
-    Eigen::Vector3d safety_radius(drone_radius__global, drone_radius__global,
-            drone_radius__global);
-    ocworld.inflateOccupied(safety_radius);
-
-    // Convert inflated OctomapWorld to Octree
-    octomap_msgs::Octomap inflated_msg;
-    ocworld.getOctomapBinaryMsg(&inflated_msg);
-	octomap::AbstractOcTree * tree = octomap_msgs::msgToMap(inflated_msg);
-#else
     octomap::AbstractOcTree * tree = octomap_msgs::msgToMap(msg);
-#endif
 	octree = dynamic_cast<octomap::OcTree*> (tree);
 
     if (octree == nullptr) {
@@ -979,40 +826,6 @@ smooth_trajectory smoothen_the_shortest_path(piecewise_trajectory& piecewise_pat
 }
 
 
-void publish_graph(graph& g)
-{
-	pcl_ptr->clear();
-    graph_conn_list.points.clear();
-
-	for (auto n_id : g.node_ids()) {
-		graph::node n = g.get_node(n_id);
-		pcl_ptr->points.push_back (pcl::PointXYZ(n.x, n.y, n.z));
-
-        // Publish edges between nodes
-        for (const auto& e : g.adjacent_edges(n_id)) {
-            geometry_msgs::Point p1, p2;
-
-            p1.x = g.get_node(e.n1).x;
-            p1.y = g.get_node(e.n1).y;
-            p1.z = g.get_node(e.n1).z;
-
-            p2.x = g.get_node(e.n2).x;
-            p2.y = g.get_node(e.n2).y;
-            p2.z = g.get_node(e.n2).z;
-
-            graph_conn_list.points.push_back(p1);
-            graph_conn_list.points.push_back(p2);
-        }
-	}
-
-    if (DEBUG__global) {
-        // Visualize graph immediately (a temporary debugging technique)
-        graph_conn_pub.publish(graph_conn_list);
-        ros::spinOnce();
-    }
-}
-
-
 void postprocess(piecewise_trajectory& path)
 {
     // We use a greedy approach to shorten the path here.
@@ -1349,7 +1162,6 @@ bool OMPLStateValidityChecker(const ompl::base::State * state)
 template<class PlannerType>
 piecewise_trajectory OMPL_plan(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree)
 {
-#ifndef INFLATE
     namespace ob = ompl::base;
     namespace og = ompl::geometric;
 
@@ -1416,9 +1228,6 @@ piecewise_trajectory OMPL_plan(geometry_msgs::Point start, geometry_msgs::Point 
         ROS_ERROR("Path not found!");
 
     return result;
-#else
-    ROS_ERROR("OMPL-based planners cannot be compiled together with inflation!");
-#endif
 }
 
 
