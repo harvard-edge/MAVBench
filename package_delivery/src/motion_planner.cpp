@@ -645,8 +645,3 @@ MotionPlanner::piecewise_trajectory MotionPlanner::OMPL_PRM(geometry_msgs::Point
     return OMPL_plan<ompl::geometric::PRM>(start, goal, octree);
 }
 
-int main()
-{
-    MotionPlanner m(nullptr);
-}
-
