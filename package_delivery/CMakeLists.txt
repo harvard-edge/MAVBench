@@ -31,6 +31,7 @@ find_package(catkin REQUIRED COMPONENTS
   nlopt
   minkindr_conversions
   octomap_world
+  mavbench_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -66,18 +67,17 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
- add_message_files(
-  FILES
-  multiDOF.msg
-  multiDOF_array.msg
-  BoolPlusHeader.msg
-  )
+# add_message_files(
+#   FILES
+#   multiDOF.msg
+#   multiDOF_array.msg
+#   BoolPlusHeader.msg
+# )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
   get_trajectory.srv
-  follow_trajectory_status_srv.srv
 )
 
 ## Generate actions in the 'action' folder
@@ -93,6 +93,7 @@ generate_messages(
   std_msgs
   geometry_msgs
   trajectory_msgs
+  mavbench_msgs
 )
 
 ################################################
@@ -194,26 +195,21 @@ add_executable(motion_planner src/motion_planner.cpp src/graph.cpp src/global_pl
 add_dependencies(motion_planner package_delivery_generate_messages_cpp)
 target_link_libraries(motion_planner ${catkin_LIBRARIES} ${OMPL_LIBRARIES}  AirLib MavLinkCom rpc pthread  cuda cudart cublas curand )
 
-add_executable(package_delivery ${common_utility_src}/Drone.cpp ${common_utility_src}/control_drone.cpp 
-    ${common_utility_src}/common.cpp  ${common_utility_src}/Profiling.cpp src/package_delivery.cpp ${common_utility_src}/timer.cpp)
-add_dependencies(package_delivery package_delivery_generate_messages_cpp)
-target_link_libraries(package_delivery ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
+# add_executable(package_delivery ${common_utility_src}/Drone.cpp ${common_utility_src}/control_drone.cpp 
+#     ${common_utility_src}/common.cpp  ${common_utility_src}/Profiling.cpp src/package_delivery.cpp ${common_utility_src}/timer.cpp)
+# add_dependencies(package_delivery package_delivery_generate_messages_cpp)
+# target_link_libraries(package_delivery ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
+# 
+# add_executable(scanning ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 
+#     ${common_utility_src}/Profiling.cpp ${common_utility_src}/control_drone.cpp src/scanning.cpp ${common_utility_src}/timer.cpp)
+# add_dependencies(scanning package_delivery_generate_messages_cpp)
+# target_link_libraries(scanning ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
+# 
+# add_executable(obstacle_avoidance_test ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 
+#      ${common_utility_src}/Profiling.cpp ${common_utility_src}/control_drone.cpp src/obstacle_avoidance_test.cpp ${common_utility_src}/timer.cpp)
+# add_dependencies(obstacle_avoidance_test obstacle_avoidance_test_generate_messages_cpp)
+# target_link_libraries(obstacle_avoidance_test ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
-add_executable(scanning ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 
-    ${common_utility_src}/Profiling.cpp ${common_utility_src}/control_drone.cpp src/scanning.cpp ${common_utility_src}/timer.cpp)
-add_dependencies(scanning package_delivery_generate_messages_cpp)
-target_link_libraries(scanning ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
-
-add_executable(obstacle_avoidance_test ${common_utility_src}/Drone.cpp ${common_utility_src}/common.cpp 
-     ${common_utility_src}/Profiling.cpp ${common_utility_src}/control_drone.cpp src/obstacle_avoidance_test.cpp ${common_utility_src}/timer.cpp)
-add_dependencies(obstacle_avoidance_test obstacle_avoidance_test_generate_messages_cpp)
-target_link_libraries(obstacle_avoidance_test ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
-
-#add_executable(Drone_dummy_service_adv src/Drone_dummy_service_adv.cpp src/Drone.cpp)
-#target_link_libraries(Drone_dummy_service_adv ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
-
-#add_executable(Drone_dummy_client_adv src/Drone_dummy_client_adv.cpp src/Drone.cpp)
-#target_link_libraries(Drone_dummy_client_adv ${catkin_LIBRARIES} AirLib MavLinkCom rpc pthread ${OpenCV_LIBS})
 
 #############
 ## Install ##

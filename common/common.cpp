@@ -392,3 +392,10 @@ void waitForLocalization(std::string method)
     }
 }
 
+float yawFromVelocity(float vx, float vy)
+{
+    if (vx == 0 && vy == 0)
+        return YAW_UNCHANGED;
+    return 90 - atan2(vy, vx)*180.0/3.14;
+}
+

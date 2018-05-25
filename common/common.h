@@ -120,9 +120,11 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
         //float max_speed = 3,
         float time = 2); 
 
+
 // Recovery methods
 trajectory_t create_slam_loss_trajectory(Drone& drone, trajectory_t& normal_traj, const trajectory_t& rev_normal_traj);
 bool reset_slam(Drone& drone, const std::string& topic);
+
 
 // Spinning commands
 void spin_around(Drone &drone);
@@ -132,6 +134,7 @@ void scan_around(Drone &drone, int angle);
 // Utility functions
 float distance(float x, float y, float z);
 float yawFromQuat(geometry_msgs::Quaternion q);
+float yawFromVelocity(float vx, float vy);
 void waitForLocalization(std::string method);
 
 #endif
