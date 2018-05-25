@@ -399,3 +399,29 @@ float yawFromVelocity(float vx, float vy)
     return 90 - atan2(vy, vx)*180.0/3.14;
 }
 
+multiDOFpoint trajectory_at_time(const trajectory_t& traj, double t)
+{
+    for (const auto& mdofp : traj) {
+        t -= mdofp.duration;
+
+        if (t <= 0)
+            return mdofp;
+    }
+
+    return {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0};
+}
+
+multiDOFpoint trajectory_at_time(const mavbench_msgs::multiDOFtrajectory& traj, double t)
+{
+    for (const auto& mdofp : traj.points) {
+        t -= mdofp.duration;
+
+        if (t <= 0)
+            return {mdofp.x, mdofp.y, mdofp.z, mdofp.vx, mdofp.vy, mdofp.vz,
+                mdofp.ax, mdofp.ay, mdofp.az, mdofp.yaw, mdofp.blocking_yaw,
+                mdofp.duration};
+    }
+
+    return {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0};
+}
+

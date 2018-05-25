@@ -22,9 +22,6 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
         return true;
     }
 
-    // req.start.x += req.twist.linear.x*g_planning_budget;
-    // req.start.y += req.twist.linear.y*g_planning_budget;
-    // req.start.z += req.twist.linear.z*g_planning_budget;
     g_start_pos = req.start;
     
     piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length, req.n_pts_per_dir, octree);
@@ -51,10 +48,9 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
     create_response(res, smooth_path);
 
     // Publish the trajectory (for debugging purposes)
-    // traj_topic = res.multiDOFtrajectory;
-    // traj_topic.header.stamp = ros::Time::now();
-    traj_pub.publish(res.multiDOFtrajectory);
+    // traj_pub.publish(res.multiDOFtrajectory);
     smooth_traj_vis_pub.publish(smooth_traj_markers);
+    piecewise_traj_vis_pub.publish(piecewise_traj_markers);
 
     auto hook_end_t = ros::Time::now(); 
     g_planning_without_OM_PULL_time_acc += (((hook_end_t - hook_start_t).toSec())*1e9);
@@ -64,6 +60,12 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
     return true;
 }
 
+
+void MotionPlanner::future_col_callback(const mavbench_msgs::future_collision::ConstPtr& msg)
+{
+    if (msg->header.seq > future_col_seq_id)
+        future_col_seq_id = msg->header.seq;
+}
 
 void MotionPlanner::motion_planning_initialize_params()
 {
@@ -354,6 +356,13 @@ void MotionPlanner::create_response(package_delivery::get_trajectory::Response &
 
     res.multiDOFtrajectory.append = true;
     res.multiDOFtrajectory.reverse = false;
+
+    // Mark the trajectory with the correct sequence id's
+    static int trajectory_seq_id = 0; 
+    res.multiDOFtrajectory.header.seq = trajectory_seq_id;
+    trajectory_seq_id++;
+
+    res.multiDOFtrajectory.future_collision_seq = future_col_seq_id;
 }
 
 

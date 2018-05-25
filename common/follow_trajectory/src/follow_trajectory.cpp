@@ -22,6 +22,7 @@ bool fly_backward = false;
 bool slam_lost = false;
 // ros::Time future_collision_time{0};
 int future_collision_seq = 0;
+int trajectory_seq = 0;
 
 // Parameters
 float g_v_max;
@@ -97,8 +98,13 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 
 void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
 {
+    if (msg->header.seq < trajectory_seq)
+        return;
+    else
+        trajectory_seq = msg->header.seq;
+
     // Check for trajectories that are not updated to the latest collision
-    // detection
+    // detection, or that arrive out of order
     if (msg->future_collision_seq < future_collision_seq)
         return;
 
@@ -176,7 +182,8 @@ void initialize_global_params() {
 }
 
 
-int main(int argc, char **argv){
+int main(int argc, char **argv)
+{
     ros::init(argc, argv, "follow_trajectory", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
     signal(SIGINT, sigIntHandlerPrivate);
@@ -252,7 +259,11 @@ int main(int argc, char **argv){
         follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy,
             true, max_velocity, g_fly_trajectory_time_out);
 
-        next_steps_pub.publish(create_trajectory_msg(*forward_traj));
+        // Publish the remainder of the trajectory
+        mavbench_msgs::multiDOFtrajectory trajectory_msg = create_trajectory_msg(*forward_traj);
+        trajectory_msg.header.seq = trajectory_seq;
+
+        next_steps_pub.publish(trajectory_msg);
 
         if (slam_lost){
             ROS_INFO_STREAM("slam loss");

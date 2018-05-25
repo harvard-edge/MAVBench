@@ -1,7 +1,6 @@
 #include <future_collision/future_collision.h>
 
 // Standard headers
-#include <tuple>
 #include <cmath>
 
 // MAVBench headers
@@ -55,14 +54,12 @@ void FutureCollisionChecker::pull_traj(const mavbench_msgs::multiDOFtrajectory::
     }
 }
 
-std::pair <bool,double> FutureCollisionChecker::check_for_collisions(Drone& drone)
+std::tuple <bool, double> FutureCollisionChecker::check_for_collisions(Drone& drone)
 {
     start_hook_chk_col_t = ros::Time::now();
 
-    //RESET_TIMER();
-
     if (octree == nullptr || traj.empty())
-        return std::make_pair(false, 0.0);
+        return std::make_tuple(false, 0.0);
 
     bool col = false;
     double time_to_collision = 0.0;
@@ -85,13 +82,11 @@ std::pair <bool,double> FutureCollisionChecker::check_for_collisions(Drone& dron
         time_to_collision += pos1.duration;
     }
 
-    //LOG_ELAPSED(future_collision);
-    
     end_hook_chk_col_t = ros::Time::now(); 
     g_checking_collision_t = end_hook_chk_col_t;
     g_checking_collision_kernel_acc += ((end_hook_chk_col_t - start_hook_chk_col_t).toSec()*1e9);
     g_check_collision_ctr++;
-    return std::make_pair(col, time_to_collision);
+    return std::make_tuple(col, time_to_collision);
 }
 
 
@@ -179,7 +174,9 @@ void FutureCollisionChecker::run()
     if (traj_future_collision_seq_id >= future_collision_seq_id) {
         bool collision_coming;
         double time_to_collision;
-        std::tie(collision_coming, time_to_collision) = check_for_collisions(drone);
+
+        std::tie(collision_coming, time_to_collision)
+            = check_for_collisions(drone);
 
         if (collision_coming) {
             future_collision_seq_id++;

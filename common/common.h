@@ -110,6 +110,8 @@ enum yaw_strategy_t { ignore_yaw, face_forward, face_backward, follow_yaw };
 
 trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOFtrajectory&);
 mavbench_msgs::multiDOFtrajectory create_trajectory_msg(const trajectory_t&);
+multiDOFpoint trajectory_at_time(const trajectory_t& traj, double t);
+multiDOFpoint trajectory_at_time(const mavbench_msgs::multiDOFtrajectory& traj, double t);
 trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second);
 
 void follow_trajectory(Drone& drone, trajectory_t * traj,

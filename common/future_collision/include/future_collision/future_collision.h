@@ -5,7 +5,7 @@
 
 // Standard headers
 #include <string>
-#include <utility>
+#include <tuple>
 
 // Octomap specific headers
 #include <octomap/octomap.h>
@@ -49,7 +49,7 @@ public:
     }
 
 private:
-    std::pair <bool,double> check_for_collisions(Drone& drone);
+    std::tuple <bool, double> check_for_collisions(Drone& drone);
     bool collision(const octomap::OcTree * octree, const multiDOFpoint& n1, const multiDOFpoint& n2) const;
     void pull_traj(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg);
     void future_collision_initialize_params();

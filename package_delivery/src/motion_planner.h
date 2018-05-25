@@ -57,9 +57,12 @@ public:
 
         // Topics and services
         nh.advertiseService("get_trajectory_srv", &MotionPlanner::get_trajectory_fun, this);
+
+        nh.subscribe<mavbench_msgs::future_collision>("/col_coming", 1, &MotionPlanner::future_col_callback, this);
+
         smooth_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 1);
         piecewise_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
-        traj_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1);
+        // traj_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1);
     }
 
     void run() {}
@@ -68,6 +71,9 @@ public:
 
 private:
     bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res);
+
+    // ***F:DN Record which collision sequence we're on
+    void future_col_callback(const mavbench_msgs::future_collision::ConstPtr& msg);
 
     // ***F:DN Create a grid-based lawn-mower-like path
     piecewise_trajectory lawn_mower(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
@@ -121,7 +127,7 @@ private:
 private:
     ros::NodeHandle nh;
     ros::Publisher smooth_traj_vis_pub, piecewise_traj_vis_pub;
-    ros::Publisher traj_pub;
+    // ros::Publisher traj_pub;
 
     octomap::OcTree * octree = nullptr;
     int future_col_seq_id = 0;

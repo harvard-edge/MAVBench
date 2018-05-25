@@ -16,19 +16,13 @@
 #include "common/Common.hpp"
 #include "Drone.h"
 #include "package_delivery/get_trajectory.h"
-#include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
-#include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Vector3.h>
 #include <std_msgs/Bool.h>
 #include "common.h"
 #include "timer.h"
-#include <package_delivery/multiDOF.h>
-#include <package_delivery/multiDOF_array.h>
-#include <package_delivery/follow_trajectory_status_srv.h>
-#include <std_srvs/Empty.h>
-#include <std_srvs/SetBool.h>
-#include <package_delivery/BoolPlusHeader.h>
+#include <mavbench_msgs/multiDOFtrajectory.h>
+#include <mavbench_msgs/future_collision.h>
 
 using namespace std;
 
@@ -39,11 +33,12 @@ ros::Time col_coming_time_stamp;
 long long g_pt_cld_to_pkg_delivery_commun_acc = 0;
 int g_col_com_ctr = 0;
 
-bool should_panic = false;
 bool slam_lost = false;
 bool col_coming = false;
 bool clcted_col_coming_data = true;
-
+mavbench_msgs::multiDOFtrajectory normal_traj_msg;
+mavbench_msgs::multiDOFtrajectory g_next_steps_msg;
+int g_trajectory_seq_id = 0;
 
 long long g_accumulate_loop_time = 0; //it is in ms
 long long g_panic_rlzd_t_accumulate = 0;
@@ -54,12 +49,11 @@ bool g_start_profiling = false;
 double v_max__global, a_max__global, g_fly_trajectory_time_out;
 float g_max_yaw_rate;
 float g_max_yaw_rate_during_flight;
+double g_planning_budget;
 long long g_planning_time_including_ros_overhead_acc  = 0;
 int  g_planning_ctr = 0; 
 bool clct_data = true;
 ros::Time g_traj_time_stamp;
-
-
 
 geometry_msgs::Vector3 panic_velocity;
 string ip_addr__global;
@@ -72,20 +66,48 @@ bool DEBUG;
 
 enum State { setup, waiting, flying, trajectory_completed, failed, invalid };
 
-void col_coming_callback(const package_delivery::BoolPlusHeader::ConstPtr& msg) {
-    col_coming = msg->data;
-    if (CLCT_DATA){ 
+void col_coming_callback(const mavbench_msgs::future_collision::ConstPtr& msg)
+{
+    static int future_col_seq_id = 0;
+
+    if (msg->header.seq < future_col_seq_id)
+        return;
+    else
+        future_col_seq_id = msg->header.seq;
+
+    col_coming = msg->collision;
+
+    if (CLCT_DATA) {
         col_coming_time_stamp = msg->header.stamp;
-        //col_coming_time_stamp = ros::Time::now();
         g_pt_cld_to_pkg_delivery_commun_acc += (ros::Time::now() - msg->header.stamp).toSec()*1e9;
         g_col_com_ctr++;
     }
-    //ROS_INFO_STREAM("col_coming to col_coming_cb"<<ros::Time::now() - col_coming_time_stamp);
-
 }
 
-void log_data_before_shutting_down(){
+void get_start_in_future(geometry_msgs::Point& start,
+        geometry_msgs::Twist& twist, geometry_msgs::Twist& acceleration)
+{
+    // Find the conditions the drone will be in when a new path is calculated
+    multiDOFpoint mdofp = trajectory_at_time(g_next_steps_msg, g_planning_budget);
 
+    start.x = mdofp.x; start.y = mdofp.y; start.z = mdofp.z; 
+
+    twist.linear.x = mdofp.vx;
+    twist.linear.y = mdofp.vy;
+    twist.linear.z = mdofp.vz;
+
+    acceleration.linear.x = mdofp.ax;
+    acceleration.linear.y = mdofp.ay;
+    acceleration.linear.z = mdofp.az;
+}
+
+void next_steps_callback(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
+{
+    g_next_steps_msg = *msg;
+}
+
+void log_data_before_shutting_down()
+{
     std::string ns = ros::this_node::getName();
     profile_manager::profiling_data_srv profiling_data_srv_inst;
     
@@ -194,34 +216,38 @@ void package_delivery_initialize_params() {
                 (ns + "/localization_method").c_str());
        return; 
     }
-    if(!ros::param::get("/stats_file_addr",stats_file_addr)){
+    if(!ros::param::get("/stats_file_addr",stats_file_addr)) {
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
      return; 
     }
 
-    if(!ros::param::get("/package_delivery/v_max", v_max__global)){
+    if(!ros::param::get("/package_delivery/v_max", v_max__global)) {
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
      return; 
     }
 
-    if(!ros::param::get("max_yaw_rate",g_max_yaw_rate))  {
+    if(!ros::param::get("max_yaw_rate",g_max_yaw_rate)) {
         ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate not provided");
         return;
     }
 
-    if(!ros::param::get("max_yaw_rate_during_flight",g_max_yaw_rate_during_flight))  {
+    if(!ros::param::get("max_yaw_rate_during_flight", g_max_yaw_rate_during_flight)) {
         ROS_FATAL_STREAM("Could not start follow_trajectory max_yaw_rate_during_flight not provided");
         return;
     }
 
-    if(!ros::param::get("/package_delivery/fly_trajectory_time_out", g_fly_trajectory_time_out)){
+    if(!ros::param::get("/package_delivery/fly_trajectory_time_out", g_fly_trajectory_time_out)) {
         ROS_FATAL("Could not start exploration. Parameter missing! Looking for %s", 
                 (ns + "/stats_file_addr").c_str());
-     return; 
+        return; 
     }
 
+    if(!ros::param::get("/planning_budget", g_planning_budget)) {
+        ROS_FATAL_STREAM("Could not start pkg delivery planning_budget not provided");
+        return;
+    }
 }
 
 geometry_msgs::Point get_start(Drone& drone) {
@@ -230,7 +256,6 @@ geometry_msgs::Point get_start(Drone& drone) {
     // Get current position from drone
     auto drone_pos = drone.position();
     start.x = drone_pos.x; start.y = drone_pos.y; start.z = drone_pos.z;
-    //std::cout << "Current position is " << drone_pos.x << " " << drone_pos.y << " " << drone_pos.z << std::endl;
 
     return start;
 }
@@ -247,32 +272,25 @@ geometry_msgs::Point get_goal() {
     return goal;
 }
 
-trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point start, geometry_msgs::Point goal, geometry_msgs::Twist twist, geometry_msgs::Twist acceleration) {
+mavbench_msgs::multiDOFtrajectory request_trajectory(ros::ServiceClient& client, const geometry_msgs::Point& start, const geometry_msgs::Point& goal, const geometry_msgs::Twist& twist, const geometry_msgs::Twist& acceleration) {
     // Request the actual trajectory from the motion_planner node
     package_delivery::get_trajectory srv;
     srv.request.start = start;
     srv.request.goal = goal;
-    srv.request.twist  = twist; 
+    srv.request.twist = twist; 
     srv.request.acceleration= acceleration; 
     int fail_ctr = 0;
     
-    /*
-    while(!client.call(srv) && fail_ctr<=5){
-        fail_ctr++;
-    }
-     
-    if (fail_ctr ==5) {
-        ROS_ERROR("Failed to call service.");
-        return trajectory_t();
-
-    }
-    */ 
-   while(true){ 
+    while(true) {
        if(client.call(srv)) {
-           //ROS_INFO("Received trajectory.");
-           if(!srv.response.path_found){
-               return trajectory_t();
-           }else{
+           if(!srv.response.path_found) {
+               // Back up slowly from current position
+               mavbench_msgs::multiDOFtrajectory result;
+               result.append = false;
+               result.reverse = true;
+
+               return result;
+           } else {
                break;
            }
        } else {
@@ -281,12 +299,18 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
        }
        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    
-    return create_trajectory(srv.response.multiDOFtrajectory, true);
+
+    return srv.response.multiDOFtrajectory;
 }
 
 bool trajectory_done(const trajectory_t& trajectory) {
     return trajectory.size() == 0;
+}
+
+bool drone_stopped()
+{
+    return g_next_steps_msg.points.size() == 0 &&
+        g_next_steps_msg.header.seq >= normal_traj_msg.header.seq;
 }
 
 // *** F:DN main function
@@ -298,13 +322,15 @@ int main(int argc, char **argv)
     signal(SIGINT, sigIntHandlerPrivate);
     ns = ros::this_node::getName();
 
-    //ROS_INFO("HEy!!");
-    
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
     package_delivery_initialize_params();
     geometry_msgs::Point start, goal;
+
+    geometry_msgs::Twist twist, acceleration;
+    twist.linear.x = twist.linear.y = twist.linear.z = 0;
+    acceleration.linear.x = acceleration.linear.y = acceleration.linear.z = 0; 
 
     // Flight queues
     trajectory_t slam_loss_traj;
@@ -316,29 +342,21 @@ int main(int argc, char **argv)
     bool delivering_mission_complete = false; //if true, we have delivered the 
                                               //pkg and successfully returned to origin
     
-   package_delivery::follow_trajectory_status_srv follow_trajectory_status_srv_inst;
-
-   int fail_ctr = 0;
-   int fail_threshold = 50;
+    int fail_ctr = 0;
+    int fail_threshold = 50;
 
     ros::Time start_hook_t, end_hook_t;                                          
     // *** F:DN subscribers,publishers,servers,clients
+    ros::Publisher trajectory_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("normal_traj", 1);
+
+    nh.subscribe("col_coming", 1, col_coming_callback);
+    nh.subscribe("next_steps", 1, next_steps_callback);
+
 	ros::ServiceClient get_trajectory_client = 
         nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
 	ros::ServiceClient record_profiling_data_client = 
         nh.serviceClient<profile_manager::profiling_data_srv>("record_profiling_data");
         ros::Subscriber slam_lost_sub = nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
-
-    ros::ServiceClient follow_trajectory_status_client = 
-      nh.serviceClient<package_delivery::follow_trajectory_status_srv>("/follow_trajectory_status", true);
-
-    ros::Publisher trajectory_pub = nh.advertise <package_delivery::multiDOF_array>("normal_traj", 1);
-
-    ros::Subscriber col_coming_sub = 
-        nh.subscribe<package_delivery::BoolPlusHeader>("col_coming", 1, col_coming_callback);
-    
-
-
     ros::ServiceClient start_profiling_client = 
       nh.serviceClient<profile_manager::start_profiling_srv>("/start_profiling");
 
@@ -355,7 +373,6 @@ int main(int argc, char **argv)
                                            //on the goal
     
     bool srv_call_status = false;
-    trajectory_t normal_traj;
     ros::Time panic_realization_start_t;
     ros::Time panic_realization_end_t;
     msr::airlib::FlightStats init_stats, end_stats;
@@ -374,10 +391,7 @@ int main(int argc, char **argv)
     
     ros::Time loop_start_t(0,0); 
     ros::Time loop_end_t(0,0); //if zero, it's not valid
-    geometry_msgs::Twist twist;
-    twist.linear.x = twist.linear.y = twist.linear.z = 1;
-    geometry_msgs::Twist acceleration;
-    acceleration.linear.x = acceleration.linear.y = acceleration.linear.z = 1; 
+
 	ros::Rate pub_rate(80);
     for (State state = setup; ros::ok(); ) {
 		pub_rate.sleep();
@@ -405,138 +419,78 @@ int main(int argc, char **argv)
         }
         else if (state == waiting)
         {
-            if (CLCT_DATA){ 
+            if (CLCT_DATA)
                 start_hook_t = ros::Time::now(); 
-            }
             
-            start = get_start(drone);
-            normal_traj = request_trajectory(get_trajectory_client, start, goal, 
-                    twist, acceleration);
+            normal_traj_msg = request_trajectory(get_trajectory_client, start,
+                    goal, twist, acceleration);
            
             // Profiling
             if (CLCT_DATA){ 
                 end_hook_t = ros::Time::now(); 
-                /* 
-                if (!clcted_col_coming_data){ 
-                    g_col_coming_to_req_traj_acc += (start_hook_t - col_coming_time_stamp).toSec()*1e9;
-                    clcted_col_coming_data = true; 
-                    if (DEBUG){ 
-                        ROS_INFO_STREAM("col coming to req traj"<< (start_hook_t - col_coming_time_stamp).toSec());
-                    }
-                }
-                */     
-                if (DEBUG){ 
+
+                if (DEBUG)
                     ROS_INFO_STREAM("req traj with srv overhead"<<end_hook_t - start_hook_t); 
-                }
+
                 g_planning_time_including_ros_overhead_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
                 g_planning_ctr++; 
             } 
-            
-            //std::this_thread::sleep_for(std::chrono::milliseconds(150));
-            package_delivery::multiDOF_array array_of_point_msg; 
-            
-            if (!clcted_col_coming_data){ 
-                array_of_point_msg.header.stamp = col_coming_time_stamp;//ros::Time::now();
-                //ROS_INFO_STREAM("diff "<<(ros::Time::now() - col_coming_time_stamp).toSec() << " " <<(end_hook_t - start_hook_t)); 
-                //array_of_point_msg.header.stamp = ros::Time::now();
-                clcted_col_coming_data = true; 
-            }else{
+
+            if (!clcted_col_coming_data) { 
+                normal_traj_msg.header.stamp = col_coming_time_stamp;
+                clcted_col_coming_data = true;
+            } else {
                 ros::Time temp(0,0); 
-                array_of_point_msg.header.stamp = temp;
+                normal_traj_msg.header.stamp = temp;
             }
-            
-            //ROS_INFO_STREAM("blah blah"<< (ros::Time::now() - col_coming_time_stamp) << " " << ros::Time::now() << " " << col_coming_time_stamp); 
-            ros::Time cp_time = ros::Time::now(); 
-            for (auto point : normal_traj){
-                package_delivery::multiDOF point_msg;
-                point_msg.x = point.x;
-                point_msg.y = point.y;
-                point_msg.z = point.z;
-                point_msg.vx = point.vx;
-                point_msg.vy = point.vy;
-                point_msg.vz = point.vz;
-                point_msg.ax = point.ax;
-                point_msg.ay = point.ay;
-                point_msg.az = point.az;
-                point_msg.yaw = point.yaw;
-                point_msg.duration = point.duration;
-                array_of_point_msg.points.push_back(point_msg); 
-            }
-            ros::Time cp_end_time = ros::Time::now(); 
 
-            trajectory_pub.publish(array_of_point_msg);
+            trajectory_pub.publish(normal_traj_msg);
 
-            if (!normal_traj.empty())
+            if (!normal_traj_msg.points.empty())
                 next_state = flying;
-            else {
+            else
                 next_state = trajectory_completed;
-            }
-
-            //next_state = failed;
         }
         else if (state == flying)
         {
-            // Choose next state (failure, completion, or more flying)
-            /* 
-               if (slam_lost && created_slam_loss_traj && trajectory_done(slam_loss_traj)) {
-               if (reset_slam(drone, "/slam_lost"))
-               next_state = trajectory_completed;
-               else
-               next_state = failed;
-               }
-               */
-            //ros::Time start__t = ros::Time::now(); 
-            srv_call_status = follow_trajectory_status_client.call(follow_trajectory_status_srv_inst);
-            //ros::Time end__t = ros::Time::now(); 
+            if (drone_stopped()) {
+                next_state = trajectory_completed;
 
-            //ROS_INFO_STREAM("diff "<<(end__t - start__t)); 
-            if(!srv_call_status){
-                ROS_INFO_STREAM("could not make a service all to trajectory done");
-                next_state = flying;
-            }else if (follow_trajectory_status_srv_inst.response.success.data) {
-                next_state = trajectory_completed; 
-                twist = follow_trajectory_status_srv_inst.response.twist;
-                acceleration = follow_trajectory_status_srv_inst.response.acceleration;
+                twist.linear.x = twist.linear.y = twist.linear.z = 0;
+                acceleration.linear.x = acceleration.linear.y = acceleration.linear.z = 0;
             }
-            else if (col_coming){
-                next_state = trajectory_completed; 
-                twist = follow_trajectory_status_srv_inst.response.twist;
-                acceleration = follow_trajectory_status_srv_inst.response.acceleration;
-                col_coming = false; 
+            else if (col_coming) {
+                next_state = waiting;
+                col_coming = false;
                 clcted_col_coming_data = false;
+
+                get_start_in_future(start, twist, acceleration);
             }
-            else{
+            else {
                 next_state = flying;
             }
-
         }
         else if (state == trajectory_completed)
         {
-            fail_ctr = normal_traj.empty() ? fail_ctr+1 : 0; 
+            fail_ctr = normal_traj_msg.points.empty() ? fail_ctr+1 : 0;
             
-            if (normal_traj.empty()){
+            if (normal_traj_msg.points.empty()){
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
             }
             if (fail_ctr >fail_threshold) {
                 next_state = failed;
                 mission_status = "planning_failed_too_many_times";
-            }else if (dist(drone.position(), goal) < goal_s_error_margin) {
+            } else if (dist(drone.position(), goal) < goal_s_error_margin) {
                 ROS_INFO("Delivered the package and returned!");
-                mission_status = "completed"; 
-                g_mission_status = mission_status;            
+                mission_status = "completed";
+                g_mission_status = mission_status;
                 //update_stats_file(stats_file_addr,"mission_status completed");
                 next_state = setup;
                 log_data_before_shutting_down();
                 signal_supervisor(g_supervisor_mailbox, "kill"); 
                 ros::shutdown();
-            } else { //If we've drifted too far off from the destination
-                //ROS_WARN("We're a little off...");
-
-                auto pos = drone.position();
-                // std::cout << "Pos: " << pos.x << " " << pos.y << " " << pos.z << std::endl;
-                // std::cout << "Goal: " << goal.x << " " << goal.y << " " << goal.z << std::endl;
-                // std::cout << "Dist: " << dist(pos, goal) << std::endl;
-
+            } else {
+                // If we're too far off from the destination
                 start = get_start(drone);
                 next_state = waiting;
             }
