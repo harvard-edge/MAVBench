@@ -18,15 +18,26 @@ set(PACKAGE_DEPENDENCIES
 
 find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES})
 
-find_package(PCL REQUIRED QUIET COMPONENTS common sample_consensus io segmentation filters)
+find_package(PCL 1.8 REQUIRED QUIET COMPONENTS common sample_consensus io segmentation filters)
 
 find_package(octomap REQUIRED)
 add_definitions(-DOCTOMAP_NODEBUGOUT)
+
+# Hasan's changes
+if(NOT "${PCL_INCLUDE_DIRS}" STREQUAL "")
+  foreach(item ${PCL_INCLUDE_DIRS})
+    string(REGEX MATCH "/usr/include/pcl-1.7" item ${item})
+    if(item)
+      list(REMOVE_ITEM PCL_INCLUDE_DIRS ${item})
+    endif()
+  endforeach()
+endif()
 
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  /usr/local/include/pcl-1.8
   ${OCTOMAP_INCLUDE_DIRS}
 )
 

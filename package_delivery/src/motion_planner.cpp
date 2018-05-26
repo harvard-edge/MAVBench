@@ -63,8 +63,8 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
 
 void MotionPlanner::future_col_callback(const mavbench_msgs::future_collision::ConstPtr& msg)
 {
-    if (msg->header.seq > future_col_seq_id)
-        future_col_seq_id = msg->header.seq;
+    if (msg->future_collision_seq > future_col_seq_id)
+        future_col_seq_id = msg->future_collision_seq;
 }
 
 void MotionPlanner::motion_planning_initialize_params()
@@ -88,8 +88,8 @@ void MotionPlanner::motion_planning_initialize_params()
     ros::param::get("/motion_planner/nodes_to_add_to_roadmap", nodes_to_add_to_roadmap__global);
     ros::param::get("/motion_planner/max_dist_to_connect_at", max_dist_to_connect_at__global);
 
-    ros::param::get("/motion_planner/planner_drone_radius", drone_radius__global);
-    ros::param::get("/motion_planner/planner_drone_height", drone_height__global);
+    ros::param::get("/motion_planner/drone_radius", drone_radius__global);
+    ros::param::get("/motion_planner/drone_height", drone_height__global);
     ros::param::get("/motion_planner/v_max", v_max__global);
     ros::param::get("/motion_planner/a_max", a_max__global);
     ros::param::get("ros_DEBUG", DEBUG__global);
@@ -322,13 +322,17 @@ void MotionPlanner::create_response(package_delivery::get_trajectory::Response &
     res.unknown = -1;
 
     int state_index = 0;
-	for (const auto& s : states) {
+	// for (const auto& s : states) {
+    for (int i = 0; i < states.size() - 1; i++) {
+        const auto& s = states[i];
+        const auto& s_next = states[i+1];
+
 		mavbench_msgs::multiDOFpoint point;
 
         graph::node current;
-		point.x = current.x = s.position_W.x();
-		point.y = current.y = s.position_W.y();
-		point.z = current.z = s.position_W.z();
+		point.x = current.x = s_next.position_W.x();
+		point.y = current.y = s_next.position_W.y();
+		point.z = current.z = s_next.position_W.z();
 
 		point.vx = s.velocity_W.x();
 		point.vy = s.velocity_W.y();
@@ -341,7 +345,7 @@ void MotionPlanner::create_response(package_delivery::get_trajectory::Response &
         point.yaw = yawFromVelocity(point.vx, point.vy);
         point.blocking_yaw = false;
 
-	    point.duration = double(s.time_from_start_ns) / 1e9;
+	    point.duration = double(s_next.time_from_start_ns - s.time_from_start_ns) / 1e9;
 
         if (res.unknown != -1 &&
                 !known(octree, current.x, current.y, current.z)
@@ -354,12 +358,12 @@ void MotionPlanner::create_response(package_delivery::get_trajectory::Response &
         state_index++;
 	}
 
-    res.multiDOFtrajectory.append = true;
+    res.multiDOFtrajectory.append = false;
     res.multiDOFtrajectory.reverse = false;
 
     // Mark the trajectory with the correct sequence id's
     static int trajectory_seq_id = 0; 
-    res.multiDOFtrajectory.header.seq = trajectory_seq_id;
+    res.multiDOFtrajectory.trajectory_seq = trajectory_seq_id;
     trajectory_seq_id++;
 
     res.multiDOFtrajectory.future_collision_seq = future_col_seq_id;
@@ -418,8 +422,8 @@ MotionPlanner::smooth_trajectory MotionPlanner::smoothen_the_shortest_path(piece
 		// Estimate the time the drone should take flying between each node
 		auto segment_times = estimateSegmentTimes(vertices, v_max__global, a_max__global, magic_fabian_constant);
 
-        for (auto& el : segment_times)
-            el *= 0.4;
+        // for (auto& el : segment_times)
+        //     el *= 0.4;
 
 		// Optimize and create a smooth path from the vertices
 		opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);

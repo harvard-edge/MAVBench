@@ -41,7 +41,7 @@ void sigIntHandlerPrivate(int signo) {
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "future_collision");
+    ros::init(argc, argv, "occupancy_map_node");
     ros::NodeHandle nh("~");
     std::string mapFilename(""), mapFilenameParam("");
     signal(SIGINT, sigIntHandlerPrivate);
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
             exit(1);
         }
     }
-    
+
     // Create FutureCollisionChecker
     FutureCollisionChecker fcc (octree);
     fcc.setOctomapServer(&server);
@@ -77,15 +77,18 @@ int main(int argc, char** argv)
     // Create MotionPlanner
     MotionPlanner mp (octree);
     mp_ptr = &mp;
-    
-    ros::Rate loop_rate(60);
+
+    // ros::Rate loop_rate(60);
     while (ros::ok()) {
+        // ros::Time start = ros::Time::now();
         ros::spinOnce();
 
         fcc.run();
         mp.run();
 
-        loop_rate.sleep();
+        // loop_rate.sleep();
+        // ros::Time end = ros::Time::now();
+        // std::cout << (end - start).toSec() << "\n";
     }
 }
 

@@ -38,7 +38,6 @@ bool col_coming = false;
 bool clcted_col_coming_data = true;
 mavbench_msgs::multiDOFtrajectory normal_traj_msg;
 mavbench_msgs::multiDOFtrajectory g_next_steps_msg;
-int g_trajectory_seq_id = 0;
 
 long long g_accumulate_loop_time = 0; //it is in ms
 long long g_panic_rlzd_t_accumulate = 0;
@@ -70,10 +69,10 @@ void col_coming_callback(const mavbench_msgs::future_collision::ConstPtr& msg)
 {
     static int future_col_seq_id = 0;
 
-    if (msg->header.seq < future_col_seq_id)
+    if (msg->future_collision_seq < future_col_seq_id)
         return;
     else
-        future_col_seq_id = msg->header.seq;
+        future_col_seq_id = msg->future_collision_seq;
 
     col_coming = msg->collision;
 
@@ -310,7 +309,7 @@ bool trajectory_done(const trajectory_t& trajectory) {
 bool drone_stopped()
 {
     return g_next_steps_msg.points.size() == 0 &&
-        g_next_steps_msg.header.seq >= normal_traj_msg.header.seq;
+        g_next_steps_msg.trajectory_seq >= normal_traj_msg.trajectory_seq;
 }
 
 // *** F:DN main function
@@ -349,14 +348,14 @@ int main(int argc, char **argv)
     // *** F:DN subscribers,publishers,servers,clients
     ros::Publisher trajectory_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("normal_traj", 1);
 
-    nh.subscribe("col_coming", 1, col_coming_callback);
-    nh.subscribe("next_steps", 1, next_steps_callback);
+    ros::Subscriber col_coming_sub = nh.subscribe("col_coming", 1, col_coming_callback);
+    ros::Subscriber next_steps_sub = nh.subscribe("next_steps", 1, next_steps_callback);
+    ros::Subscriber slam_lost_sub = nh.subscribe("/slam_lost", 1, slam_loss_callback);
 
 	ros::ServiceClient get_trajectory_client = 
-        nh.serviceClient<package_delivery::get_trajectory>("get_trajectory_srv");
+        nh.serviceClient<package_delivery::get_trajectory>("/get_trajectory_srv");
 	ros::ServiceClient record_profiling_data_client = 
-        nh.serviceClient<profile_manager::profiling_data_srv>("record_profiling_data");
-        ros::Subscriber slam_lost_sub = nh.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
+        nh.serviceClient<profile_manager::profiling_data_srv>("/record_profiling_data");
     ros::ServiceClient start_profiling_client = 
       nh.serviceClient<profile_manager::start_profiling_srv>("/start_profiling");
 

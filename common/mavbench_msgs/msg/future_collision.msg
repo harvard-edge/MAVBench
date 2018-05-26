@@ -1,3 +1,4 @@
 Header header
 bool collision
 float64 time_to_collision
+int32 future_collision_seq

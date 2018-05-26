@@ -18,8 +18,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   sensor_msgs
-  pcl_conversions
-  pcl_ros
   tf
   octomap_ros
   octomap_msgs
@@ -30,7 +28,6 @@ find_package(catkin REQUIRED COMPONENTS
   mav_trajectory_generation_ros
   nlopt
   minkindr_conversions
-  octomap_world
   mavbench_msgs
   future_collision
 )

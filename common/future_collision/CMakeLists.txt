@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(future_collision)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-add_compile_options(-std=c++11 -fno-omit-frame-pointer)
+add_compile_options(-std=c++11 -g -fno-omit-frame-pointer)
 set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
 set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
 
@@ -15,13 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   geometry_msgs
-  pcl_conversions
-  pcl_ros
   tf
   octomap_ros
   octomap_msgs
   octomap_server
-  octomap_world
 )
 
 ## System dependencies are found with CMake's conventions

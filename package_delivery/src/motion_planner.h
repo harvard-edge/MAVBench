@@ -56,9 +56,9 @@ public:
         motion_planning_initialize_params();
 
         // Topics and services
-        nh.advertiseService("get_trajectory_srv", &MotionPlanner::get_trajectory_fun, this);
+        get_trajectory_srv_server = nh.advertiseService("/get_trajectory_srv", &MotionPlanner::get_trajectory_fun, this);
 
-        nh.subscribe<mavbench_msgs::future_collision>("/col_coming", 1, &MotionPlanner::future_col_callback, this);
+        future_col_sub = nh.subscribe<mavbench_msgs::future_collision>("/col_coming", 1, &MotionPlanner::future_col_callback, this);
 
         smooth_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 1);
         piecewise_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
@@ -127,6 +127,8 @@ private:
 private:
     ros::NodeHandle nh;
     ros::Publisher smooth_traj_vis_pub, piecewise_traj_vis_pub;
+    ros::Subscriber future_col_sub;
+    ros::ServiceServer get_trajectory_srv_server;
     // ros::Publisher traj_pub;
 
     octomap::OcTree * octree = nullptr;
@@ -282,7 +284,7 @@ MotionPlanner::piecewise_trajectory MotionPlanner::OMPL_plan(geometry_msgs::Poin
 
     if (solved)
     {
-        //ROS_INFO("Solution found!");
+        ROS_INFO("Solution found!");
         ss.simplifySolution();
 
         for (auto state : ss.getSolutionPath().getStates()) {

@@ -40,17 +40,21 @@ void FutureCollisionChecker::pull_traj(const mavbench_msgs::multiDOFtrajectory::
 {
     traj_future_collision_seq_id = msg->future_collision_seq;
 
-    auto pos = drone.position();
-    const auto& traj_front = msg->points.front();
-    double x_offset = pos.x - traj_front.x;
-    double y_offset = pos.y - traj_front.y;
-    double z_offset = pos.z - traj_front.z;
+    if (msg->points.size() > 0) {
+        auto pos = drone->position();
+        const auto& traj_front = msg->points.front();
+        double x_offset = pos.x - traj_front.x;
+        double y_offset = pos.y - traj_front.y;
+        double z_offset = pos.z - traj_front.z;
 
-    traj = create_trajectory_from_msg(*msg);
-    for (auto& point : traj) {
-        point.x += x_offset;
-        point.y += y_offset;
-        point.z += z_offset;
+        traj = create_trajectory_from_msg(*msg);
+        for (auto& point : traj) {
+            point.x += x_offset;
+            point.y += y_offset;
+            point.z += z_offset;
+        }
+    } else {
+        traj = trajectory_t();
     }
 }
 
@@ -65,8 +69,8 @@ std::tuple <bool, double> FutureCollisionChecker::check_for_collisions(Drone& dr
     double time_to_collision = 0.0;
 
     for (int i = 0; i < traj.size() - 1; ++i) {
-        auto& pos1 = traj[i];
-        auto& pos2 = traj[i+1];
+        const auto& pos1 = traj[i];
+        const auto& pos2 = traj[i+1];
 
         if (collision(octree, pos1, pos2)) {
             col = true;
@@ -86,6 +90,7 @@ std::tuple <bool, double> FutureCollisionChecker::check_for_collisions(Drone& dr
     g_checking_collision_t = end_hook_chk_col_t;
     g_checking_collision_kernel_acc += ((end_hook_chk_col_t - start_hook_chk_col_t).toSec()*1e9);
     g_check_collision_ctr++;
+
     return std::make_tuple(col, time_to_collision);
 }
 
@@ -95,17 +100,17 @@ void FutureCollisionChecker::future_collision_initialize_params()
     ros::param::get("/future_col_drone_radius", drone_radius__global);
     ros::param::get("/future_col_drone_height", drone_height__global);
 
-    if(!ros::param::get("/package_delivery/ip_addr",ip_addr__global)) {
+    if(!ros::param::get("/ip_addr", ip_addr__global)) {
         ROS_FATAL("Could not start exploration. IP address parameter missing!");
         return;
     }
-    if(!ros::param::get("/package_delivery/localization_method",localization_method)) {
+    if(!ros::param::get("/localization_method", localization_method)) {
         ROS_FATAL("Could not start exploration. Localization parameter missing!");
-        return; 
+        return;
     }
 	if(!ros::param::get("/CLCT_DATA",CLCT_DATA)) {
         ROS_FATAL("Could not start exploration. Localization parameter missing!");
-        return; 
+        return;
     }
     if(!ros::param::get("/DEBUG",DEBUG)) {
         ROS_FATAL("Could not start exploration. Localization parameter missing!");
@@ -176,14 +181,14 @@ void FutureCollisionChecker::run()
         double time_to_collision;
 
         std::tie(collision_coming, time_to_collision)
-            = check_for_collisions(drone);
+            = check_for_collisions(*drone);
 
         if (collision_coming) {
             future_collision_seq_id++;
 
             mavbench_msgs::future_collision col_coming_msg;
             col_coming_msg.header.stamp = g_pt_cloud_header;
-            col_coming_msg.header.seq = future_collision_seq_id;
+            col_coming_msg.future_collision_seq = future_collision_seq_id;
             col_coming_msg.collision = collision_coming;
             col_coming_msg.time_to_collision = time_to_collision;
 
@@ -195,6 +200,8 @@ void FutureCollisionChecker::run()
             if(DEBUG)
                 ROS_INFO_STREAM("pt cloud to start of checking collision in future collision"<< g_pt_cloud_to_future_collision_t);
         }
+    } else {
+        ROS_WARN("Future collision will ignore old trajectory");
     }
 
     main_loop_end_hook_t = ros::Time::now();

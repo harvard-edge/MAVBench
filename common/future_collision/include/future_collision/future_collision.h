@@ -26,16 +26,13 @@ class FutureCollisionChecker {
 public:
     FutureCollisionChecker(octomap::OcTree * octree_) :
         nh("~"),
-        octree(octree_),
-        // The initialization below looks quite strange, but its actually
-        // really simple. We use C++'s comma operator to call
-        // "future_collision_initialize_params()", which initializes
-        // "ip_addr__global" and some other arguments, before calling the
-        // "Drone" constructor.
-        drone((future_collision_initialize_params(), ip_addr__global.c_str()),
-            port, localization_method)
+        octree(octree_)
     {
-        nh.subscribe<mavbench_msgs::multiDOFtrajectory>("/next_steps", 1, &FutureCollisionChecker::pull_traj, this);
+        future_collision_initialize_params();
+
+        drone = new Drone(ip_addr__global.c_str(), port, localization_method);
+
+        next_steps_sub = nh.subscribe<mavbench_msgs::multiDOFtrajectory>("/next_steps", 1, &FutureCollisionChecker::pull_traj, this);
         col_coming_pub = nh.advertise<mavbench_msgs::future_collision>("/col_coming", 1);
     }
 
@@ -57,8 +54,9 @@ private:
 private:
     ros::NodeHandle nh;
     ros::Publisher col_coming_pub;
+    ros::Subscriber next_steps_sub;
 
-    Drone drone;
+    Drone * drone = nullptr;
     uint16_t port = 41451;
 
     int future_collision_seq_id = 0;

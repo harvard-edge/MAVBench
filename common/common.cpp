@@ -369,7 +369,7 @@ mavbench_msgs::multiDOFtrajectory create_trajectory_msg(const trajectory_t& t)
         mdp_msg.yaw = mdp.yaw;
         mdp_msg.blocking_yaw = mdp.blocking_yaw;
 
-        mdp_msg.duration = mdp_msg.duration;
+        mdp_msg.duration = mdp.duration;
 
         result.points.push_back(mdp_msg);
     }
