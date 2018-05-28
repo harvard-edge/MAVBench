@@ -1,31 +1,31 @@
 diff --git a/AirLib/include/common/VectorMath.hpp b/AirLib/include/common/VectorMath.hpp
-index a5bb238..b2f1458 100644
+index 8590f19..0eb09d1 100644
 --- a/AirLib/include/common/VectorMath.hpp
 +++ b/AirLib/include/common/VectorMath.hpp
-@@ -227,18 +227,18 @@ public:
+@@ -231,18 +231,18 @@ public:
          // roll (x-axis rotation)
          RealT t0 = +2.0f * (q.w() * q.x() + q.y() * q.z());
          RealT t1 = +1.0f - 2.0f * (q.x() * q.x() + ysqr);
--        roll = std::atan2f(t0, t1);
-+        roll = std::atan2(t0, t1);
+-        roll = std::atan2(t0, t1);
++        roll = atan2f(t0, t1);
  
          // pitch (y-axis rotation)
          RealT t2 = +2.0f * (q.w() * q.y() - q.z() * q.x());
          t2 = ((t2 > 1.0f) ? 1.0f : t2);
          t2 = ((t2 < -1.0f) ? -1.0f : t2);
--        pitch = std::asinf(t2);
+-        pitch = std::asin(t2);
 +        pitch = asinf(t2);
  
          // yaw (z-axis rotation)
          RealT t3 = +2.0f * (q.w() * q.z() + q.x() * q.y());
          RealT t4 = +1.0f - 2.0f * (ysqr + q.z() * q.z());  
--        yaw = std::atan2f(t3, t4);
-+        yaw = std::atan2(t3, t4);
+-        yaw = std::atan2(t3, t4);
++        yaw = atan2f(t3, t4);
      }
  
-     static Vector3T toAngularVelocity(const QuaternionT& start, const QuaternionT& end, RealT delta_sec)
+     static Vector3T toAngularVelocity(const QuaternionT& start, const QuaternionT& end, RealT dt)
 diff --git a/AirLib/include/common/common_utils/Utils.hpp b/AirLib/include/common/common_utils/Utils.hpp
-index d3c3a44..2899a1a 100644
+index 38c5649..5c7854c 100644
 --- a/AirLib/include/common/common_utils/Utils.hpp
 +++ b/AirLib/include/common/common_utils/Utils.hpp
 @@ -20,6 +20,7 @@
@@ -36,111 +36,82 @@ index d3c3a44..2899a1a 100644
  #include <queue>
  #include "type_utils.hpp"
  
-diff --git a/MavLinkCom/MavLinkTest/main.cpp b/MavLinkCom/MavLinkTest/main.cpp
-index cb56e42..7a0f280 100644
---- a/MavLinkCom/MavLinkTest/main.cpp
-+++ b/MavLinkCom/MavLinkTest/main.cpp
-@@ -719,19 +719,19 @@ void mavlink_dcm_to_euler(const float dcm[3][3], float* roll, float* pitch, floa
- 
-     if (fabsf(theta - static_cast<float>(M_PI_2)) < 1.0e-3f) {
-         phi = 0.0f;
--        psi = (atan2f(dcm[1][2] - dcm[0][1],
-+        psi = (atan2(dcm[1][2] - dcm[0][1],
-             dcm[0][2] + dcm[1][1]) + phi);
- 
-     }
-     else if (fabsf(theta + static_cast<float>(M_PI_2)) < 1.0e-3f) {
-         phi = 0.0f;
--        psi = atan2f(dcm[1][2] - dcm[0][1],
-+        psi = atan2(dcm[1][2] - dcm[0][1],
-             dcm[0][2] + dcm[1][1] - phi);
- 
-     }
-     else {
--        phi = atan2f(dcm[2][1], dcm[2][2]);
--        psi = atan2f(dcm[1][0], dcm[0][0]);
-+        phi = atan2(dcm[2][1], dcm[2][2]);
-+        psi = atan2(dcm[1][0], dcm[0][0]);
-     }
- 
-     *roll = phi;
-diff --git a/MavLinkCom/mavlink/mavlink_conversions.h b/MavLinkCom/mavlink/mavlink_conversions.h
-index 9baee26..f09716f 100644
---- a/MavLinkCom/mavlink/mavlink_conversions.h
-+++ b/MavLinkCom/mavlink/mavlink_conversions.h
-@@ -71,17 +71,17 @@ MAVLINK_HELPER void mavlink_dcm_to_euler(const float dcm[3][3], float* roll, flo
- 
-     if (fabsf(theta - (float)M_PI_2) < 1.0e-3f) {
-         phi = 0.0f;
--        psi = (atan2f(dcm[1][2] - dcm[0][1],
-+        psi = (atan2(dcm[1][2] - dcm[0][1],
-                 dcm[0][2] + dcm[1][1]) + phi);
- 
-     } else if (fabsf(theta + (float)M_PI_2) < 1.0e-3f) {
-         phi = 0.0f;
--        psi = atan2f(dcm[1][2] - dcm[0][1],
-+        psi = atan2(dcm[1][2] - dcm[0][1],
-                   dcm[0][2] + dcm[1][1] - phi);
- 
-     } else {
--        phi = atan2f(dcm[2][1], dcm[2][2]);
--        psi = atan2f(dcm[1][0], dcm[0][0]);
-+        phi = atan2(dcm[2][1], dcm[2][2]);
-+        psi = atan2(dcm[1][0], dcm[0][0]);
-     }
- 
-     *roll = phi;
 diff --git a/build.sh b/build.sh
-index fb39802..9f57277 100755
+index fa90fbc..c1438a1 100755
 --- a/build.sh
 +++ b/build.sh
-@@ -11,15 +11,15 @@ set -x
- git submodule update --init --recursive 
+@@ -8,23 +8,23 @@ set -e
+ # set -x
+ 
+ #check for correct verion of llvm
+-if [[ ! -d "llvm-source-50" ]]; then
+-    if [[ -d "llvm-source-39" ]]; then
+-        echo "Hello there! We just upgraded AirSim to Unreal Engine 4.18."
+-        echo "Here are few easy steps for upgrade so everything is new and shiny :)"
+-        echo "https://github.com/Microsoft/AirSim/blob/master/docs/unreal_upgrade.md"
+-        exit 1
+-    else
+-        echo "The llvm-souce-50 folder was not found! Mystery indeed."
+-    fi
+-fi
++# if [[ ! -d "llvm-source-50" ]]; then
++#     if [[ -d "llvm-source-39" ]]; then
++#         echo "Hello there! We just upgraded AirSim to Unreal Engine 4.18."
++#         echo "Here are few easy steps for upgrade so everything is new and shiny :)"
++#         echo "https://github.com/Microsoft/AirSim/blob/master/docs/unreal_upgrade.md"
++#         exit 1
++#     else
++#         echo "The llvm-souce-50 folder was not found! Mystery indeed."
++#     fi
++# fi
  
  # check for libc++
 -if [[ !(-d "./llvm-build/output/lib") ]]; then
 -    echo "ERROR: clang++ and libc++ is necessary to compile AirSim and run it in Unreal engine"
--    echo "please run setup.sh first."
+-    echo "Please run setup.sh first."
 -    exit 1
 -fi
--
-+#if [[ !(-d "./llvm-build/output/lib") ]]; then
-+#    echo "ERROR: clang++ and libc++ is necessary to compile AirSim and run it in Unreal engine"
-+#    echo "please run setup.sh first."
-+#    exit 1
-+#fi
-+#
- # set up paths of clang compiler
--export CC="clang-3.9"
--export CXX="clang++-3.9"
-+export CC="gcc"
-+export CXX="g++"
++# if [[ !(-d "./llvm-build/output/lib") ]]; then
++#     echo "ERROR: clang++ and libc++ is necessary to compile AirSim and run it in Unreal engine"
++#     echo "Please run setup.sh first."
++#     exit 1
++# fi
  
- #install EIGEN library
- if [[ !(-d "./AirLib/deps/eigen3/Eigen") ]]; then 
+ # check for rpclib
+ if [ ! -d "./external/rpclib/rpclib-2.2.1" ]; then
+@@ -109,9 +109,9 @@ rsync -a --delete MavLinkCom/include AirLib/deps/MavLinkCom
+ rsync -a --delete AirLib Unreal/Plugins/AirSim/Source
+ 
+ # Update Blocks project
+-Unreal/Environments/Blocks/clean.sh
+-mkdir -p Unreal/Environments/Blocks/Plugins
+-rsync -a --delete Unreal/Plugins/AirSim Unreal/Environments/Blocks/Plugins
++# Unreal/Environments/Blocks/clean.sh
++# mkdir -p Unreal/Environments/Blocks/Plugins
++# rsync -a --delete Unreal/Plugins/AirSim Unreal/Environments/Blocks/Plugins
+ 
+ set +x
+ 
 diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
-index 5e31535..6529991 100644
+index 5e31535..a8378e4 100644
 --- a/cmake/CMakeLists.txt
 +++ b/cmake/CMakeLists.txt
-@@ -4,10 +4,10 @@ project(AirSim)
- add_subdirectory("rpclib_wrapper")
+@@ -5,9 +5,9 @@ add_subdirectory("rpclib_wrapper")
  add_subdirectory("AirLib")
  add_subdirectory("MavLinkCom")
--add_subdirectory("AirLibUnitTests")
+ add_subdirectory("AirLibUnitTests")
 -add_subdirectory("HelloDrone")
 -add_subdirectory("HelloCar")
 -add_subdirectory("DroneShell")
 -add_subdirectory("DroneServer")
--
-+#add_subdirectory("AirLibUnitTests")
-+#add_subdirectory("HelloDrone")
-+#add_subdirectory("HelloCar")
-+#add_subdirectory("DroneShell")
-+#add_subdirectory("DroneServer")
-+#
++# add_subdirectory("HelloDrone")
++# add_subdirectory("HelloCar")
++# add_subdirectory("DroneShell")
++# add_subdirectory("DroneServer")
+ 
  
 diff --git a/cmake/MavLinkCom/CMakeLists.txt b/cmake/MavLinkCom/CMakeLists.txt
-index 45ff74e..cd0ec8a 100644
+index 45ff74e..5b6efde 100644
 --- a/cmake/MavLinkCom/CMakeLists.txt
 +++ b/cmake/MavLinkCom/CMakeLists.txt
 @@ -1,7 +1,7 @@
@@ -148,26 +119,354 @@ index 45ff74e..cd0ec8a 100644
  project(MavLinkCom)
  
 -add_subdirectory("MavLinkTest")
-+#add_subdirectory("MavLinkTest")
++# add_subdirectory("MavLinkTest")
  
  LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../cmake-modules") 
  INCLUDE("${CMAKE_CURRENT_LIST_DIR}/../cmake-modules/CommonSetup.cmake")
-diff --git a/cmake/cmake-modules/CommonSetup.cmake b/cmake/cmake-modules/CommonSetup.cmake
-index db327a3..a6fa82c 100644
---- a/cmake/cmake-modules/CommonSetup.cmake
-+++ b/cmake/cmake-modules/CommonSetup.cmake
-@@ -63,7 +63,7 @@ macro(CommonSetup)
-                 -std=c++14 -ggdb -Wall -Wextra -Wstrict-aliasing -Wunreachable-code -Wcast-qual -Wctor-dtor-privacy \
-                 -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wswitch-default \
-                 -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wstrict-overflow=5 -Wswitch-default -Wundef \
--                -Wno-variadic-macros -Wno-parentheses -Wno-unused-function -Wno-unused -Wno-documentation -fdiagnostics-show-option -ferror-limit=10 \
-+                -Wno-variadic-macros -Wno-parentheses -Wno-unused-function -Wno-unused -Wno-documentation -fdiagnostics-show-option \
-                 -pthread \
-                 ${RPC_LIB_DEFINES} ${CMAKE_CXX_FLAGS}")
+diff --git a/companion-computer-patch.diff b/companion-computer-patch.diff
+index 526c3da..9904eb7 100644
+--- a/companion-computer-patch.diff
++++ b/companion-computer-patch.diff
+@@ -1,228 +0,0 @@
+-diff --git a/AirLib/include/common/VectorMath.hpp b/AirLib/include/common/VectorMath.hpp
+-index d5a8c89..12bbfdb 100644
+---- a/AirLib/include/common/VectorMath.hpp
+-+++ b/AirLib/include/common/VectorMath.hpp
+-@@ -227,18 +227,18 @@ public:
+-         // roll (x-axis rotation)
+-         RealT t0 = +2.0f * (q.w() * q.x() + q.y() * q.z());
+-         RealT t1 = +1.0f - 2.0f * (q.x() * q.x() + ysqr);
+--        roll = std::atan2f(t0, t1);
+-+        roll = atan2f(t0, t1);
+- 
+-         // pitch (y-axis rotation)
+-         RealT t2 = +2.0f * (q.w() * q.y() - q.z() * q.x());
+-         t2 = ((t2 > 1.0f) ? 1.0f : t2);
+-         t2 = ((t2 < -1.0f) ? -1.0f : t2);
+--        pitch = std::asinf(t2);
+-+        pitch = asinf(t2);
+- 
+-         // yaw (z-axis rotation)
+-         RealT t3 = +2.0f * (q.w() * q.z() + q.x() * q.y());
+-         RealT t4 = +1.0f - 2.0f * (ysqr + q.z() * q.z());  
+--        yaw = std::atan2f(t3, t4);
+-+        yaw = atan2f(t3, t4);
+-     }
+- 
+-     static Vector3T toAngularVelocity(const QuaternionT& start, const QuaternionT& end, RealT dt)
+-diff --git a/AirLib/include/common/common_utils/Utils.hpp b/AirLib/include/common/common_utils/Utils.hpp
+-index 0437182..7a97442 100644
+---- a/AirLib/include/common/common_utils/Utils.hpp
+-+++ b/AirLib/include/common/common_utils/Utils.hpp
+-@@ -20,6 +20,7 @@
+- #include <iomanip>
+- #include <iostream>
+- #include <limits>
+-+#include <limits.h>
+- #include <queue>
+- #include "type_utils.hpp"
+- 
+-diff --git a/build.sh b/build.sh
+-index fb39802..cf5aad9 100755
+---- a/build.sh
+-+++ b/build.sh
+-@@ -11,15 +11,17 @@ set -x
+- git submodule update --init --recursive 
+- 
+- # check for libc++
+--if [[ !(-d "./llvm-build/output/lib") ]]; then
+--    echo "ERROR: clang++ and libc++ is necessary to compile AirSim and run it in Unreal engine"
+--    echo "please run setup.sh first."
+--    exit 1
+--fi
+-+# if [[ !(-d "./llvm-build/output/lib") ]]; then
+-+#     echo "ERROR: clang++ and libc++ is necessary to compile AirSim and run it in Unreal engine"
+-+#     echo "please run setup.sh first."
+-+#     exit 1
+-+# fi
+- 
+- # set up paths of clang compiler
+--export CC="clang-3.9"
+--export CXX="clang++-3.9"
+-+# export CC="clang-3.9"
+-+# export CXX="clang++-3.9"
+-+export CC="gcc"
+-+export CXX="g++"
+- 
+- #install EIGEN library
+- if [[ !(-d "./AirLib/deps/eigen3/Eigen") ]]; then 
+-@@ -68,12 +70,12 @@ cp $build_dir/output/lib/libAirSim-rpclib.a AirLib/deps/rpclib/lib/librpc.a
+- rsync -a --delete $build_dir/output/lib/ AirLib/lib/x64/Debug
+- rsync -a --delete external/rpclib/include AirLib/deps/rpclib
+- rsync -a --delete MavLinkCom/include AirLib/deps/MavLinkCom
+--rsync -a --delete AirLib Unreal/Plugins/AirSim/Source
+-+# rsync -a --delete AirLib Unreal/Plugins/AirSim/Source
+- 
+- # Update Blocks project
+--Unreal/Environments/Blocks/clean.sh
+--mkdir -p Unreal/Environments/Blocks/Plugins
+--rsync -a --delete Unreal/Plugins/AirSim Unreal/Environments/Blocks/Plugins
+-+# Unreal/Environments/Blocks/clean.sh
+-+# mkdir -p Unreal/Environments/Blocks/Plugins
+-+# rsync -a --delete Unreal/Plugins/AirSim Unreal/Environments/Blocks/Plugins
+- 
+- set +x
+- 
+-diff --git a/cmake/CMakeLists.txt b/cmake/CMakeLists.txt
+-index 5e31535..a8378e4 100644
+---- a/cmake/CMakeLists.txt
+-+++ b/cmake/CMakeLists.txt
+-@@ -5,9 +5,9 @@ add_subdirectory("rpclib_wrapper")
+- add_subdirectory("AirLib")
+- add_subdirectory("MavLinkCom")
+- add_subdirectory("AirLibUnitTests")
+--add_subdirectory("HelloDrone")
+--add_subdirectory("HelloCar")
+--add_subdirectory("DroneShell")
+--add_subdirectory("DroneServer")
+-+# add_subdirectory("HelloDrone")
+-+# add_subdirectory("HelloCar")
+-+# add_subdirectory("DroneShell")
+-+# add_subdirectory("DroneServer")
+- 
+- 
+-diff --git a/cmake/MavLinkCom/CMakeLists.txt b/cmake/MavLinkCom/CMakeLists.txt
+-index 45ff74e..5b6efde 100644
+---- a/cmake/MavLinkCom/CMakeLists.txt
+-+++ b/cmake/MavLinkCom/CMakeLists.txt
+-@@ -1,7 +1,7 @@
+- cmake_minimum_required(VERSION 3.5.0)
+- project(MavLinkCom)
+- 
+--add_subdirectory("MavLinkTest")
+-+# add_subdirectory("MavLinkTest")
+- 
+- LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/../cmake-modules") 
+- INCLUDE("${CMAKE_CURRENT_LIST_DIR}/../cmake-modules/CommonSetup.cmake")
+-diff --git a/cmake/cmake-modules/CommonSetup.cmake b/cmake/cmake-modules/CommonSetup.cmake
+-index 1b75467..e6e2951 100644
+---- a/cmake/cmake-modules/CommonSetup.cmake
+-+++ b/cmake/cmake-modules/CommonSetup.cmake
+-@@ -63,7 +63,7 @@ macro(CommonSetup)
+-                 -std=c++14 -ggdb -Wall -Wextra -Wstrict-aliasing -Wunreachable-code -Wcast-qual -Wctor-dtor-privacy \
+-                 -Wdisabled-optimization -Wformat=2 -Winit-self -Wmissing-include-dirs -Wswitch-default \
+-                 -Wold-style-cast -Woverloaded-virtual -Wredundant-decls -Wshadow -Wstrict-overflow=5 -Wswitch-default -Wundef \
+--                -Wno-variadic-macros -Wno-parentheses -Wno-unused-function -Wno-unused -Wno-documentation -fdiagnostics-show-option -ferror-limit=10 \
+-+                -Wno-variadic-macros -Wno-parentheses -Wno-unused-function -Wno-unused -Wno-documentation -fdiagnostics-show-option \
+-                 -pthread \
+-                 ${RPC_LIB_DEFINES} ${CMAKE_CXX_FLAGS}")
+- 
+-diff --git a/setup.sh b/setup.sh
+-index 8114535..a1fbb4c 100755
+---- a/setup.sh
+-+++ b/setup.sh
+-@@ -7,10 +7,11 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+- pushd "$SCRIPT_DIR" >/dev/null
+- 
+- #Parse command line arguments
+--downloadHighPolySuv=true
+--if [[ $1 == "--no-full-poly-car" ]]; then
+--    downloadHighPolySuv=false
+--fi
+-+# downloadHighPolySuv=true
+-+# if [[ $1 == "--no-full-poly-car" ]]; then
+-+#     downloadHighPolySuv=false
+-+# fi
+-+downloadHighPolySuv=false
+- 
+- #get sub modules
+- git submodule update --init --recursive
+-@@ -34,9 +35,9 @@ else
+-     #install clang and build tools
+-     sudo apt-get install -y build-essential
+-     sudo apt-get install cmake
+--    wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+--    sudo apt-get update
+--    sudo apt-get install -y clang-3.9 clang++-3.9
+-+    # wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+-+    # sudo apt-get update
+-+    # sudo apt-get install -y clang-3.9 clang++-3.9
+- fi
+- 
+- # Download high-polycount SUV model
+-@@ -75,38 +76,38 @@ fi
+- # #sudo apt-get install -y clang-3.9-doc libclang-common-3.9-dev libclang-3.9-dev libclang1-3.9 libclang1-3.9-dbg libllvm-3.9-ocaml-dev libllvm3.9 libllvm3.9-dbg lldb-3.9 llvm-3.9 llvm-3.9-dev llvm-3.9-doc llvm-3.9-examples llvm-3.9-runtime clang-format-3.9 python-clang-3.9 libfuzzer-3.9-dev
+- 
+- #get libc++ source
+--if [[ ! -d "llvm-source-39" ]]; then 
+--    git clone --depth=1 -b release_39  https://github.com/llvm-mirror/llvm.git llvm-source-39
+--    git clone --depth=1 -b release_39  https://github.com/llvm-mirror/libcxx.git llvm-source-39/projects/libcxx
+--    git clone --depth=1 -b release_39  https://github.com/llvm-mirror/libcxxabi.git llvm-source-39/projects/libcxxabi
+--else
+--    echo "folder llvm-source already exists, skipping git clone..."
+--fi
+--
+--#build libc++
+--sudo rm -rf llvm-build
+--mkdir -p llvm-build
+--pushd llvm-build >/dev/null
+--
+--export C_COMPILER=clang-3.9
+--export COMPILER=clang++-3.9
+--
+--cmake -DCMAKE_C_COMPILER=${C_COMPILER} -DCMAKE_CXX_COMPILER=${COMPILER} \
+--      -LIBCXX_ENABLE_EXPERIMENTAL_LIBRARY=OFF -DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=OFF \
+--      -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=./output \
+--            ../llvm-source-39
+--
+--make cxx
+--
+--#install libc++ locally in output folder
+--sudo make install-libcxx install-libcxxabi 
+--
+--popd >/dev/null
+-+# if [[ ! -d "llvm-source-39" ]]; then 
+-+#     git clone --depth=1 -b release_39  https://github.com/llvm-mirror/llvm.git llvm-source-39
+-+#     git clone --depth=1 -b release_39  https://github.com/llvm-mirror/libcxx.git llvm-source-39/projects/libcxx
+-+#     git clone --depth=1 -b release_39  https://github.com/llvm-mirror/libcxxabi.git llvm-source-39/projects/libcxxabi
+-+# else
+-+#     echo "folder llvm-source already exists, skipping git clone..."
+-+# fi
+-+# 
+-+# #build libc++
+-+# sudo rm -rf llvm-build
+-+# mkdir -p llvm-build
+-+# pushd llvm-build >/dev/null
+-+# 
+-+# export C_COMPILER=clang-3.9
+-+# export COMPILER=clang++-3.9
+-+# 
+-+# cmake -DCMAKE_C_COMPILER=${C_COMPILER} -DCMAKE_CXX_COMPILER=${COMPILER} \
+-+#       -LIBCXX_ENABLE_EXPERIMENTAL_LIBRARY=OFF -DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=OFF \
+-+#       -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=./output \
+-+#             ../llvm-source-39
+-+# 
+-+# make cxx
+-+# 
+-+# #install libc++ locally in output folder
+-+# sudo make install-libcxx install-libcxxabi 
+-+# 
+-+# popd >/dev/null
+- 
+- #install EIGEN library
+- sudo rm -rf ./AirLib/deps/eigen3/Eigen
+- echo "downloading eigen..."
+--wget http://bitbucket.org/eigen/eigen/get/3.3.2.zip
+-+wget --no-check-certificate http://bitbucket.org/eigen/eigen/get/3.3.2.zip
+- unzip 3.3.2.zip -d temp_eigen
+- mkdir -p AirLib/deps/eigen3
+- mv temp_eigen/eigen*/Eigen AirLib/deps/eigen3
+diff --git a/setup.sh b/setup.sh
+index 3662d4b..c9b9995 100755
+--- a/setup.sh
++++ b/setup.sh
+@@ -1,11 +1,11 @@
+ #! /bin/bash
  
-diff --git a/external/rpclib b/external/rpclib
---- a/external/rpclib
-+++ b/external/rpclib
-@@ -1 +1 @@
--Subproject commit 9885c01db61c6defd412b0c08602d9af5ddf2633
-+Subproject commit 9885c01db61c6defd412b0c08602d9af5ddf2633-dirty
+-if [[ -d "llvm-source-39" ]]; then
+-    echo "Hello there! We just upgraded AirSim to Unreal Engine 4.18."
+-    echo "Here are few easy steps for upgrade so everything is new and shiny :)"
+-    echo "https://github.com/Microsoft/AirSim/blob/master/docs/unreal_upgrade.md"
+-    exit 1
+-fi
++# if [[ -d "llvm-source-39" ]]; then
++#     echo "Hello there! We just upgraded AirSim to Unreal Engine 4.18."
++#     echo "Here are few easy steps for upgrade so everything is new and shiny :)"
++#     echo "https://github.com/Microsoft/AirSim/blob/master/docs/unreal_upgrade.md"
++#     exit 1
++# fi
+ 
+ set -x
+ set -e
+@@ -42,14 +42,14 @@ else #linux
+     fi
+ 
+     #install clang and build tools
+-    sudo apt-get install -y build-essential
+-    wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+-    sudo apt-get update
+-    sudo apt-get install -y clang-5.0 clang++-5.0
+-    sudo apt-get install -y unzip
+-
+-    export C_COMPILER=clang-5.0
+-    export COMPILER=clang++-5.0
++    # sudo apt-get install -y build-essential
++    # wget -O - http://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
++    # sudo apt-get update
++    # sudo apt-get install -y clang-5.0 clang++-5.0
++    # sudo apt-get install -y unzip
++
++    # export C_COMPILER=clang-5.0
++    # export COMPILER=clang++-5.0
+ fi
+ 
+ #download cmake - we need v3.9+ which is not out of box in Ubuntu 16.04
+@@ -128,39 +128,39 @@ fi
+ # #sudo apt-get install -y clang-3.9-doc libclang-common-3.9-dev libclang-3.9-dev libclang1-3.9 libclang1-3.9-dbg libllvm-3.9-ocaml-dev libllvm3.9 libllvm3.9-dbg lldb-3.9 llvm-3.9 llvm-3.9-dev llvm-3.9-doc llvm-3.9-examples llvm-3.9-runtime clang-format-3.9 python-clang-3.9 libfuzzer-3.9-dev
+ 
+ #get libc++ source
+-if [[ ! -d "llvm-source-50" ]]; then 
+-    git clone --depth=1 -b release_50  https://github.com/llvm-mirror/llvm.git llvm-source-50
+-    git clone --depth=1 -b release_50  https://github.com/llvm-mirror/libcxx.git llvm-source-50/projects/libcxx
+-    git clone --depth=1 -b release_50  https://github.com/llvm-mirror/libcxxabi.git llvm-source-50/projects/libcxxabi
+-else
+-    echo "folder llvm-source-50 already exists, skipping git clone..."
+-fi
++# if [[ ! -d "llvm-source-50" ]]; then 
++#     git clone --depth=1 -b release_50  https://github.com/llvm-mirror/llvm.git llvm-source-50
++#     git clone --depth=1 -b release_50  https://github.com/llvm-mirror/libcxx.git llvm-source-50/projects/libcxx
++#     git clone --depth=1 -b release_50  https://github.com/llvm-mirror/libcxxabi.git llvm-source-50/projects/libcxxabi
++# else
++#     echo "folder llvm-source-50 already exists, skipping git clone..."
++# fi
+ 
+ #build libc++
+-if [ "$(uname)" == "Darwin" ]; then
+-    rm -rf llvm-build
+-else
+-    sudo rm -rf llvm-build
+-fi
+-mkdir -p llvm-build
+-pushd llvm-build >/dev/null
+-
+-
+-"$CMAKE" -DCMAKE_C_COMPILER=${C_COMPILER} -DCMAKE_CXX_COMPILER=${COMPILER} \
+-      -LIBCXX_ENABLE_EXPERIMENTAL_LIBRARY=OFF -DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=OFF \
+-      -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=./output \
+-            ../llvm-source-50
+-
+-make cxx
++# if [ "$(uname)" == "Darwin" ]; then
++#     rm -rf llvm-build
++# else
++#     sudo rm -rf llvm-build
++# fi
++# mkdir -p llvm-build
++# pushd llvm-build >/dev/null
++
++
++# "$CMAKE" -DCMAKE_C_COMPILER=${C_COMPILER} -DCMAKE_CXX_COMPILER=${COMPILER} \
++#       -LIBCXX_ENABLE_EXPERIMENTAL_LIBRARY=OFF -DLIBCXX_INSTALL_EXPERIMENTAL_LIBRARY=OFF \
++#       -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=./output \
++#             ../llvm-source-50
++# 
++# make cxx
+ 
+ #install libc++ locally in output folder
+-if [ "$(uname)" == "Darwin" ]; then
+-    make install-libcxx install-libcxxabi 
+-else
+-    sudo make install-libcxx install-libcxxabi 
+-fi
+-
+-popd >/dev/null
++# if [ "$(uname)" == "Darwin" ]; then
++#     make install-libcxx install-libcxxabi 
++# else
++#     sudo make install-libcxx install-libcxxabi 
++# fi
++# 
++# popd >/dev/null
+ 
+ #install EIGEN library
+ 
