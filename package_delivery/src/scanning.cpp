@@ -179,14 +179,13 @@ int main(int argc, char **argv)
 {
     ros::init(argc, argv, "scanning", ros::init_options::NoSigintHandler);
     ros::NodeHandle n;
-    ros::NodeHandle panic_nh;
     string app_name;
     initialize_params();
     int width, length, lanes; // size of area to scan
     ros::Time start_hook_t, end_hook_t;  
     geometry_msgs::Point start, goal, original_start;
 	package_delivery::get_trajectory get_trajectory_srv;
-    trajectory_t trajectory, reverse_trajectory;
+    trajectory_t trajectory;
     uint16_t port = 41451;
     Drone drone(ip_addr__global.c_str(), port, localization_method);
     signal(SIGINT, sigIntHandlerPrivate);
@@ -248,7 +247,7 @@ int main(int argc, char **argv)
             next_state = flying;
         } else if (state == flying)
         {
-            follow_trajectory(drone, &trajectory, &reverse_trajectory, 
+            follow_trajectory(drone, &trajectory, nullptr, 
                     ignore_yaw, true ,v_max__global, g_fly_trajectory_time_out);
             //follow_trajectory(drone, &trajectory, &reverse_trajectory, ignore_yaw, true);
             next_state = trajectory_done(trajectory) ? completed : flying;

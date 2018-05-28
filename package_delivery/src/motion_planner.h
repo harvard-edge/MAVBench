@@ -55,25 +55,35 @@ public:
     {
         motion_planning_initialize_params();
 
+        // Create a new callback queue
+        nh.setCallbackQueue(&callback_queue);
+
         // Topics and services
         get_trajectory_srv_server = nh.advertiseService("/get_trajectory_srv", &MotionPlanner::get_trajectory_fun, this);
 
-        future_col_sub = nh.subscribe<mavbench_msgs::future_collision>("/col_coming", 1, &MotionPlanner::future_col_callback, this);
+        future_col_sub = nh.subscribe("/col_coming", 1, &MotionPlanner::future_col_callback, this);
+        // next_steps_sub = nh.subscribe("/next_steps", 1, &MotionPlanner::next_steps_callback, this);
 
         smooth_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 1);
         piecewise_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
         // traj_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1);
     }
 
-    void run() {}
+    void spinOnce()
+    {
+        callback_queue.callAvailable(ros::WallDuration());
+    }
 
     void log_data_before_shutting_down();
 
 private:
     bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res);
 
-    // ***F:DN Record which collision sequence we're on
+    // ***F:DN Plans new paths when collisions are detected
     void future_col_callback(const mavbench_msgs::future_collision::ConstPtr& msg);
+
+    // ***F:DN Keep track of the drone's next moves
+    void next_steps_callback(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg);
 
     // ***F:DN Create a grid-based lawn-mower-like path
     piecewise_trajectory lawn_mower(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
@@ -126,15 +136,19 @@ private:
 
 private:
     ros::NodeHandle nh;
+    ros::CallbackQueue callback_queue;
     ros::Publisher smooth_traj_vis_pub, piecewise_traj_vis_pub;
-    ros::Subscriber future_col_sub;
+    ros::Subscriber future_col_sub, next_steps_sub;
     ros::ServiceServer get_trajectory_srv_server;
     // ros::Publisher traj_pub;
 
     octomap::OcTree * octree = nullptr;
     int future_col_seq_id = 0;
+    int trajectory_seq_id = 0;
+    mavbench_msgs::multiDOFtrajectory g_next_steps_msg;
 
     geometry_msgs::Point g_start_pos;
+    ros::Time g_start_time{0};
 
     // Parameters
     std::string motion_planning_core_str;

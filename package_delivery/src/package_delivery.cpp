@@ -27,8 +27,7 @@
 using namespace std;
 
 // Profiling
-//global variable to log in stats manager
-std::string g_mission_status = "time_out";
+std::string g_mission_status = "time_out"; //global variable to log in stats manager
 ros::Time col_coming_time_stamp; 
 long long g_pt_cld_to_pkg_delivery_commun_acc = 0;
 int g_col_com_ctr = 0;
@@ -83,27 +82,12 @@ void col_coming_callback(const mavbench_msgs::future_collision::ConstPtr& msg)
     }
 }
 
-void get_start_in_future(geometry_msgs::Point& start,
-        geometry_msgs::Twist& twist, geometry_msgs::Twist& acceleration)
-{
-    // Find the conditions the drone will be in when a new path is calculated
-    multiDOFpoint mdofp = trajectory_at_time(g_next_steps_msg, g_planning_budget);
-
-    start.x = mdofp.x; start.y = mdofp.y; start.z = mdofp.z; 
-
-    twist.linear.x = mdofp.vx;
-    twist.linear.y = mdofp.vy;
-    twist.linear.z = mdofp.vz;
-
-    acceleration.linear.x = mdofp.ax;
-    acceleration.linear.y = mdofp.ay;
-    acceleration.linear.z = mdofp.az;
-}
 
 void next_steps_callback(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
 {
     g_next_steps_msg = *msg;
 }
+
 
 void log_data_before_shutting_down()
 {
@@ -171,6 +155,7 @@ void log_data_before_shutting_down()
     }
 }
 
+
 void sigIntHandlerPrivate(int signo){
     if (signo == SIGINT) {
         log_data_before_shutting_down(); 
@@ -179,17 +164,21 @@ void sigIntHandlerPrivate(int signo){
     exit(0);
 }
 
+
 double dist(coord t, geometry_msgs::Point m)
 {
     // We must convert between the two coordinate systems
     return std::sqrt((t.x-m.x)*(t.x-m.x) + (t.y-m.y)*(t.y-m.y) + (t.z-m.z)*(t.z-m.z));
 }
 
+
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     slam_lost = msg->data;
 }
 
-void package_delivery_initialize_params() {
+
+void package_delivery_initialize_params()
+{
     if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
       ROS_FATAL_STREAM("Could not start mapping supervisor_mailbox not provided");
       return ;
@@ -249,6 +238,7 @@ void package_delivery_initialize_params() {
     }
 }
 
+
 geometry_msgs::Point get_start(Drone& drone) {
     geometry_msgs::Point start;
 
@@ -258,6 +248,7 @@ geometry_msgs::Point get_start(Drone& drone) {
 
     return start;
 }
+
 
 geometry_msgs::Point get_goal() {
     geometry_msgs::Point goal;
@@ -271,7 +262,44 @@ geometry_msgs::Point get_goal() {
     return goal;
 }
 
-mavbench_msgs::multiDOFtrajectory request_trajectory(ros::ServiceClient& client, const geometry_msgs::Point& start, const geometry_msgs::Point& goal, const geometry_msgs::Twist& twist, const geometry_msgs::Twist& acceleration) {
+
+// This function will return a starting position for our motion planner that
+// begins "g_planning_budget" seconds into the current trajectory of the drone
+void get_start_in_future(Drone& drone, geometry_msgs::Point& start,
+        geometry_msgs::Twist& twist, geometry_msgs::Twist& acceleration)
+{
+    if (g_next_steps_msg.points.empty()) {
+        start = get_start(drone);
+        twist.linear.x = twist.linear.y = twist.linear.z = 0;
+        acceleration.linear.x = acceleration.linear.y = acceleration.linear.z = 0;
+        return;
+    }
+
+    multiDOFpoint mdofp = trajectory_at_time(g_next_steps_msg, g_planning_budget);
+
+    // Shift the drone's planned position at time "g_planning_budget" seconds
+    // by its current position
+    auto current_pos = drone.position();
+    auto planned_pos = g_next_steps_msg.points[0];
+
+    mdofp.x += current_pos.x - planned_pos.x;
+    mdofp.y += current_pos.y - planned_pos.y;
+    mdofp.z += current_pos.z - planned_pos.z;
+
+    start.x = mdofp.x; start.y = mdofp.y; start.z = mdofp.z; 
+
+    twist.linear.x = mdofp.vx;
+    twist.linear.y = mdofp.vy;
+    twist.linear.z = mdofp.vz;
+
+    acceleration.linear.x = mdofp.ax;
+    acceleration.linear.y = mdofp.ay;
+    acceleration.linear.z = mdofp.az;
+}
+
+
+mavbench_msgs::multiDOFtrajectory request_trajectory(ros::ServiceClient& client, const geometry_msgs::Point& start, const geometry_msgs::Point& goal, const geometry_msgs::Twist& twist, const geometry_msgs::Twist& acceleration)
+{
     // Request the actual trajectory from the motion_planner node
     package_delivery::get_trajectory srv;
     srv.request.start = start;
@@ -281,36 +309,42 @@ mavbench_msgs::multiDOFtrajectory request_trajectory(ros::ServiceClient& client,
     int fail_ctr = 0;
     
     while(true) {
-       if(client.call(srv)) {
-           if(!srv.response.path_found) {
-               // Back up slowly from current position
-               mavbench_msgs::multiDOFtrajectory result;
-               result.append = false;
-               result.reverse = true;
+        ROS_INFO("Requesting trajectory");
+        if(client.call(srv)) {
+            if(!srv.response.path_found) {
+                // Back up slowly from current position
+                srv.response.multiDOFtrajectory.reverse = true;
 
-               return result;
-           } else {
-               break;
-           }
-       } else {
-           ROS_ERROR("Failed to call service.");
-           //return trajectory_t();
-       }
-       std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                ROS_INFO("Failed trajectory");
+                return srv.response.multiDOFtrajectory;
+            } else {
+                break;
+            }
+        } else {
+            ROS_ERROR("Failed to call service.");
+            //return trajectory_t();
+            // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
     }
 
+    ROS_INFO("Got trajectory");
     return srv.response.multiDOFtrajectory;
 }
 
-bool trajectory_done(const trajectory_t& trajectory) {
+
+bool trajectory_done(const trajectory_t& trajectory)
+{
     return trajectory.size() == 0;
 }
 
-bool drone_stopped()
+
+bool drone_stopped_or_reversing()
 {
-    return g_next_steps_msg.points.size() == 0 &&
-        g_next_steps_msg.trajectory_seq >= normal_traj_msg.trajectory_seq;
+    return (g_next_steps_msg.points.size() == 0 &&
+        g_next_steps_msg.trajectory_seq >= normal_traj_msg.trajectory_seq)
+        || g_next_steps_msg.reverse;
 }
+
 
 // *** F:DN main function
 int main(int argc, char **argv)
@@ -452,7 +486,7 @@ int main(int argc, char **argv)
         }
         else if (state == flying)
         {
-            if (drone_stopped()) {
+            if (drone_stopped_or_reversing()) {
                 next_state = trajectory_completed;
 
                 twist.linear.x = twist.linear.y = twist.linear.z = 0;
@@ -463,7 +497,7 @@ int main(int argc, char **argv)
                 col_coming = false;
                 clcted_col_coming_data = false;
 
-                get_start_in_future(start, twist, acceleration);
+                get_start_in_future(drone, start, twist, acceleration);
             }
             else {
                 next_state = flying;

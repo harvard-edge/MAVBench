@@ -348,7 +348,6 @@ mavbench_msgs::multiDOFtrajectory create_trajectory_msg(const trajectory_t& t)
 {
     mavbench_msgs::multiDOFtrajectory result;
 
-    result.append = false;
     result.reverse = false;
 
     for (const auto& mdp : t) {

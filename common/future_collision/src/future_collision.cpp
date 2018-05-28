@@ -162,12 +162,14 @@ void FutureCollisionChecker::log_data_before_shutting_down()
     ROS_INFO_STREAM("done with the octomap profiles");
 }
 
-void FutureCollisionChecker::run()
+void FutureCollisionChecker::spinOnce()
 {
     static ros::Time main_loop_start_hook_t;
     static ros::Time main_loop_end_hook_t;
 
     main_loop_start_hook_t = ros::Time::now();
+
+    callback_queue.callAvailable(ros::WallDuration());
 
     if (CLCT_DATA){ 
         g_pt_cloud_header = server->rcvd_point_cld_time_stamp; 

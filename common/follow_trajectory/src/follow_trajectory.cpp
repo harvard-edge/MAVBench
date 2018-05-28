@@ -20,33 +20,32 @@ bool fly_backward = false;
 
 // Messages from other nodes
 bool slam_lost = false;
-ros::Time future_collision_time{0};
+ros::Time future_collision_time{0}; // The moment in time when the drone should stop because of an upcoming collision
 int future_collision_seq = 0;
 int trajectory_seq = 0;
 
 // Parameters
 float g_v_max;
 double g_planning_budget = 0;
+double g_time_to_come_to_full_stop = 0;
 double g_fly_trajectory_time_out;
 long long g_planning_time_including_ros_overhead_acc  = 0;
 float g_max_yaw_rate;
 float g_max_yaw_rate_during_flight;
 bool g_trajectory_done = false;
 bool g_got_new_trajectory = false;
-ros::Time g_recieved_traj_t;
 
 // Profiling
 std::string g_supervisor_mailbox; //file to write to when completed
-ros::Time col_coming_time_stamp;
 float g_localization_status = 1.0;
 long long g_rcv_traj_to_follow_traj_acc_t = 0;
-bool prev_col_coming = false;
 bool CLCT_DATA, DEBUG;
 int g_follow_ctr = 0;
 long long g_img_to_follow_acc = 0;
 ros::Time g_msg_time_stamp;
 long long g_pt_cld_to_futurCol_commun_acc = 0;
 int g_traj_ctr = 0; 
+ros::Time g_recieved_traj_t;
 
 void log_data_before_shutting_down(){
     profile_manager::profiling_data_srv profiling_data_srv_inst;
@@ -91,8 +90,8 @@ void future_collision_callback(const mavbench_msgs::future_collision::ConstPtr& 
     if (msg->future_collision_seq > future_collision_seq)
         future_collision_seq = msg->future_collision_seq;
 
-    if (g_planning_budget+0.2 < msg->time_to_collision)
-        future_collision_time = ros::Time::now() + ros::Duration(g_planning_budget+0.2);
+    if (g_planning_budget+g_time_to_come_to_full_stop < msg->time_to_collision)
+        future_collision_time = ros::Time::now() + ros::Duration(g_planning_budget);
     else
         future_collision_time = ros::Time::now();
 }
@@ -103,18 +102,20 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 
 void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
 {
+    // Check for trajectories that arrive out of orde
     if (msg->trajectory_seq < trajectory_seq) {
-        ROS_ERROR("Trajectories arrived out of order!");
+        ROS_ERROR("Trajectories arrived out of order! New seq: %d, old seq: %d", msg->trajectory_seq, trajectory_seq, msg->reverse);
         return;
     } else
         trajectory_seq = msg->trajectory_seq;
 
     // Check for trajectories that are not updated to the latest collision
-    // detection, or that arrive out of order
+    // detection
     if (msg->future_collision_seq < future_collision_seq) {
         ROS_ERROR("Proposed trajectory does not consider latest detected collision");
         return;
-    }
+    } else
+        future_collision_time = ros::Time(0);
 
     if (CLCT_DATA){
         g_recieved_traj_t = ros::Time::now();
@@ -128,14 +129,7 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
     if (msg->reverse) {
         fly_backward = true;
     } else {
-        trajectory_t new_trajectory = create_trajectory_from_msg(*msg);
-
-        if (msg->append) {
-            trajectory = append_trajectory(trajectory, new_trajectory);
-        } else {
-            trajectory = new_trajectory;
-        }
-
+        trajectory = create_trajectory_from_msg(*msg);
         fly_backward = false;
     }
 
@@ -161,7 +155,7 @@ void sigIntHandlerPrivate(int signo){
 
 
 void initialize_global_params() {
-    if(!ros::param::get("v_max",g_v_max))  {
+    if(!ros::param::get("v_max", g_v_max))  {
         ROS_FATAL_STREAM("Could not start follow_trajectory vmax not provided");
         exit(-1);
     }
@@ -192,6 +186,14 @@ void initialize_global_params() {
         ROS_FATAL("Could not start follow_thrajectory. Parameter missing! fly_trajectory_time_out is not provided");
         exit(-1);
     }
+
+    double a_max;
+    if(!ros::param::get("a_max", a_max))  {
+        ROS_FATAL_STREAM("Could not start follow_trajectory amax not provided");
+        exit(-1);
+    }
+
+    g_time_to_come_to_full_stop = g_v_max / a_max;
 }
 
 
@@ -277,6 +279,7 @@ int main(int argc, char **argv)
         mavbench_msgs::multiDOFtrajectory trajectory_msg = create_trajectory_msg(*forward_traj);
         trajectory_msg.future_collision_seq = future_collision_seq;
         trajectory_msg.trajectory_seq = trajectory_seq;
+        trajectory_msg.reverse = fly_backward;
 
         next_steps_pub.publish(trajectory_msg);
 
@@ -288,6 +291,7 @@ int main(int argc, char **argv)
             ros::shutdown();
         } else if (future_collision_time != ros::Time(0) && ros::Time::now() >= future_collision_time) {
             // Stop the drone if we haven't been able to come up with a new plan in our budgetted time
+            ROS_WARN("Motion planner took too long to propose a new path, so the drone is being stopped!");
             drone.fly_velocity(0, 0, 0);
             trajectory.clear();
             future_collision_time = ros::Time(0);

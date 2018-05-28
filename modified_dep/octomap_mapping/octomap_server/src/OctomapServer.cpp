@@ -398,8 +398,7 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
           }
       }
   }
-  // Hasan's changes
-  // publishAll(cloud->header.stamp);
+  publishAll(cloud->header.stamp);
   //publishAll(start_time);
 }
 

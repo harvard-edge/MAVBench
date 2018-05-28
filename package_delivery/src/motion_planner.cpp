@@ -16,19 +16,20 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
     auto hook_end_t_2 = ros::Time::now(); 
 
     auto hook_start_t = ros::Time::now();
-    if (octree == nullptr && motion_planning_core_str != "lawn_mower") {
-        ROS_ERROR("Octomap is not available.");
-        res.path_found = false;
-        return true;
-    }
 
+    g_start_time = ros::Time::now();
     g_start_pos = req.start;
     
     piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length, req.n_pts_per_dir, octree);
 
-    if (piecewise_path.size() == 0) {
+    if (piecewise_path.empty()) {
         ROS_ERROR("Empty path returned");
         res.path_found = false;
+
+        res.multiDOFtrajectory.future_collision_seq = future_col_seq_id;
+        res.multiDOFtrajectory.trajectory_seq = trajectory_seq_id;
+        trajectory_seq_id++;
+
         return true;
     }
 
@@ -37,6 +38,7 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
     }
 
     // Smoothen the path and build the multiDOFtrajectory response
+    ROS_INFO("Smoothenning...");
     smooth_path = smoothen_the_shortest_path(piecewise_path, octree, 
                                     Eigen::Vector3d(req.twist.linear.x,
                                         req.twist.linear.y,
@@ -44,6 +46,17 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
                                     Eigen::Vector3d(req.acceleration.linear.x,
                                                     req.acceleration.linear.y,
                                                     req.acceleration.linear.z));
+
+    if (smooth_path.empty()) {
+        ROS_ERROR("Path could not be smoothened successfully");
+        res.path_found = false;
+
+        res.multiDOFtrajectory.future_collision_seq = future_col_seq_id;
+        res.multiDOFtrajectory.trajectory_seq = trajectory_seq_id;
+        trajectory_seq_id++;
+
+        return true;
+    }
 	
     create_response(res, smooth_path);
 
@@ -55,8 +68,9 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
     auto hook_end_t = ros::Time::now(); 
     g_planning_without_OM_PULL_time_acc += (((hook_end_t - hook_start_t).toSec())*1e9);
     g_number_of_planning++; 
+    ROS_INFO("motion_planner: Planning took %f s", (hook_end_t - hook_start_t).toSec());
 
-    res.path_found = true; 
+    res.path_found = true;
     return true;
 }
 
@@ -65,6 +79,24 @@ void MotionPlanner::future_col_callback(const mavbench_msgs::future_collision::C
 {
     if (msg->future_collision_seq > future_col_seq_id)
         future_col_seq_id = msg->future_collision_seq;
+    else
+        return;
+
+    // If neccessary, plan a new path for the drone
+    // if (g_next_steps_msg.future_collision_seq <= future_col_seq_id) {
+    //     // "Call the get_trajectory_fun function right here, without waiting
+    //     // for the package_delivery node to make a request
+    //     package_delivery::get_trajectory srv;
+    //     srv.request.start = start;
+    //     srv.request.goal = goal;
+    //     srv.request.twist = twist;
+    //     srv.request.acceleration= acceleration;
+    // }
+}
+
+void MotionPlanner::next_steps_callback(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
+{
+    g_next_steps_msg = *msg;
 }
 
 void MotionPlanner::motion_planning_initialize_params()
@@ -234,9 +266,8 @@ bool MotionPlanner::out_of_bounds_lax(const graph::node& pos)
 
 bool MotionPlanner::collision(octomap::OcTree * octree, const graph::node& n1, const graph::node& n2, graph::node * end_ptr)
 {
-    if (motion_planning_core_str == "lawn_mower") {
+    if (motion_planning_core_str == "lawn_mower")
         return false;
-    }
     
     RESET_TIMER();
 
@@ -259,46 +290,53 @@ bool MotionPlanner::collision(octomap::OcTree * octree, const graph::node& n1, c
         }
     }
 
-    const double pi = 3.14159265359;
-
-	// The drone is modeled as a cylinder.
-	// Angles are in radians and lengths are in meters.
-    
+    // Create a bounding box representing the drone
     double height = drone_height__global; 
     double radius = drone_radius__global; 
 
-	const double angle_step = pi/4;
-	const double radius_step = radius/3;
-	const double height_step = height/2;
+    octomap::point3d min(n1.x-radius, n1.y-radius, n1.z-height/2);
+    octomap::point3d max(n1.x+radius, n1.y+radius, n1.z+height/2);
 
+    // Create a direction vector over which to check for collisions
 	double dx = n2.x - n1.x;
 	double dy = n2.y - n1.y;
 	double dz = n2.z - n1.z;
+    double distance = std::sqrt(dx*dx + dy*dy + dz*dz);
+    octomap::point3d direction(dx, dy, dz);
 
-	double distance = std::sqrt(dx*dx + dy*dy + dz*dz);
+    // Make sure the direction vector isn't just (0,0,0)
+    // Otherwise, we'll get a bunch of really annoying error messages
+    // if (distance == 0) {
+    //     if (occupied(octree, n1.x, n1.y, n1.z)) {
+    //         if (end_ptr != nullptr) {
+    //             end_ptr->x = n1.x;
+    //             end_ptr->y = n1.y;
+    //             end_ptr->z = n1.z;
+    //         }
+    //         return true;
+    //     } else
+    //         return false;
+    // }
 
-	octomap::point3d direction(dx, dy, dz);
-	octomap::point3d end;
+    // Finally, loop over the drone's bounding box to search for collisions
+    octomap::point3d end;
+    for (auto it = octree->begin_leafs_bbx(min, max),
+            end_it = octree->end_leafs_bbx(); it != end_it; ++it)
+    {
+        octomap::point3d start (it.getCoordinate());
+        
+        // std::cout << distance << " (" << start.x() << " " << start.y() << " " << start.z() << ") (" << direction.x() << " " << direction.y() << " " << direction.z() << ")" << std::endl;
 
-	for (double h = -height/2; h <= height/2; h += height_step) {
-		for (double r = 0; r <= radius; r += radius_step) {
-			for (double a = 0; a <= pi*2; a += angle_step) {
-				octomap::point3d start(n1.x + r*std::cos(a), n1.y + r*std::sin(a), n1.z + h);
+        if (octree->castRay(start, direction, end, true, distance)) {
+            if (end_ptr != nullptr) {
+                end_ptr->x = end.x();
+                end_ptr->y = end.y();
+                end_ptr->z = end.z();
+            }
 
-				if (octree->castRay(start, direction, end, true, distance)) {
-
-                    if (end_ptr != nullptr) {
-                        end_ptr->x = end.x();
-                        end_ptr->y = end.y();
-                        end_ptr->z = end.z();
-                    }
-
-					//LOG_ELAPSED(motion_planner);
-					return true;
-                }
-			}
-		}
-	}
+            return true;
+        }
+    }
 
 	//LOG_ELAPSED(motion_planner);
 	return false;
@@ -358,11 +396,9 @@ void MotionPlanner::create_response(package_delivery::get_trajectory::Response &
         state_index++;
 	}
 
-    res.multiDOFtrajectory.append = false;
     res.multiDOFtrajectory.reverse = false;
 
     // Mark the trajectory with the correct sequence id's
-    static int trajectory_seq_id = 0; 
     res.multiDOFtrajectory.trajectory_seq = trajectory_seq_id;
     trajectory_seq_id++;
 
@@ -388,8 +424,6 @@ MotionPlanner::smooth_trajectory MotionPlanner::smoothen_the_shortest_path(piece
    	//start_v.addConstraint(mav_trajectory_generation::derivative_order::ACCELERATION, Eigen::Vector3d(3, 0, 0));
     start_v.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z));
     
-
-
     end_v.addConstraint(mav_trajectory_generation::derivative_order::POSITION, Eigen::Vector3d(piecewise_path.back().x, piecewise_path.back().y, piecewise_path.back().z));
    	end_v.addConstraint(mav_trajectory_generation::derivative_order::VELOCITY, Eigen::Vector3d(0,0,0));
     ///Eigen::Vector3d(piecewise_path.front().x, piecewise_path.front().y, piecewise_path.front().z));
@@ -406,24 +440,19 @@ MotionPlanner::smooth_trajectory MotionPlanner::smoothen_the_shortest_path(piece
 	// Parameters used to calculate how quickly the drone can move between vertices
 	const double magic_fabian_constant = 6.5; // A tuning parameter.
 
-	//double v_max__global, a_max__global;
-	//ros::param::get("/motion_planner/v_max__global", v_max__global);
-	//ros::param::get("/motion_planner/a_max__global", a_max__global);
-
 	const int N = 10;
 	mav_trajectory_generation::PolynomialOptimization<N> opt(dimension);
 
 	// Optimize until no collisions are present
 	bool col;
 	do {
-		// ROS_INFO("Checking for collisions...");
 		col = false;
 
 		// Estimate the time the drone should take flying between each node
 		auto segment_times = estimateSegmentTimes(vertices, v_max__global, a_max__global, magic_fabian_constant);
 
         // for (auto& el : segment_times)
-        //     el *= 0.4;
+        //     el *= 0.5;
 
 		// Optimize and create a smooth path from the vertices
 		opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
@@ -453,12 +482,10 @@ MotionPlanner::smooth_trajectory MotionPlanner::smoothen_the_shortest_path(piece
 				graph::node n2 = {pos2.x(), pos2.y(), pos2.z()};
 
 				// Check for a collision between two near points on the segment
-				
-                
-            //if (motion_planning_core_str != "lawn_mower") {
+
+                //if (motion_planning_core_str != "lawn_mower") {
                 if (out_of_bounds_lax(n1) || out_of_bounds_lax(n2) || collision(octree, n1, n2)) {
-					
-                    
+
                     // Add a new vertex in the middle of the segment we are currently on
 					mav_trajectory_generation::Vertex middle(dimension);
 
@@ -478,10 +505,14 @@ MotionPlanner::smooth_trajectory MotionPlanner::smoothen_the_shortest_path(piece
 
 					break;
 				}
-            //}
+                //}
 			}
 		}
-	} while (col);
+	} while (col &&
+            ros::Time::now() < g_start_time+ros::Duration(g_planning_budget));
+
+    if (col)
+        return smooth_trajectory();
 
 	// Return the collision-free smooth trajectory
 	mav_trajectory_generation::Trajectory traj;

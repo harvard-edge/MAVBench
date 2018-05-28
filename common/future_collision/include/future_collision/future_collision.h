@@ -30,13 +30,18 @@ public:
     {
         future_collision_initialize_params();
 
-        drone = new Drone(ip_addr__global.c_str(), port, localization_method);
+        // Create a new callback queue
+        nh.setCallbackQueue(&callback_queue);
 
+        // Topics
         next_steps_sub = nh.subscribe<mavbench_msgs::multiDOFtrajectory>("/next_steps", 1, &FutureCollisionChecker::pull_traj, this);
         col_coming_pub = nh.advertise<mavbench_msgs::future_collision>("/col_coming", 1);
+
+        // Create new Drone object
+        drone = new Drone(ip_addr__global.c_str(), port, localization_method);
     }
 
-    void run();
+    void spinOnce();
     void log_data_before_shutting_down();
 
     // TODO: Get rid of this function
@@ -53,6 +58,7 @@ private:
 
 private:
     ros::NodeHandle nh;
+    ros::CallbackQueue callback_queue;
     ros::Publisher col_coming_pub;
     ros::Subscriber next_steps_sub;
 
