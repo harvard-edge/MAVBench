@@ -24,7 +24,7 @@
   <arg name="planning_resolution" default=".85"/>
   <arg name="sensor_max_range" default="7" />
   <arg name="fly_trajectory_time_out" default=".01"/> 
-  <arg name="planning_budget" default=".3"/>
+  <arg name="planning_budget" default=".25"/>
   <param name="planning_budget" value="$(arg planning_budget)"/>
 
   <!-- orb slam location--> 
@@ -226,6 +226,8 @@
         <!-- param name="yaw_t" value=".75"/ -->
         <param name="ip_addr" value="$(arg host_ip)"/>
         <param name="localization_method" type="string" value="$(arg localization_method)"/>
+        <param name="grace_period" type="double" value="0.0" />
+        <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>
     </node>
 1
 

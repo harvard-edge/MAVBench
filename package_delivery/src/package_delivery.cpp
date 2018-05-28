@@ -89,6 +89,15 @@ void next_steps_callback(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
 }
 
 
+void trajectory_callback(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
+{
+    if (msg->trajectory_seq > normal_traj_msg.trajectory_seq)
+        normal_traj_msg = *msg;
+    else if (msg->trajectory_seq < normal_traj_msg.trajectory_seq)
+        ROS_ERROR("package_delivery: Trajectories arrived out of order! New seq: %d, old seq: %d", msg->trajectory_seq, normal_traj_msg.trajectory_seq);
+}
+
+
 void log_data_before_shutting_down()
 {
     std::string ns = ros::this_node::getName();
@@ -340,9 +349,10 @@ bool trajectory_done(const trajectory_t& trajectory)
 
 bool drone_stopped_or_reversing()
 {
-    return (g_next_steps_msg.points.size() == 0 &&
-        g_next_steps_msg.trajectory_seq >= normal_traj_msg.trajectory_seq)
-        || g_next_steps_msg.reverse;
+    // Check whether the follow_trajectory node is on the latest trajectory,
+    // and whether it has either stopped or started reversing
+    return g_next_steps_msg.trajectory_seq >= normal_traj_msg.trajectory_seq &&
+        (g_next_steps_msg.points.size() == 0 || g_next_steps_msg.reverse);
 }
 
 
@@ -380,9 +390,10 @@ int main(int argc, char **argv)
 
     ros::Time start_hook_t, end_hook_t;                                          
     // *** F:DN subscribers,publishers,servers,clients
-    ros::Publisher trajectory_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("normal_traj", 1);
+    // ros::Publisher trajectory_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("normal_traj", 1);
 
     ros::Subscriber col_coming_sub = nh.subscribe("col_coming", 1, col_coming_callback);
+    ros::Subscriber trajectory_sub = nh.subscribe("multidoftraj", 1, trajectory_callback);
     ros::Subscriber next_steps_sub = nh.subscribe("next_steps", 1, next_steps_callback);
     ros::Subscriber slam_lost_sub = nh.subscribe("/slam_lost", 1, slam_loss_callback);
 
@@ -477,7 +488,7 @@ int main(int argc, char **argv)
                 normal_traj_msg.header.stamp = temp;
             }
 
-            trajectory_pub.publish(normal_traj_msg);
+            // trajectory_pub.publish(normal_traj_msg);
 
             if (!normal_traj_msg.points.empty())
                 next_state = flying;
@@ -492,13 +503,13 @@ int main(int argc, char **argv)
                 twist.linear.x = twist.linear.y = twist.linear.z = 0;
                 acceleration.linear.x = acceleration.linear.y = acceleration.linear.z = 0;
             }
-            else if (col_coming) {
-                next_state = waiting;
-                col_coming = false;
-                clcted_col_coming_data = false;
+            // else if (col_coming) {
+            //     next_state = waiting;
+            //     col_coming = false;
+            //     clcted_col_coming_data = false;
 
-                get_start_in_future(drone, start, twist, acceleration);
-            }
+            //     get_start_in_future(drone, start, twist, acceleration);
+            // }
             else {
                 next_state = flying;
             }

@@ -26,7 +26,7 @@ int trajectory_seq = 0;
 
 // Parameters
 float g_v_max;
-double g_planning_budget = 0;
+double g_grace_period = 0; // How much time the drone will wait for a new path to be calculated when a collision is near, before pumping the breaks
 double g_time_to_come_to_full_stop = 0;
 double g_fly_trajectory_time_out;
 long long g_planning_time_including_ros_overhead_acc  = 0;
@@ -46,8 +46,12 @@ ros::Time g_msg_time_stamp;
 long long g_pt_cld_to_futurCol_commun_acc = 0;
 int g_traj_ctr = 0; 
 ros::Time g_recieved_traj_t;
+double g_max_velocity_reached = 0;
 
-void log_data_before_shutting_down(){
+void log_data_before_shutting_down()
+{
+    std::cout << "\n\nMax velocity reached by drone: " << g_max_velocity_reached << "\n" << std::endl;
+
     profile_manager::profiling_data_srv profiling_data_srv_inst;
     profiling_data_srv_inst.request.key = "localization_status";
     profiling_data_srv_inst.request.value = g_localization_status;
@@ -84,14 +88,23 @@ void log_data_before_shutting_down(){
             ros::shutdown();
         }
     }
+
+    profiling_data_srv_inst.request.key = "max_velocity_reached";
+    profiling_data_srv_inst.request.value = g_max_velocity_reached;
+    if (ros::service::waitForService("/record_profiling_data", 10)){ 
+        if(!ros::service::call("/record_profiling_data",profiling_data_srv_inst)){
+            ROS_ERROR_STREAM("could not probe data using stats manager");
+            ros::shutdown();
+        }
+    }
 }
 
 void future_collision_callback(const mavbench_msgs::future_collision::ConstPtr& msg) {
     if (msg->future_collision_seq > future_collision_seq)
         future_collision_seq = msg->future_collision_seq;
 
-    if (g_planning_budget+g_time_to_come_to_full_stop < msg->time_to_collision)
-        future_collision_time = ros::Time::now() + ros::Duration(g_planning_budget);
+    if (g_grace_period+g_time_to_come_to_full_stop < msg->time_to_collision)
+        future_collision_time = ros::Time::now() + ros::Duration(g_grace_period);
     else
         future_collision_time = ros::Time::now();
 }
@@ -104,7 +117,7 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
 {
     // Check for trajectories that arrive out of orde
     if (msg->trajectory_seq < trajectory_seq) {
-        ROS_ERROR("Trajectories arrived out of order! New seq: %d, old seq: %d", msg->trajectory_seq, trajectory_seq, msg->reverse);
+        ROS_ERROR("follow_trajectory: Trajectories arrived out of order! New seq: %d, old seq: %d", msg->trajectory_seq, trajectory_seq);
         return;
     } else
         trajectory_seq = msg->trajectory_seq;
@@ -178,12 +191,12 @@ void initialize_global_params() {
         ROS_FATAL_STREAM("Could not start follow_trajectory DEBUG not provided");
         exit(-1);
     }
-    if(!ros::param::get("/fly_trajectory_time_out", g_fly_trajectory_time_out)){
-        ROS_FATAL("Could not start follow_thrajectory. Parameter missing! fly_trajectory_time_out is not provided");
+    if(!ros::param::get("/follow_trajectory/fly_trajectory_time_out", g_fly_trajectory_time_out)){
+        ROS_FATAL("Could not start follow_trajectory. Parameter missing! fly_trajectory_time_out is not provided");
         exit(-1);
     }
-    if(!ros::param::get("/planning_budget", g_planning_budget)) {
-        ROS_FATAL("Could not start follow_thrajectory. Parameter missing! fly_trajectory_time_out is not provided");
+    if(!ros::param::get("/follow_trajectory/grace_period", g_grace_period)) {
+        ROS_FATAL("Could not start follow_trajectory. Parameter missing! grace_period is not provided");
         exit(-1);
     }
 
@@ -220,8 +233,8 @@ int main(int argc, char **argv)
 
     ros::Subscriber slam_lost_sub = n.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
     ros::Subscriber col_coming_sub = n.subscribe<mavbench_msgs::future_collision>("/col_coming", 1, future_collision_callback);
-    ros::Subscriber traj_sub = n.subscribe<mavbench_msgs::multiDOFtrajectory>("normal_traj", 1, callback_trajectory);
-    // ros::Subscriber other_traj_sub = n.subscribe<mavbench_msgs::multiDOFtrajectory>("multiDOFtraj", 1, callback_trajectory);
+    // ros::Subscriber traj_sub = n.subscribe<mavbench_msgs::multiDOFtrajectory>("normal_traj", 1, callback_trajectory);
+    ros::Subscriber traj_sub = n.subscribe<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1, callback_trajectory);
 
     // Begin execution loop
     bool app_started = false;  //decides when the first planning has occured
@@ -272,8 +285,12 @@ int main(int argc, char **argv)
             max_velocity = 1;
         }
 
-        follow_trajectory(drone, forward_traj, rev_traj, yaw_strategy,
-            true, max_velocity, g_fly_trajectory_time_out);
+        double max_velocity_reached = follow_trajectory(drone, forward_traj,
+                rev_traj, yaw_strategy, true, max_velocity,
+                g_fly_trajectory_time_out);
+
+        if (max_velocity_reached > g_max_velocity_reached)
+            g_max_velocity_reached = max_velocity_reached;
 
         // Publish the remainder of the trajectory
         mavbench_msgs::multiDOFtrajectory trajectory_msg = create_trajectory_msg(*forward_traj);
@@ -301,6 +318,7 @@ int main(int argc, char **argv)
 
         g_got_new_trajectory = false;
     }
+
     return 0;
 }
 

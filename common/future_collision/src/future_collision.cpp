@@ -201,6 +201,8 @@ void FutureCollisionChecker::spinOnce()
                 g_pt_cloud_to_future_collision_t = start_hook_chk_col_t - g_pt_cloud_header;
             if(DEBUG)
                 ROS_INFO_STREAM("pt cloud to start of checking collision in future collision"<< g_pt_cloud_to_future_collision_t);
+
+            ROS_WARN("future_collision: Collision on trajectory!");
         }
     } else {
         ROS_WARN("Future collision will ignore old trajectory");

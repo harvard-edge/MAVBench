@@ -50,8 +50,9 @@ public:
     using piecewise_trajectory = std::vector<graph::node>;
     using smooth_trajectory = mav_trajectory_generation::Trajectory;
 
-    MotionPlanner(octomap::OcTree * octree_) :
-        octree(octree_)
+    MotionPlanner(octomap::OcTree * octree_, Drone * drone_) :
+        octree(octree_),
+        drone(drone_)
     {
         motion_planning_initialize_params();
 
@@ -62,11 +63,11 @@ public:
         get_trajectory_srv_server = nh.advertiseService("/get_trajectory_srv", &MotionPlanner::get_trajectory_fun, this);
 
         future_col_sub = nh.subscribe("/col_coming", 1, &MotionPlanner::future_col_callback, this);
-        // next_steps_sub = nh.subscribe("/next_steps", 1, &MotionPlanner::next_steps_callback, this);
+        next_steps_sub = nh.subscribe("/next_steps", 1, &MotionPlanner::next_steps_callback, this);
 
         smooth_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 1);
         piecewise_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
-        // traj_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1);
+        traj_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1);
     }
 
     void spinOnce()
@@ -84,6 +85,9 @@ private:
 
     // ***F:DN Keep track of the drone's next moves
     void next_steps_callback(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg);
+
+    // ***F:DN Find where the drone will be in a few seconds
+    void get_start_in_future(Drone& drone, geometry_msgs::Point& start, geometry_msgs::Twist& twist, geometry_msgs::Twist& acceleration);
 
     // ***F:DN Create a grid-based lawn-mower-like path
     piecewise_trajectory lawn_mower(geometry_msgs::Point start, geometry_msgs::Point goal, int width, int length, int n_pts_per_dir, octomap::OcTree * octree);
@@ -140,14 +144,16 @@ private:
     ros::Publisher smooth_traj_vis_pub, piecewise_traj_vis_pub;
     ros::Subscriber future_col_sub, next_steps_sub;
     ros::ServiceServer get_trajectory_srv_server;
-    // ros::Publisher traj_pub;
+    ros::Publisher traj_pub;
 
+    Drone * drone = nullptr;
     octomap::OcTree * octree = nullptr;
     int future_col_seq_id = 0;
     int trajectory_seq_id = 0;
     mavbench_msgs::multiDOFtrajectory g_next_steps_msg;
 
     geometry_msgs::Point g_start_pos;
+    geometry_msgs::Point g_goal_pos;
     ros::Time g_start_time{0};
 
     // Parameters

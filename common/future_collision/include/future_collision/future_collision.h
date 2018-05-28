@@ -24,9 +24,10 @@
 
 class FutureCollisionChecker {
 public:
-    FutureCollisionChecker(octomap::OcTree * octree_) :
+    FutureCollisionChecker(octomap::OcTree * octree_, Drone * drone_) :
         nh("~"),
-        octree(octree_)
+        octree(octree_),
+        drone(drone_)
     {
         future_collision_initialize_params();
 
@@ -38,7 +39,7 @@ public:
         col_coming_pub = nh.advertise<mavbench_msgs::future_collision>("/col_coming", 1);
 
         // Create new Drone object
-        drone = new Drone(ip_addr__global.c_str(), port, localization_method);
+        // drone = new Drone(ip_addr__global.c_str(), port, localization_method);
     }
 
     void spinOnce();
@@ -63,7 +64,6 @@ private:
     ros::Subscriber next_steps_sub;
 
     Drone * drone = nullptr;
-    uint16_t port = 41451;
 
     int future_collision_seq_id = 0;
     const octomap::OcTree * octree = nullptr;

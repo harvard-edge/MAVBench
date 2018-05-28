@@ -19,6 +19,7 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
 
     g_start_time = ros::Time::now();
     g_start_pos = req.start;
+    g_goal_pos = req.goal;
     
     piecewise_path = motion_planning_core(req.start, req.goal, req.width, req.length, req.n_pts_per_dir, octree);
 
@@ -30,6 +31,9 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
         res.multiDOFtrajectory.trajectory_seq = trajectory_seq_id;
         trajectory_seq_id++;
 
+        res.multiDOFtrajectory.reverse = true;
+
+        traj_pub.publish(res.multiDOFtrajectory);
         return true;
     }
 
@@ -55,13 +59,16 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
         res.multiDOFtrajectory.trajectory_seq = trajectory_seq_id;
         trajectory_seq_id++;
 
+        res.multiDOFtrajectory.reverse = true;
+
+        traj_pub.publish(res.multiDOFtrajectory);
         return true;
     }
 	
     create_response(res, smooth_path);
 
     // Publish the trajectory (for debugging purposes)
-    // traj_pub.publish(res.multiDOFtrajectory);
+    traj_pub.publish(res.multiDOFtrajectory);
     smooth_traj_vis_pub.publish(smooth_traj_markers);
     piecewise_traj_vis_pub.publish(piecewise_traj_markers);
 
@@ -75,23 +82,62 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
 }
 
 
+void MotionPlanner::get_start_in_future(Drone& drone,
+        geometry_msgs::Point& start, geometry_msgs::Twist& twist,
+        geometry_msgs::Twist& acceleration)
+{
+    if (g_next_steps_msg.points.empty() || g_next_steps_msg.reverse) {
+        auto pos = drone.position();
+        start.x = pos.x; start.y = pos.y; start.z = pos.z; 
+        twist.linear.x = twist.linear.y = twist.linear.z = 0;
+        acceleration.linear.x = acceleration.linear.y = acceleration.linear.z = 0;
+        return;
+    }
+
+    multiDOFpoint mdofp = trajectory_at_time(g_next_steps_msg, g_planning_budget);
+
+    // Shift the drone's planned position at time "g_planning_budget" seconds
+    // by its current position
+    auto current_pos = drone.position();
+    auto planned_pos = g_next_steps_msg.points[0];
+
+    mdofp.x += current_pos.x - planned_pos.x;
+    mdofp.y += current_pos.y - planned_pos.y;
+    mdofp.z += current_pos.z - planned_pos.z;
+
+    start.x = mdofp.x; start.y = mdofp.y; start.z = mdofp.z; 
+
+    twist.linear.x = mdofp.vx;
+    twist.linear.y = mdofp.vy;
+    twist.linear.z = mdofp.vz;
+
+    acceleration.linear.x = mdofp.ax;
+    acceleration.linear.y = mdofp.ay;
+    acceleration.linear.z = mdofp.az;
+}
+
+
 void MotionPlanner::future_col_callback(const mavbench_msgs::future_collision::ConstPtr& msg)
 {
+    ROS_INFO("motion_planner: New collision noticed");
+
     if (msg->future_collision_seq > future_col_seq_id)
         future_col_seq_id = msg->future_collision_seq;
     else
         return;
 
     // If neccessary, plan a new path for the drone
-    // if (g_next_steps_msg.future_collision_seq <= future_col_seq_id) {
-    //     // "Call the get_trajectory_fun function right here, without waiting
-    //     // for the package_delivery node to make a request
-    //     package_delivery::get_trajectory srv;
-    //     srv.request.start = start;
-    //     srv.request.goal = goal;
-    //     srv.request.twist = twist;
-    //     srv.request.acceleration= acceleration;
-    // }
+    if (g_next_steps_msg.future_collision_seq <= future_col_seq_id) {
+        // "Call the get_trajectory_fun function right here, without waiting
+        // for the package_delivery node to make a request
+        package_delivery::get_trajectory::Request req;
+        package_delivery::get_trajectory::Response res;
+
+        get_start_in_future(*drone, req.start, req.twist, req.acceleration);
+        req.goal = g_goal_pos;
+
+        get_trajectory_fun(req, res);
+    }
 }
 
 void MotionPlanner::next_steps_callback(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
@@ -451,8 +497,8 @@ MotionPlanner::smooth_trajectory MotionPlanner::smoothen_the_shortest_path(piece
 		// Estimate the time the drone should take flying between each node
 		auto segment_times = estimateSegmentTimes(vertices, v_max__global, a_max__global, magic_fabian_constant);
 
-        // for (auto& el : segment_times)
-        //     el *= 0.5;
+        for (auto& el : segment_times)
+            el *= 0.5;
 
 		// Optimize and create a smooth path from the vertices
 		opt.setupFromVertices(vertices, segment_times, derivative_to_optimize);
