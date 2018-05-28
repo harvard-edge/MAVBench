@@ -1,15 +1,8 @@
 #include "ros/ros.h"
 
 // Standard headers
-#include <chrono>
 #include <string>
-#include <cmath>
 #include <signal.h>
-
-// ROS message headers
-#include "std_msgs/Bool.h"
-#include "std_msgs/Int32.h"
-#include "trajectory_msgs/MultiDOFJointTrajectory.h"
 
 // Octomap specific headers
 #include <octomap/octomap.h>

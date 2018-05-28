@@ -1,33 +1,18 @@
 #include "ros/ros.h"
-#include <std_msgs/String.h>
-#include <image_transport/image_transport.h>
-#include <opencv2/highgui/highgui.hpp>
-#include <cv_bridge/cv_bridge.h>
-//#include "template_library.hpp"
-#include <sstream>
-//#include "rpc/RpcLibClient.hpp"
 #include <iostream>
-#include <chrono>
 #include <math.h>
 #include <iterator>
-#include <chrono>
-#include <thread>
-#include <tuple>
-//#include "controllers/DroneControllerBase.hpp"
 #include "control_drone.h"
-#include "common/Common.hpp"
 #include <fstream>
 #include "Drone.h"
-#include "package_delivery/get_trajectory.h"
 #include <cstdlib>
 #include <geometry_msgs/Point.h>
-#include <trajectory_msgs/MultiDOFJointTrajectoryPoint.h>
-#include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <stdio.h>
 #include <time.h>
 #include "std_msgs/Bool.h"
 #include <signal.h>
 #include "common.h"
+#include "package_delivery/get_trajectory.h"
 #include <profile_manager/profiling_data_srv.h>
 #include <profile_manager/start_profiling_srv.h>
 
@@ -127,7 +112,7 @@ trajectory_t request_trajectory(ros::ServiceClient& client, geometry_msgs::Point
         return trajectory_t();
     }
 
-    return create_trajectory(srv.response.multiDOFtrajectory);
+    return create_trajectory_from_msg(srv.response.multiDOFtrajectory);
 }
 
 
@@ -136,7 +121,7 @@ bool trajectory_done(trajectory_t trajectory) {
 }
 
 
-void log_data_before_shutting_down(){
+void log_data_before_shutting_down() {
     std::string ns = ros::this_node::getName();
     profile_manager::profiling_data_srv profiling_data_srv_inst;
 
@@ -167,7 +152,7 @@ void log_data_before_shutting_down(){
     }
 }
 
-void sigIntHandlerPrivate(int signo){
+void sigIntHandlerPrivate(int signo) {
     if (signo == SIGINT) {
         log_data_before_shutting_down(); 
         ros::shutdown();
@@ -243,7 +228,6 @@ int main(int argc, char **argv)
             g_planning_time_acc += ((end_hook_t - start_hook_t).toSec()*1e9);
             g_planning_ctr++; 
 
-            //std::this_thread::sleep_for(std::chrono::seconds(1));
             next_state = flying;
         } else if (state == flying)
         {

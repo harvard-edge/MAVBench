@@ -9,6 +9,9 @@ sudo apt-get install ros-kinetic-rviz-visual-tools
 sudo apt-get install ros-kinetic-vision-opencv
 sudo apt-get install ros-kinetic-ompl
 
+# Pre-reqs to side-step PCL C++11 issue
+git clone https://github.com/ros-perception/perception_pcl.git
+
 # Prereqs for mav_trajectory_generation, our trajectory-smoothening package
 #git clone https://github.com/catkin/catkin_simple.git
 #git clone https://github.com/ethz-asl/eigen_catkin.git

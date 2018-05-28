@@ -1,10 +1,10 @@
 <launch>
     <!-- args --> 
     <!-- Behzad's workstation ip --> 
-    <arg name="host_ip" value="10.157.90.132" /> 
+    <!--arg name="host_ip" value="10.157.90.132" /--> 
     <!--arg name="host_ip" value="169.254.153.158" /--> 
     <!-- Hasans's workstation ip --> 
-    <!--arg name="host_ip" value="10.157.90.49" /--> 
+    <arg name="host_ip" value="10.157.90.49" /> 
     
     <param name="/ip_addr" value="$(arg host_ip)" />
 
@@ -83,16 +83,9 @@
     </node>
 
     
-    <?ignore 
-    <!-- Convert to point cloud -->
-	<node pkg="package_delivery" type="panic" name="panic">
-		<remap from="depth_img" to="/Airsim/depth_2"/>
-		<!-- remap from="depth_img" to="/stereo/left/image_raw"/ -->
-    </node>
-    ?>
-
 	<!-- Path-Planner -->
-	<node pkg="package_delivery" type="motion_planner" name="motion_planner" output="screen" launch-prefix="$(arg my_launch_prefix)">
+	<node pkg="package_delivery" type="motion_planner_node" name="motion_planner_node" output="screen" launch-prefix="$(arg my_launch_prefix)" />
+    <group ns="motion_planner">
 		<param name="nodes_to_add_to_roadmap" value="300"/>
 		<param name="max_dist_to_connect_at" value="10"/>
         <param name="v_max" value="$(arg v_max)"/>
@@ -117,8 +110,7 @@
 
         <!-- options for motion_planning core --> 
         <param name="motion_planning_core" value="lawn_mower"/>
-        <!-- param name="motion_planning_core" value="lawn_mower"/-->
-	</node>
+	</group>
 
 	<!-- Demo program that controls drone -->
 	<!-- <node pkg="package_delivery" type="scanning" name="scanning" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp"> -->
