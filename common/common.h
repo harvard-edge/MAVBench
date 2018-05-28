@@ -114,7 +114,7 @@ multiDOFpoint trajectory_at_time(const trajectory_t& traj, double t);
 multiDOFpoint trajectory_at_time(const mavbench_msgs::multiDOFtrajectory& traj, double t);
 trajectory_t append_trajectory (trajectory_t first, const trajectory_t& second);
 
-void follow_trajectory(Drone& drone, trajectory_t * traj,
+double follow_trajectory(Drone& drone, trajectory_t * traj,
         trajectory_t * reverse_traj,
         yaw_strategy_t yaw_strategy = ignore_yaw,
         bool check_position = true,

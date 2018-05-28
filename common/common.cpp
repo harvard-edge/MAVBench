@@ -209,11 +209,14 @@ void spin_around(Drone &drone) {
 
 
 // Follows trajectory, popping commands off the front of it and returning those commands in reverse order
-void follow_trajectory(Drone& drone, trajectory_t * traj,
+// Also returns the maximum speed reached while flying along trajectory
+double follow_trajectory(Drone& drone, trajectory_t * traj,
         trajectory_t * reverse_traj, yaw_strategy_t yaw_strategy,
-        bool check_position, float max_speed, float time){
+        bool check_position, float max_speed, float time) {
 
     trajectory_t reversed_commands;
+
+    double max_speed_so_far = 0;
 
     ros::Time start_hook_t;
     while (time > 0 && traj->size() > 0) {
@@ -257,6 +260,9 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
             speed = std::sqrt((v_x*v_x + v_y*v_y + v_z*v_z));
         }
 
+        if (speed > max_speed_so_far)
+            max_speed_so_far = speed;
+
         // Calculate the time for which these flight commands should run
         double flight_time = p.duration <= time ? p.duration : time;
         double scaled_flight_time = flight_time / scale;
@@ -283,6 +289,8 @@ void follow_trajectory(Drone& drone, trajectory_t * traj,
 
     if (reverse_traj != nullptr)
         *reverse_traj = append_trajectory(reversed_commands, *reverse_traj);
+
+    return max_speed_so_far;
 }
 
 
