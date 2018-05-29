@@ -40,6 +40,7 @@ bool control_drone(Drone& drone)
 	cout << "\ty x: set yaw to x\n";
 	cout << "\tyz x z: set yaw to x degrees, holding height z m\n";
 	cout << "\tp: print pitch, roll, yaw, height\n";
+	cout << "\tb: print battery stats\n";
 	cout << "\tc: complete drone setup and continue\n";
 	cout << "\ts: sleep for 5 seconds\n";
 	cout << "\tr: rotate slowly\n";
@@ -92,6 +93,9 @@ bool control_drone(Drone& drone)
 		} else if (cmd == "p") {
 			auto pos = drone.pose().position;
 			cout << "pitch: " << drone.get_pitch() << " roll: " << drone.get_roll() << " yaw: " << drone.get_yaw() << " pos: " << pos.x << ", " << pos.y << ", " << pos.z << endl;
+        } else if (cmd == "b") {
+            auto flight_stats = drone.getFlightStats();
+            cout << "energy consumed: " << flight_stats.energy_consumed << endl;
         } else if (cmd == "r") {
             spin_around(drone); 
         } else if (cmd != "c") {

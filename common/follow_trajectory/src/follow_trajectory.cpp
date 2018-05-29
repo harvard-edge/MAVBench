@@ -100,13 +100,14 @@ void log_data_before_shutting_down()
 }
 
 void future_collision_callback(const mavbench_msgs::future_collision::ConstPtr& msg) {
-    if (msg->future_collision_seq > future_collision_seq)
+    if (msg->future_collision_seq > future_collision_seq) {
         future_collision_seq = msg->future_collision_seq;
 
-    if (g_grace_period+g_time_to_come_to_full_stop < msg->time_to_collision)
-        future_collision_time = ros::Time::now() + ros::Duration(g_grace_period);
-    else
-        future_collision_time = ros::Time::now();
+        if (g_grace_period+g_time_to_come_to_full_stop < msg->time_to_collision)
+            future_collision_time = ros::Time::now() + ros::Duration(g_grace_period);
+        else
+            future_collision_time = ros::Time::now();
+    }
 }
 
 void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
@@ -115,7 +116,7 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 
 void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
 {
-    // Check for trajectories that arrive out of orde
+    // Check for trajectories that arrive out of order
     if (msg->trajectory_seq < trajectory_seq) {
         ROS_ERROR("follow_trajectory: Trajectories arrived out of order! New seq: %d, old seq: %d", msg->trajectory_seq, trajectory_seq);
         return;
@@ -127,8 +128,10 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
     if (msg->future_collision_seq < future_collision_seq) {
         ROS_ERROR("Proposed trajectory does not consider latest detected collision");
         return;
-    } else
+    } else {
+        future_collision_seq = msg->future_collision_seq;
         future_collision_time = ros::Time(0);
+    }
 
     if (CLCT_DATA){
         g_recieved_traj_t = ros::Time::now();
