@@ -276,41 +276,6 @@ void convert_pose_vector_to_trajectory_msg(const vector<geometry_msgs::Pose>& po
 }
 
 
-void move_to_start_of_trajectory(Drone& drone, vector<geometry_msgs::Pose>& poses) {
-    if (poses.size() == 0)
-        return;
-
-    auto current_pos = drone.position();
-
-    float correction_in_x = poses[0].position.x - current_pos.x;
-    float correction_in_y = poses[0].position.y - current_pos.y;
-    float correction_in_z = poses[0].position.z - current_pos.z;
-
-    double disc = std::min((dt * slow_v) / correction_distance, 1.0); // The proportion of the correction_distance taken up by each g_dt time step
-
-    vector<geometry_msgs::Pose> correction_path;
-
-    // Fill in all the points from the drone's current position to the
-    // beginning of the planned path
-    for (double it = 0; it <= 1.0; it += disc) {
-        geometry_msgs::Point p;
-
-        p.x = current_pos.x + it*correction_in_x;
-        p.y = current_pos.y + it*correction_in_y;
-        p.z = current_pos.z + it*correction_in_z;
-
-        // We set the orientation of each point along the correction
-        // path to the orientation at the start of the actual path
-        p.orientation = poses[0].orientation;
-
-        correction_path.push_back(p);
-    }
-
-    // Append the correction path to the beginning of the actual path
-    poses.insert(poses.end(), correction_path.begin(), correction_path.end());
-}
-
-
 void decelerate_end_of_trajectory(mavbench_msgs::multiDOFtrajectory& trajectory) {
     double speed = 0;
     for (auto it = trajectory->rbegin(); it != trajectory->rend(); ++it) {
@@ -390,9 +355,6 @@ mavbench_msgs::multiDOFtrajectory nbvp_trajectory(Drone& drone, ros::ServiceClie
     // Record the coverage of the map so far
     g_coverage = planSrv.response.coverage;
 
-    // Correct for drift
-    move_to_start_of_trajectory(drone, planSrv.response.path);
-
     // Convert from the nbvp's message format to MAVBench's message format
     mavbench_msgs::multiDOFtrajectory result;
     convert_pose_vector_to_trajectory_msg(planSrv.response.path, result);
@@ -442,7 +404,7 @@ int main(int argc, char** argv)
         nh.serviceClient<profile_manager::start_profiling_srv>("/start_profiling");
 
     ros::Subscriber future_col_sub =
-        nh.subscribe<mavbench_msgs::future_collision>("/col_coming", 1, future_col_callback);
+        nh.subscribe("/col_coming", 1, future_col_callback);
     ros::Subscriber next_steps_sub =
         nh.subscribe("next_steps", 1, next_steps_callback);
     // ros::Subscriber slam_lost_sub =

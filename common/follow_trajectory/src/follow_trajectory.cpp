@@ -114,7 +114,51 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
     slam_lost = msg->data;
 }
 
-void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
+
+template<class P1, class P2>
+trajectory_t straight_line_trajectory(P1 start, P2 end, double v)
+{
+    trajectory_t result;
+
+    const double dt = 0.5;
+
+    double correction_in_x = end.x - start.x;
+    double correction_in_y = end.y - start.y;
+    double correction_in_z = end.z - start.z;
+
+    double correction_distance = distance(correction_in_x, correction_in_y, correction_in_z);
+    double correction_time = correction_distance / v;
+
+    double disc = std::min((dt * v) / correction_distance, 1.0); // The proportion of the correction_distance taken up by each g_dt time step
+
+    double vx = correction_in_x / correction_time;
+    double vy = correction_in_y / correction_time;
+    double vz = correction_in_z / correction_time;
+
+    double yaw = yawFromVelocity(vx, vy);
+
+    for (double it = 0; it <= 1.0; it += disc) {
+        multidofpoint p;
+
+        p.x = start.x + it*correction_in_x;
+        p.y = start.y + it*correction_in_y;
+        p.z = start.z + it*correction_in_z;
+
+        p.vx = vx;
+        p.vy = vy;
+        p.vz = vz;
+
+        p.yaw = yaw;
+        p.blocking_yaw = false;
+
+        p.duration = dt;
+
+        correction_path.push_back(p);
+    }
+}
+
+
+void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg, Drone * drone)
 {
     // Check for trajectories that arrive out of order
     if (msg->trajectory_seq < trajectory_seq) {
@@ -123,8 +167,7 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
     } else
         trajectory_seq = msg->trajectory_seq;
 
-    // Check for trajectories that are not updated to the latest collision
-    // detection
+    // Check for trajectories that are not updated to the latest collision detection
     if (msg->future_collision_seq < future_collision_seq) {
         ROS_ERROR("Proposed trajectory does not consider latest detected collision");
         return;
@@ -133,6 +176,23 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
         future_collision_time = ros::Time(0);
     }
 
+    trajectory_t new_trajectory = create_trajectory_from_msg(*msg);
+
+    if (msg->reverse) {
+        fly_backward = true;
+    } else if (trajectory.empty() && !new_trajectory.empty()) {
+        // Add drift correction if the drone is currently idling (because it will float around while idling)
+        trajectory_t idling_correction_traj = straight_line_trajectory(drone->position(), new_trajectory.front(), 1.0);
+        trajectory = append_trajectory(idling_correction_traj, new_trajectory);
+        fly_backward = false;
+    } else {
+        trajectory = new_trajectory;
+        fly_backward = false;
+    }
+
+    g_got_new_trajectory = true;
+
+    // Profiling
     if (CLCT_DATA){
         g_recieved_traj_t = ros::Time::now();
         g_msg_time_stamp = msg->header.stamp;
@@ -141,15 +201,6 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg)
             g_traj_ctr++;
         } 
     }
-
-    if (msg->reverse) {
-        fly_backward = true;
-    } else {
-        trajectory = create_trajectory_from_msg(*msg);
-        fly_backward = false;
-    }
-
-    g_got_new_trajectory = true;
 }
 
 
@@ -237,7 +288,7 @@ int main(int argc, char **argv)
     ros::Subscriber slam_lost_sub = n.subscribe<std_msgs::Bool>("/slam_lost", 1, slam_loss_callback);
     ros::Subscriber col_coming_sub = n.subscribe<mavbench_msgs::future_collision>("/col_coming", 1, future_collision_callback);
     // ros::Subscriber traj_sub = n.subscribe<mavbench_msgs::multiDOFtrajectory>("normal_traj", 1, callback_trajectory);
-    ros::Subscriber traj_sub = n.subscribe<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1, callback_trajectory);
+    ros::Subscriber traj_sub = n.subscribe<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1, boost::bind(callback_trajectory, _1, &drone));
 
     // Begin execution loop
     bool app_started = false;  //decides when the first planning has occured
