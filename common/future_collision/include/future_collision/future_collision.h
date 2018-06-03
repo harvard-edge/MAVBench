@@ -75,6 +75,7 @@ private:
     std::string localization_method;
     double drone_height__global;
     double drone_radius__global;
+    double grace_period__global;
 
     // Profiling variables
     const octomap_server::OctomapServer * server = nullptr; // TODO: get rid of this dependency

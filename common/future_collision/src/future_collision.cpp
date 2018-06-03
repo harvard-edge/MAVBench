@@ -58,6 +58,7 @@ void FutureCollisionChecker::pull_traj(const mavbench_msgs::multiDOFtrajectory::
     }
 }
 
+
 std::tuple <bool, double> FutureCollisionChecker::check_for_collisions(Drone& drone)
 {
     start_hook_chk_col_t = ros::Time::now();
@@ -101,20 +102,24 @@ void FutureCollisionChecker::future_collision_initialize_params()
     ros::param::get("/future_col_drone_height", drone_height__global);
 
     if(!ros::param::get("/ip_addr", ip_addr__global)) {
-        ROS_FATAL("Could not start exploration. IP address parameter missing!");
+        ROS_FATAL("Could not start future_collision. IP address parameter missing!");
         return;
     }
     if(!ros::param::get("/localization_method", localization_method)) {
-        ROS_FATAL("Could not start exploration. Localization parameter missing!");
+        ROS_FATAL("Could not start future_collision. Localization parameter missing!");
         return;
     }
 	if(!ros::param::get("/CLCT_DATA",CLCT_DATA)) {
-        ROS_FATAL("Could not start exploration. Localization parameter missing!");
+        ROS_FATAL("Could not start future_collision. CLCT_DATA parameter missing!");
         return;
     }
     if(!ros::param::get("/DEBUG",DEBUG)) {
-        ROS_FATAL("Could not start exploration. Localization parameter missing!");
+        ROS_FATAL("Could not start future_collision. DEBUG parameter missing!");
         return; 
+    }
+    if(!ros::param::get("/follow_trajectory/grace_period", grace_period__global)) {
+        ROS_FATAL("Could not start future_collision. grace_period parameter missing!");
+        return;
     }
 }
 
@@ -162,6 +167,20 @@ void FutureCollisionChecker::log_data_before_shutting_down()
     ROS_INFO_STREAM("done with the octomap profiles");
 }
 
+
+void stop_drone()
+{
+    while (ros::ok() &&
+            (traj_future_collision_seq_id < future_collision_seq_id
+             || (traj_future_collision_seq_id == future_collision_seq_id
+                 !traj.empty())))
+    {
+        callback_queue.callAvailable(ros::WallDuration());
+        drone->fly_velocity(0,0,0);
+    }
+}
+
+
 void FutureCollisionChecker::spinOnce()
 {
     static ros::Time main_loop_start_hook_t;
@@ -196,14 +215,26 @@ void FutureCollisionChecker::spinOnce()
 
             col_coming_pub.publish(col_coming_msg);
 
-            // Profiling 
+            ROS_WARN("future_collision: Collision on trajectory!");
+
+            if (grace_period__global == 0) {
+                // If the drone is supposed to immediately stop, then stop it
+                // here until follow_trajectory catches up
+                ROS_INFO("Stopping the drone immediately inside FutureCollision");
+                stop_drone();
+            }
+
+            // Profiling
             if(CLCT_DATA)
                 g_pt_cloud_to_future_collision_t = start_hook_chk_col_t - g_pt_cloud_header;
             if(DEBUG)
                 ROS_INFO_STREAM("pt cloud to start of checking collision in future collision"<< g_pt_cloud_to_future_collision_t);
-
-            ROS_WARN("future_collision: Collision on trajectory!");
         }
+    } else if (grace_period__global == 0) {
+        // If the drone is supposed to immediately stop, then stop it here so
+        // we're faster
+        ROS_INFO("Stopping the drone immediately inside FutureCollision");
+        stop_drone();
     } else {
         ROS_WARN("Future collision will ignore old trajectory");
     }
