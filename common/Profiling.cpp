@@ -1,5 +1,7 @@
 #include "Profiling.h"
 #include <fstream>
+#include <profile_manager/profiling_data_srv.h>
+#include <profile_manager/start_profiling_srv.h>
 
 void signal_supervisor(std::string file_to_write_to, std::string msg){
     std::ofstream file_to_write_to_h; //file handle write to when completed
