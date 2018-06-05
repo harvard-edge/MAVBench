@@ -353,7 +353,7 @@ mavbench_msgs::multiDOFtrajectory nbvp_trajectory(Drone& drone, ros::ServiceClie
 
     // Make the actual service request to the mapping planner
     ros::Time start_hook_t = ros::Time::now();
-    if (nbvp_client.call(planSrv)) {
+    if (!nbvp_client.call(planSrv)) {
         ROS_ERROR("Planner not reachable");
         shutdown_app();
     }
@@ -405,6 +405,8 @@ int main(int argc, char** argv)
     ros::NodeHandle nh;
     signal(SIGINT, sigIntHandlerPrivate);
 
+    initialize_params();
+
     // Variables
     mavbench_msgs::multiDOFpoint goal;
     const int time_out_ctr_threshold = 10; 
@@ -416,7 +418,7 @@ int main(int argc, char** argv)
     ros::Time loop_end_t(0,0); //if zero, it's not valid
 
     // Topics and services
-    ros::Publisher trajectory_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("multiDOFtrajectory", 5);
+    ros::Publisher trajectory_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("/multidoftraj", 5);
     ros::Publisher path_to_follow_marker_pub = nh.advertise<visualization_msgs::Marker>("path_to_follow_topic", 1000);
 
     ros::ServiceClient nbvplanner_client = 
@@ -469,7 +471,7 @@ int main(int argc, char** argv)
             trajectory_pub.publish(trajectory);
             visualize_trajectory(trajectory, path_to_follow_marker_pub);
 
-            if (trajectory.points.size() == 0) {
+            if (trajectory.points.size() > 0) {
                 goal = trajectory.points.back();
                 next_state = waiting;
             } else

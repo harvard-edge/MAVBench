@@ -48,6 +48,17 @@ int g_traj_ctr = 0;
 ros::Time g_recieved_traj_t;
 double g_max_velocity_reached = 0;
 
+
+template <class P1, class P2>
+double distance(const P1& p1, const P2& p2) {
+    double x_diff = p2.x - p1.x;
+    double y_diff = p2.y - p1.y;
+    double z_diff = p2.z - p1.z;
+
+    return distance(x_diff, y_diff, z_diff);
+}
+
+
 void log_data_before_shutting_down()
 {
     std::cout << "\n\nMax velocity reached by drone: " << g_max_velocity_reached << "\n" << std::endl;
@@ -116,11 +127,11 @@ void slam_loss_callback (const std_msgs::Bool::ConstPtr& msg) {
 
 
 template<class P1, class P2>
-trajectory_t straight_line_trajectory(P1 start, P2 end, double v)
+trajectory_t straight_line_trajectory(const P1& start, const P2& end, double v)
 {
     trajectory_t result;
 
-    const double dt = 0.5;
+    const double dt = 0.1;
 
     double correction_in_x = end.x - start.x;
     double correction_in_y = end.y - start.y;
@@ -184,7 +195,12 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg,
         fly_backward = true;
     } else if (trajectory.empty() && !new_trajectory.empty()) {
         // Add drift correction if the drone is currently idling (because it will float around while idling)
-        trajectory_t idling_correction_traj = straight_line_trajectory(drone->position(), new_trajectory.front(), 1.0);
+        const double max_idling_drift_distance = 0.5;
+        trajectory_t idling_correction_traj;
+
+        if (distance(drone->position(), new_trajectory.front()) > max_idling_drift_distance)
+             idling_correction_traj = straight_line_trajectory(drone->position(), new_trajectory.front(), 1.0);
+
         trajectory = append_trajectory(idling_correction_traj, new_trajectory);
         fly_backward = false;
     } else if (msg->append) {

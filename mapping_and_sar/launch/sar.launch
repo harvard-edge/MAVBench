@@ -5,8 +5,8 @@
   <arg name="log_file" default="$(arg mav_name)" />
   
   <!-- important params affecting performance -->
-  <!-- arg name="v_max" default="3.4"/-->
   <arg name="v_max" default="3.4"/>
+  <arg name="a_max" default="5"/> 
 
 
   <arg name="nbvp/gain/range" default="6"/>
@@ -35,6 +35,7 @@
   <arg name="max_yaw_rate_during_flight" default="90"/>
   <arg name="system/dyaw_max" default="$(eval arg('max_yaw_rate_during_flight') * 3.14159265359 / 180.0)"/>
   <param name="v_max" value="$(arg v_max)"/>
+  <param name="a_max" value="$(arg a_max)"/>
   <param name="max_yaw_rate" value="$(arg max_yaw_rate)"/>
   <param name="max_yaw_rate_during_flight" value="$(arg max_yaw_rate_during_flight)"/>
   
@@ -72,12 +73,12 @@
 
   <!-- Behzad's workstation ip --> 
   <!-- arg name="host_ip" value="10.157.34.101" /--> 
-  <arg name="host_ip" value="10.157.90.51" />
+  <!--arg name="host_ip" value="10.157.90.51" /-->
   <!--arg name="host_ip" value="169.254.153.158" /-->
   <!-- Hasans's workstation ip --> 
   <!--arg name="host_ip" default="10.157.90.49" /-->
   <!-- Hasans's direct connection ip --> 
-  <!--arg name="host_ip" default="169.254.250.191" /-->
+  <arg name="host_ip" default="169.254.250.191" />
   <!-- Wenzhi's workstation ip -->
   <!-- arg name="host_ip" default="10.157.90.62" /-->
   <param name="/ip_addr" value="$(arg host_ip)" />
@@ -269,13 +270,15 @@
   
   <!-- following the tejactory --> 
   <!-- group ns="$(arg mav_name)" -->
-  <node pkg="mapping_and_sar" type="follow_trajectory" name="follow_trajectory" output="screen">
-  <rosparam command="load" file="$(arg param_file)" />
-  <param name="mav_name" value="$(arg mav_name)"/>
-  <!-- param name="yaw_t" value=".75"/ -->
-  <param name="ip_addr" value="$(arg host_ip)"/>
-  <param name="segment_dedicated_time" value="1.0"/>
-  <param name="localization_method" type="string" value="$(arg localization_method)"/>
+  <node pkg="follow_trajectory" type="follow_trajectory" name="follow_trajectory" output="screen">
+      <rosparam command="load" file="$(arg param_file)" />
+      <param name="mav_name" value="$(arg mav_name)"/>
+      <!-- param name="yaw_t" value=".75"/ -->
+      <param name="ip_addr" value="$(arg host_ip)"/>
+      <param name="segment_dedicated_time" value="1.0"/>
+      <param name="localization_method" type="string" value="$(arg localization_method)"/>
+      <param name="grace_period" type="double" value="0.0" />
+      <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>
   </node>
 
 
@@ -305,34 +308,37 @@
   </node>
   </comment>
 
-  <node pkg="mapping_and_sar" type="future_collision" name="future_collision" output="screen"> 
-  <!--remap from="/points" to="cloud_in" /-->
-  <param name="resolution" value="$(arg planning_resolution)" />
-  <param name="data_collection_iteration_freq_OM" value="$(arg data_collection_iteration_freq)"/>
-  <param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
+  <!-- node pkg="mapping_and_sar" type="future_collision" name="future_collision" output="screen" --> 
+  <node pkg="mapping_and_sar" type="occupancy_map_node" name="occupancy_map_node" output="screen">
+      <!--remap from="/points" to="cloud_in" /-->
+      <param name="resolution" value="$(arg planning_resolution)" />
+      <param name="data_collection_iteration_freq_OM" value="$(arg data_collection_iteration_freq)"/>
+      <param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
 
 
-  <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-  <param name="frame_id" type="string" value="world" />
+      <!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+      <param name="frame_id" type="string" value="world" />
 
-  <!-- maximum range to integrate (speedup!) -->
-  <param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
+      <!-- maximum range to integrate (speedup!) -->
+      <param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
 
-  <!-- data source to integrate (PointCloud2) -->
-  <remap from="cloud_in" to="/points" />
+      <!-- data source to integrate (PointCloud2) -->
+      <remap from="cloud_in" to="/points" />
 
-  <!-- Filter ground for binary occupancy map -->
-  <param name="base_frame_id" value="world" />
-  <!-- <param name="filter_ground" value="false" />
-  <param name="ground_filter_plane_distance" value="1.00" />
-  <param name="ground_filter/distance" value="0.50" /> -->
-  <param name="pointcloud_min_z" type="double" value="-2.0" />
-  <param name="pointcloud_max_z" type="double" value="10.0" />
-  <param name="occupancy_min_z" type="double" value="-2.00" />
-  <param name="occupancy_max_z" type="double" value="10.0" />
-  <!-- <param name="ground_filter_plane_distance" value="0.07" />
-  <param name="ground_filter/distance" value="0.04" />
-  <param name="ground_filter/angle" value="0.4" /> -->
+      <!-- Filter ground for binary occupancy map -->
+      <param name="base_frame_id" value="world" />
+      <!-- <param name="filter_ground" value="false" />
+      <param name="ground_filter_plane_distance" value="1.00" />
+      <param name="ground_filter/distance" value="0.50" /> -->
+      <param name="pointcloud_min_z" type="double" value="-2.0" />
+      <param name="pointcloud_max_z" type="double" value="10.0" />
+      <param name="occupancy_min_z" type="double" value="-2.00" />
+      <param name="occupancy_max_z" type="double" value="10.0" />
+      <!-- <param name="ground_filter_plane_distance" value="0.07" />
+      <param name="ground_filter/distance" value="0.04" />
+      <param name="ground_filter/angle" value="0.4" /> -->
+
+      <param name="latch" value="false" />
   </node>
   
   

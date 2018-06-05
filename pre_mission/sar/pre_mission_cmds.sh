@@ -1,6 +1,6 @@
 #!/bin/bash
 #echo s 10
-sleep 130
+#sleep 130
 
 echo fz 0 0 4 5
 #echo s 3.5
