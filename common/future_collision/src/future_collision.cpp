@@ -168,12 +168,12 @@ void FutureCollisionChecker::log_data_before_shutting_down()
 }
 
 
-void stop_drone()
+void FutureCollisionChecker::stop_drone()
 {
     while (ros::ok() &&
             (traj_future_collision_seq_id < future_collision_seq_id
              || (traj_future_collision_seq_id == future_collision_seq_id
-                 !traj.empty())))
+                 && !traj.empty())))
     {
         callback_queue.callAvailable(ros::WallDuration());
         drone->fly_velocity(0,0,0);

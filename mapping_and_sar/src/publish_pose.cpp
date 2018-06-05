@@ -31,7 +31,7 @@
 #include <string>
 using namespace std;
 std::string ip_addr__global;
-void sigIntHandler(int sig)
+void sigIntPrivateHandler(int sig)
 {
     ros::shutdown();
     exit(0);
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     
     
     std::string localization_method; 
-    signal(SIGINT, sigIntHandler);
+    signal(SIGINT, sigIntPrivateHandler);
  
     ros::Publisher pose_pub = n.advertise<geometry_msgs::PoseWithCovarianceStamped>("pose_topic", 10);
     uint16_t port = 41451;

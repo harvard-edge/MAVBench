@@ -1,7 +1,9 @@
 #ifndef PROFILING_H
 #define PROFILING_H
 
+#include <ros/ros.h>
 #include <string>
+#include <math.h>
 
 typedef struct KeyValuePair {
     std::string key;

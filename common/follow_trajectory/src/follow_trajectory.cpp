@@ -138,7 +138,7 @@ trajectory_t straight_line_trajectory(P1 start, P2 end, double v)
     double yaw = yawFromVelocity(vx, vy);
 
     for (double it = 0; it <= 1.0; it += disc) {
-        multidofpoint p;
+        multiDOFpoint p;
 
         p.x = start.x + it*correction_in_x;
         p.y = start.y + it*correction_in_y;
@@ -153,8 +153,10 @@ trajectory_t straight_line_trajectory(P1 start, P2 end, double v)
 
         p.duration = dt;
 
-        correction_path.push_back(p);
+        result.push_back(p);
     }
+
+    return result;
 }
 
 

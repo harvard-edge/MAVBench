@@ -56,6 +56,7 @@ private:
     bool collision(const octomap::OcTree * octree, const multiDOFpoint& n1, const multiDOFpoint& n2) const;
     void pull_traj(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg);
     void future_collision_initialize_params();
+    void stop_drone();
 
 private:
     ros::NodeHandle nh;

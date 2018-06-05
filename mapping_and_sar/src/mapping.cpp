@@ -81,7 +81,7 @@ void log_data_before_shutting_down() {
     else if (g_mission_status == "failed_to_start")
         mission_status = 4;
 
-    if (!log_data_in_profiler("mission_status", mission_status) {
+    if (!log_data_in_profiler("mission_status", mission_status)) {
         ROS_ERROR_STREAM("could not probe data using stats manager");
         ros::shutdown();
     }
@@ -91,33 +91,33 @@ void log_data_before_shutting_down() {
         ros::shutdown();
     }
 
-    if (!log_data_in_profiler("motion_planning_plus_srv_call", (((double)g_motion_planning_plus_srv_call_acc)/1e9)/g_iteration) {
+    if (!log_data_in_profiler("motion_planning_plus_srv_call", (((double)g_motion_planning_plus_srv_call_acc)/1e9)/g_iteration)) {
         ROS_ERROR_STREAM("could not probe data using stats manager");
         ros::shutdown();
     }
 
-    if (!log_data_in_profiler("reached_time_out_ctr", g_reached_time_out) {
+    if (!log_data_in_profiler("reached_time_out_ctr", g_reached_time_out)) {
         ROS_ERROR_STREAM("could not probe data using stats manager");
         ros::shutdown();
     }
 
-    if (!log_data_in_profiler("time_out_ctr_avg", g_time_out_ctr_acc/g_iteration) {
+    if (!log_data_in_profiler("time_out_ctr_avg", g_time_out_ctr_acc/g_iteration)) {
         ROS_ERROR_STREAM("could not probe data using stats manager");
         ros::shutdown();
     }
 
 
-    if (!log_data_in_profiler("coverage", g_coverage) {
+    if (!log_data_in_profiler("coverage", g_coverage)) {
         ROS_ERROR_STREAM("could not probe data using stats manager");
         ros::shutdown();
     }
 
-    if (!log_data_in_profiler("motion_planning_kernel", g_path_computation_time_acc/g_iteration) {
+    if (!log_data_in_profiler("motion_planning_kernel", g_path_computation_time_acc/g_iteration)) {
         ROS_ERROR_STREAM("could not probe data using stats manager");
         ros::shutdown();
     }
 
-    if (!log_data_in_profiler("motion_planning_kernel_acc", g_path_computation_time_acc) {
+    if (!log_data_in_profiler("motion_planning_kernel_acc", g_path_computation_time_acc)) {
         ROS_ERROR_STREAM("could not probe data using stats manager");
         ros::shutdown();
     }
@@ -165,66 +165,79 @@ void initialize_params() {
     if (!ros::param::get("/ip_addr", ip_addr__global)) {
         ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
               (ns + "/ip_addr").c_str());
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if (!ros::param::get("/sensor_max_range", g_sensor_max_range)) {
         ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
               (ns + "/sensor_max_range").c_str());
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if (!ros::param::get("/distance_from_goal_threshold", distance_from_goal_threshold)) {
         ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
               (ns + "/distance_from_goal_threshold").c_str());
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if(!ros::param::get("/localization_method",localization_method))  {
         ROS_FATAL_STREAM("Could not start mapping localization_method not provided");
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if(!ros::param::get("/stats_file_addr",g_stats_file_addr)){
         ROS_FATAL("Could not start mapping . Parameter missing! Looking for %s", 
             (ns + "/g_stats_file_addr").c_str());
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if (!ros::param::get("/coverage_threshold", coverage_threshold)) {
         ROS_FATAL("Could not start mapping. Parameter missing! Looking for %s",
               (ns + "/coverage_threshold").c_str());
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if(!ros::param::get("/supervisor_mailbox",g_supervisor_mailbox))  {
         ROS_FATAL_STREAM("Could not start mapping supervisor_mailbox not provided");
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if(!ros::param::get("/v_max", g_v_max))  {
         ROS_FATAL_STREAM("Could not start mapping, vmax not provided");
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if(!ros::param::get("/a_max", g_a_max))  {
         ROS_FATAL_STREAM("Could not start mapping, amax not provided");
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if(!ros::param::get("/max_yaw_rate",g_max_yaw_rate))  {
         ROS_FATAL_STREAM("Could not start mapping, max_yaw_rate not provided");
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if(!ros::param::get("/max_yaw_rate_during_flight",g_max_yaw_rate_during_flight))  {
         ROS_FATAL_STREAM("Could not start mapping,  max_yaw_rate_during_flight not provided");
-        return -1;
+        shutdown_app();
+        exit(-1);
     }
 
     if (!ros::param::get(ns + "/nbvp/dt", g_dt)) {
         ROS_WARN("No sampling time step specified. Looking for %s. Default is 0.1s.",
                 (ns + "/nbvp/dt").c_str());
+        shutdown_app();
+        exit(-1);
     }
 }
 
@@ -241,23 +254,23 @@ bool drone_stopped()
 }
 
 
-void convert_pose_vector_to_trajectory_msg(const vector<geometry_msgs::Pose>& poses, mavbench_msgs::multiDOFtrajectory& result)
+void convert_pose_vector_to_trajectory_msg(const std::vector<geometry_msgs::Pose>& poses, mavbench_msgs::multiDOFtrajectory& result)
 {
     for (int i = 1; i < poses.size(); i++) {
         const auto& pose = poses[i];
 
         // Set position
         mavbench_msgs::multiDOFpoint point;
-        point.x = pose.x;
-        point.y = pose.y;
-        point.z = pose.z;
+        point.x = pose.position.x;
+        point.y = pose.position.y;
+        point.z = pose.position.z;
 
         // Set velocity
         // if (i != 0) {
         const auto& prev_pose  = poses[i-1];
-        point.vx = (pose.x - prev_pose.x) / g_dt;
-        point.vy = (pose.y - prev_pose.y) / g_dt;
-        point.vz = (pose.z - prev_pose.z) / g_dt;
+        point.vx = (pose.position.x - prev_pose.position.x) / g_dt;
+        point.vy = (pose.position.y - prev_pose.position.y) / g_dt;
+        point.vz = (pose.position.z - prev_pose.position.z) / g_dt;
         // }
 
         // Set yaw
@@ -269,7 +282,7 @@ void convert_pose_vector_to_trajectory_msg(const vector<geometry_msgs::Pose>& po
         point.blocking_yaw = false;
 
         // Set duration
-        point.duration = dt;
+        point.duration = g_dt;
 
         result.points.push_back(point);
     }
@@ -278,7 +291,7 @@ void convert_pose_vector_to_trajectory_msg(const vector<geometry_msgs::Pose>& po
 
 void decelerate_end_of_trajectory(mavbench_msgs::multiDOFtrajectory& trajectory) {
     double speed = 0;
-    for (auto it = trajectory->rbegin(); it != trajectory->rend(); ++it) {
+    for (auto it = trajectory.points.rbegin(); it != trajectory.points.rend(); ++it) {
         speed += g_a_max * (it->duration);
         if (speed > g_v_max)
             break;
@@ -313,7 +326,7 @@ void visualize_trajectory(const mavbench_msgs::multiDOFtrajectory& trajectory, r
 
         path_to_follow_marker.points.push_back(p_marker);
 
-        path_to_follow_marker_pub.publish(path_to_follow_marker);
+        pub.publish(path_to_follow_marker);
     }
 }
 
@@ -432,7 +445,7 @@ int main(int argc, char** argv)
     }
 
     // Start ros::ok() loop
-    for (State state = planning, next state = invalid;
+    for (State state = planning, next_state = invalid;
           ros::ok(); state = next_state)
     {
         loop_start_t = ros::Time::now();
@@ -492,6 +505,9 @@ int main(int argc, char** argv)
         if (clct_data) {
             if(!g_start_profiling) { 
                 if (ros::service::waitForService("/start_profiling", 10)){ 
+                    profile_manager::start_profiling_srv start_profiling_srv_inst;
+                    start_profiling_srv_inst.request.key = "";
+
                     if(!start_profiling_client.call(start_profiling_srv_inst)){
                         ROS_ERROR_STREAM("could not probe data using stats manager");
                         ros::shutdown();

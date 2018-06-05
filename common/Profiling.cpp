@@ -21,8 +21,8 @@ void update_stats_file(const std::string& stats_file__addr, const std::string& c
 bool log_data_in_profiler(const std::string& key, double value)
 {
     profile_manager::profiling_data_srv srv_inst;
-    profiling_data_srv_inst.request.key = key;
-    profiling_data_srv_inst.request.value = value;
+    srv_inst.request.key = key;
+    srv_inst.request.value = value;
 
     if (ros::service::waitForService("/record_profiling_data", 10)
             && ros::service::call("/record_profiling_data", srv_inst))
