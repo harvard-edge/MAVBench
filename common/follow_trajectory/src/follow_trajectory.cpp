@@ -185,6 +185,9 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg,
         trajectory_t idling_correction_traj = straight_line_trajectory(drone->position(), new_trajectory.front(), 1.0);
         trajectory = append_trajectory(idling_correction_traj, new_trajectory);
         fly_backward = false;
+    } else if (msg->append) {
+        trajectory = append_trajectory(trajectory, new_trajectory);
+        fly_backward = false;
     } else {
         trajectory = new_trajectory;
         fly_backward = false;

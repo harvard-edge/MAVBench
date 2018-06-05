@@ -31,6 +31,7 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
         res.multiDOFtrajectory.trajectory_seq = trajectory_seq_id;
         trajectory_seq_id++;
 
+        res.multiDOFtrajectory.append = false;
         res.multiDOFtrajectory.reverse = true;
 
         traj_pub.publish(res.multiDOFtrajectory);
@@ -59,6 +60,7 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
         res.multiDOFtrajectory.trajectory_seq = trajectory_seq_id;
         trajectory_seq_id++;
 
+        res.multiDOFtrajectory.append = false;
         res.multiDOFtrajectory.reverse = true;
 
         traj_pub.publish(res.multiDOFtrajectory);
@@ -442,6 +444,7 @@ void MotionPlanner::create_response(package_delivery::get_trajectory::Response &
         state_index++;
 	}
 
+    res.multiDOFtrajectory.append = false;
     res.multiDOFtrajectory.reverse = false;
 
     // Mark the trajectory with the correct sequence id's

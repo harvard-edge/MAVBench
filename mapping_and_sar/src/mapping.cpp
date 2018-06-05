@@ -359,6 +359,7 @@ mavbench_msgs::multiDOFtrajectory nbvp_trajectory(Drone& drone, ros::ServiceClie
     mavbench_msgs::multiDOFtrajectory result;
     convert_pose_vector_to_trajectory_msg(planSrv.response.path, result);
 
+    result.append = true;
     result.reverse = 0;
     result.future_collision_seq = g_trajectory_future_col_seq = g_future_col_seq;
     result.trajectory_seq = g_trajectory_seq;
