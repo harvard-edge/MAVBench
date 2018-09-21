@@ -3,8 +3,8 @@ project(package_delivery)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11 -g -fno-omit-frame-pointer)
-set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
+set (common_utility_src $ENV{HOME}/catkin_ws_mav_bench_dev/src/mav-bench/common)
+set (common_utility_include $ENV{HOME}/catkin_ws_mav_bench_dev/src/mav-bench/common)
 
 
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
@@ -128,12 +128,9 @@ find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(ompl REQUIRED)
 
-catkin_package(
-#  INCLUDE_DIRS include
+    #  INCLUDE_DIRS include
 #  LIBRARIES mavbench
-#  CATKIN_DEPENDS cv_bridge image_transport roscpp std_msgs
 #  DEPENDS system_lib
-)
 
 ###########
 ## Build ##
@@ -191,9 +188,10 @@ link_directories(
 
 ### Package-Delivery executables
 
+
 add_executable(occupancy_map_node src/occupancy_map_node.cpp src/motion_planner.cpp src/graph.cpp src/global_planner.cpp ${common_utility_src}/common.cpp ${common_utility_src}/Profiling.cpp  ${common_utility_src}/Drone.cpp ${common_utility_src}/timer.cpp)
 add_dependencies(occupancy_map_node future_collision package_delivery_generate_messages_cpp)
-target_link_libraries(occupancy_map_node ${catkin_LIBRARIES} ${OMPL_LIBRARIES}  AirLib MavLinkCom rpc pthread cuda cudart cublas curand )
+target_link_libraries(occupancy_map_node ${catkin_LIBRARIES} ${OMPL_LIBRARIES}  AirLib MavLinkCom rpc pthread cuda cudart cublas curand)
 
 add_executable(package_delivery ${common_utility_src}/Drone.cpp ${common_utility_src}/control_drone.cpp 
     ${common_utility_src}/common.cpp  ${common_utility_src}/Profiling.cpp src/package_delivery.cpp ${common_utility_src}/timer.cpp)

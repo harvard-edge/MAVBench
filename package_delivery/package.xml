@@ -54,6 +54,8 @@
   <build_depend>trajectory_msgs</build_depend>
   <build_depend>nlopt</build_depend>
   <build_depend>mavbench_msgs</build_depend>
+  <build_depend>future_collision</build_depend>
+  <build_depend>follow_trajectory</build_depend>
 
   <run_depend>cv_bridge</run_depend>
   <run_depend>image_transport</run_depend>
@@ -69,6 +71,8 @@
   <run_depend>trajectory_msgs</run_depend>
   <run_depend>nlopt</run_depend>
   <run_depend>mavbench_msgs</run_depend>
+  <run_depend>future_collision</run_depend>
+  <run_depend>follow_trajectory</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

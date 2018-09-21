@@ -1,10 +1,11 @@
 cmake_minimum_required(VERSION 2.8.3)
+
 project(mapping_and_sar)
 set(darknet_include_dir  $ENV{HOME}/darknet/include $ENV{HOME}/darknet/src $ENV{HOME})
 set(darknet_lib_dir $ENV{HOME}/darknet/obj)
 set(darknet_lib_dir $ENV{HOME}/darknet/obj)
-set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
+set (common_utility_src $ENV{HOME}/catkin_ws_mav_bench_dev/src/mav-bench/common)
+set (common_utility_include $ENV{HOME}/catkin_ws_mav_bench_dev/src/mav-bench/common)
 
 #-- collecting all the files in the darknet_obj folder
 #file(GLOB darknet_obj_files
@@ -81,6 +82,7 @@ generate_messages(
   geometry_msgs
 )
 
+
 #message(cuda_include_dirs )
 include_directories(
     ${Eigen_INCLUDE_DIRS} 
@@ -88,7 +90,7 @@ include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
     $ENV{HOME}/AirSim/AirLib/include
-    $ENV{HOME}/catkin_ws/src/mav-bench/follow_the_leader/
+    $ENV{HOME}/catkin_ws_mav_bench_dev/src/mav-bench/follow_the_leader/
     ${common_utility_include} 
     ${darknet_include_dir}
     ${CUDA_INCLUDE_DIRS}
