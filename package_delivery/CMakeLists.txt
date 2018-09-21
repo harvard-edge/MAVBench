@@ -3,8 +3,8 @@ project(package_delivery)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11 -g -fno-omit-frame-pointer)
-set (common_utility_src $ENV{HOME}/catkin_ws_mav_bench_dev/src/mav-bench/common)
-set (common_utility_include $ENV{HOME}/catkin_ws_mav_bench_dev/src/mav-bench/common)
+set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
+set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
 
 
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
