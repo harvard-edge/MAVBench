@@ -131,6 +131,7 @@ set (Airlib_addr  $ENV{HOME}/AirSim/AirLib)
 ## Your package locations should be listed before other locations
 include_directories(
   include
+  ${CATKIN_DEVEL_PREFIX}/include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
@@ -138,6 +139,10 @@ include_directories(
   ${common_utility_include} 
   $ENV{HOME}/AirSim/AirLib/include
 )
+
+MESSAGE(STATUS  ${catkin_INCLUDE_DIRS})
+return()
+
 
 link_directories(
   $ENV{HOME}/AirSim/AirLib/lib
