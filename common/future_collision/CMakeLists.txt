@@ -140,10 +140,6 @@ include_directories(
   $ENV{HOME}/AirSim/AirLib/include
 )
 
-MESSAGE(STATUS  ${catkin_INCLUDE_DIRS})
-return()
-
-
 link_directories(
   $ENV{HOME}/AirSim/AirLib/lib
   $ENV{HOME}/AirSim/AirLib/deps/rpclib/lib
