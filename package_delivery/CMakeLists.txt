@@ -6,7 +6,6 @@ add_compile_options(-std=c++11 -g -fno-omit-frame-pointer)
 set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
 set (common_utility_include $ENV{HOME}/catkin_ws/src/mav-bench/common)
 
-
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -141,6 +140,7 @@ set (Airlib_addr  $ENV{HOME}/AirSim/AirLib)
 ## Your package locations should be listed before other locations
 include_directories(
 # include
+  ${CATKIN_DEVEL_PREFIX}/include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
