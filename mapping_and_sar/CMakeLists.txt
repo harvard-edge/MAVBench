@@ -85,6 +85,7 @@ generate_messages(
 
 #message(cuda_include_dirs )
 include_directories(
+    ${CATKIN_DEVEL_PREFIX}/include
     ${Eigen_INCLUDE_DIRS} 
     ${catkin_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}

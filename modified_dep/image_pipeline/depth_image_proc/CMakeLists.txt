@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(depth_image_proc)
 
+set (common_utility_src $ENV{HOME}/catkin_ws/src/mav-bench/common)
 find_package(catkin REQUIRED cmake_modules cv_bridge eigen_conversions image_geometry image_transport message_filters nodelet sensor_msgs stereo_msgs tf2 tf2_ros)
 
 if(cv_bridge_VERSION VERSION_GREATER "1.12.0")
@@ -26,7 +27,9 @@ if(NOT EIGEN3_FOUND)
 endif()
 find_package(OpenCV REQUIRED)
 include_directories(include ${BOOST_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} 
-   ${blah} ${common_utility_include}  ${EIGEN3_INCLUDE_DIRS} )
+   ${blah} ${common_utility_include}  ${EIGEN3_INCLUDE_DIRS} 
+  ${CATKIN_DEVEL_PREFIX}/include
+  )
 
 add_library(${PROJECT_NAME} src/nodelets/convert_metric.cpp
                              src/nodelets/crop_foremost.cpp
@@ -37,6 +40,7 @@ add_library(${PROJECT_NAME} src/nodelets/convert_metric.cpp
                              src/nodelets/point_cloud_xyz_radial.cpp
                              src/nodelets/point_cloud_xyzi_radial.cpp
                              src/nodelets/register.cpp
+			     ${common_utility_src}/Profiling.cpp 
 )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 

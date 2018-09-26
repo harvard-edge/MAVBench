@@ -29,9 +29,11 @@
   <arg name="planning_budget" default=".25"/>
   <param name="planning_budget" value="$(arg planning_budget)"/>
 
+  <comment> 
   <!-- orb slam location--> 
   <arg name="orb_slam2_dir" default="$(find ORB_SLAM2)/../../.."/> 
-
+  </comment>
+  
   <arg name="max_yaw_rate" default="90"/>
   <arg name="max_yaw_rate_during_flight" default="90"/>
   <param name="v_max" value="$(arg v_max)"/>
@@ -281,10 +283,11 @@
         <param name="localization_method" value="$(arg localization_method)" />
     </node>
 
+    <comment>
 	<group if="$(eval localization_method == 'orb_slam2_rgbd')">
         <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth" output="screen"/>
 	</group>
-
+    </comment>
   <group if="$(eval localization_method == 'vins_mono')">
       <node pkg="timed_roslaunch" type="timed_roslaunch.sh" args="4 vins_estimator airsim.launch" name="timed_roslaunch" />
   </group>
