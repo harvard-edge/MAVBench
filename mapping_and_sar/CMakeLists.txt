@@ -105,6 +105,7 @@ link_directories(
   ${Airlib_addr}/deps/MavLinkCom/lib  
   /usr/lib 
   /opt/ros/kinetic/lib
+  /opt/ros/kinetic/lib/aarch64-linux-gnu
   ${darknet_lib_dir}  
   $ENV{HOME}/darknet
 )
