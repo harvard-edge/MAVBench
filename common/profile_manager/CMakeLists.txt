@@ -80,5 +80,5 @@ add_executable(profile_manager src/profile_manager.cpp src/slam_profiler.cpp ${c
 target_link_libraries(profile_manager  ${catkin_LIBRARIES}  AirLib MavLinkCom rpc pthread)
 endif(${CMAKE_HOST_SYSTEM_PROCESSOR} MATCHES "x86_64")
 
-add_dependencies(profile_manager ${catkin_EXPORTED_TARGETS})
+add_dependencies(profile_manager ${catkin_EXPORTED_TARGETS} profile_manager_generate_messages_cpp)
 
