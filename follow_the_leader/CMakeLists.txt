@@ -97,6 +97,7 @@ include_directories(
     $ENV{HOME}/AirSim/AirLib/include
     $ENV{HOME}/catkin_ws/src/mav-bench/follow_the_leader
     $ENV{HOME}/catkin_ws/src/mav-bench/follow_the_leader/src/kcf
+    ${CATKIN_DEVEL_PREFIX}/devel  
     ${common_utility_include} 
     ${darknet_include_dir}
     ${CUDA_INCLUDE_DIRS}
