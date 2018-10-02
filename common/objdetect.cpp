@@ -3,6 +3,9 @@
 #include <opencv2/objdetect/objdetect.hpp>
 #include <ros/ros.h>
 #include <ros/package.h>
+#include <iostream>
+#include <stdio.h>
+#include <string.h>
 
 #define haar_scaleFactor 1.05
 #define haar_minNeighbors 3
@@ -271,22 +274,43 @@ bounding_box HaarDetector::detect_person_gpu(cv::Mat frame)
 
 
 // YOLODetector
-char datacfg[] = "/home/nvidia/darknet/cfg/coco.data";
-char cfgfile[] = "/home/nvidia/darknet/cfg/yolo.cfg";
+
+
+//char datacfg[] = "/home/nvidia/darknet/cfg/coco.data";
+//char cfgfile[] = "/home/nvidia/darknet/cfg/yolo.cfg";
 //char weightfile[] = "/media/ubuntu/0403-0201/yolo.weights";
-char weightfile[] = "/home/nvidia/Downloads/yolo.weights";
+//char weightfile[] = "/home/nvidia/Downloads/yolo.weights";
 float thresh = 0.8;
 float hier_thresh = 0.8;
 
 YOLODetector::YOLODetector()
 {
+	char *home_path = getenv("HOME");
+	std::string datacfg_str = std::string(home_path) + "/darknet/cfg/coco.data";
+	std::string cfgfile_str = std::string(home_path) + "/darknet/cfg/yolo.cfg";
+	std::string weightfile_str = std::string(home_path) + "/darknet/yolov2.weights";
+	std::string coco_names_str = std::string(home_path) + "/darknet/data/coco.names";
+
+	char *datacfg=new char[datacfg_str.size()+1];
+	memcpy(datacfg,datacfg_str.c_str(),datacfg_str.size()+1);
+
+	char *cfgfile=new char[cfgfile_str.size()+1];
+	memcpy(cfgfile,cfgfile_str.c_str(),cfgfile_str.size()+1);
+	char *weightfile = new char[weightfile_str.size()+1];
+	memcpy(weightfile,weightfile_str.c_str(),weightfile_str.size()+1);
+	char *coco_names = new char[coco_names_str.size()+1];
+	memcpy(coco_names,coco_names_str.c_str(),coco_names_str.size()+1);
+
+
+
+
 #if GPU==1
     darknet::cuda_set_device(0);
 #endif
 
     options = darknet::read_data_cfg(datacfg);
-    names = darknet::get_labels("/home/nvidia/darknet/data/coco.names");
-
+//   names = darknet::get_labels("/home/nvidia/darknet/data/coco.names");
+     names = darknet::get_labels(coco_names);
     net = darknet::parse_network_cfg(cfgfile);
     darknet::load_weights(&net, weightfile);
     darknet::set_batch_network(&net, 1);
