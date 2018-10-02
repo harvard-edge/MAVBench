@@ -2,7 +2,7 @@
     <!-- args --> 
     <!-- Behzad's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.101" /--> 
-    <arg name="host_ip" value="10.157.90.51" /> 
+    <arg name="host_ip" default="10.16.0.172" />
     <!--arg name="host_ip" value="169.254.153.158" /--> 
     <!-- Hasans's workstation ip --> 
     <!-- arg name="host_ip" value="10.157.34.208" /--> 
@@ -11,7 +11,6 @@
     <arg name="CLCT_DATA" value="true" />
 
     <!-- orb slam location--> 
-    <arg name="orb_slam2_dir" value="$(find ORB_SLAM2)/../../.."/> 
 
     <!-- Set the localization method -->
     <!-- arg name="localization_method" value="orb_slam2_rgbd" /-->
@@ -138,10 +137,6 @@
     <!-- param name="mav_name" type="string" value="$(arg mav_name)" / -->
     <comment launch-prefix="gdb -ex run --args"/>
 
-    <group if="$(eval localization_method == 'orb_slam2_rgbd')">
-    <node pkg="ORB_SLAM2" type="RGBD" name="RGBD" args="$(arg orb_slam2_dir)/Vocabulary/ORBvoc.txt $(arg orb_slam2_dir)/cameras/airsim-rgbd.yaml /camera/rgb/image_raw:=/Airsim/right/image_raw
-    /camera/depth_registered/sw_registered/image_rect:=/Airsim/depth"/>
-	</group>
 
     <node pkg="follow_the_leader" type="pid_node" name="pid_node" output="screen">
         <!--param name="vx__P__global" value=".08"/-->
