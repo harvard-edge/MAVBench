@@ -6,7 +6,7 @@ MAVBench is a framework targetting design and development of Macro Aerial Vehicl
 
 ### System Requirements
 **Hardware**:  
-> Jetson TX2  
++ Jetson TX2  
 **Software**:  
 	Ubuntu: 16.04  
 	JetPack: 3.2 (we have only tested our setup with 3.2 but we suspect, it'll work with higher versions as well)  
