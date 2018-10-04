@@ -7,7 +7,7 @@ index 57d51b7..2ba598f 100644
    URL https://github.com/google/glog/archive/v${VERSION}.zip
    UPDATE_COMMAND ""
 -  PATCH_COMMAND patch -p0 < ${CMAKE_SOURCE_DIR}/fix-unused-typedef-warning.patch
-+  PATCH_COMMAND patch -p0 < $ENV{HOME}/catkin_ws/src/glog_catkin/fix-unused-typedef-warning.patch
++  PATCH_COMMAND patch -p0 < $ENV{mavbench_base_dir}/catkin_ws/src/glog_catkin/fix-unused-typedef-warning.patch
    CONFIGURE_COMMAND cd ../glog_src/ && autoreconf -fi && ./configure --with-pic
      --with-gflags=${gflags_catkin_PREFIX}
      --prefix=${CATKIN_DEVEL_PREFIX}
