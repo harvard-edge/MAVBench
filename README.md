@@ -18,6 +18,11 @@ pecially Thanks to Microsoft and University of EHTH zurich
 
 
 ### How to Build
+- git clone  https://github.com/MAVBench/tx2.git
+- cd tx2
+- source env.bash
+- sudo su /root_setup.bash 
+- /user_setup.bash
 
 ### How to Use
 
