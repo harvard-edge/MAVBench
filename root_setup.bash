@@ -1,10 +1,9 @@
-#!/bin/bash
-source env.bash
-#export mavbench_base_dir=$PWD
+#! /bin/bash
 
-# spit out commands to stdout
+env_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source ${env_dir}/setup_env_var.sh
+
 set -x 
-# stop at any error
 set -e 
 
 # for some reason this is not necessary in the docker (but otherwise pcl
@@ -37,7 +36,7 @@ fi
 cd $mavbench_base_dir 
 if [[ ! -e "ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb" ]];then
     cd $mavbench_base_dir 
-    rm -f ros-kinetic-opencv3-3.3.1  
+    rm -rf ros-kinetic-opencv3-3.3.1  
     apt-get source ros-kinetic-opencv3
 	cp $mavbench_base_dir/opencv/modules/cudalegacy/src/graphcuts.cpp $mavbench_base_dir/ros-kinetic-opencv3-3.3.1/modules/cudalegacy/src/graphcuts.cpp
     # Dependencies
@@ -50,7 +49,7 @@ fi
 
  
 if [[ ! -e ros_install_done.txt ]]; then
-    rm -f /usr/src/deb_mavbench 
+    rm -rf /usr/src/deb_mavbench 
     mkdir /usr/src/deb_mavbench
 	cp $mavbench_base_dir/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb /usr/src/deb_mavbench/
     cd /usr/src/deb_mavbench/
@@ -65,13 +64,14 @@ if [[ ! -e ros_install_done.txt ]]; then
 	apt-get install -y ros-kinetic-opencv3 --allow-unauthenticated && \
 	sed -i -e "s/#//g" /etc/apt/sources.list.d/ros-latest.list && \
 	apt-get update && \
-	apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools sudo apt-get install -y ros-kinetic-octomap*
+	apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-octomap*
     cp /opt/ros/kinetic/lib/aarch64-linux-gnu/pkgconfig/opencv-3.3.1-dev.pc /opt/ros/kinetic/lib/aarch64-linux-gnu/pkgconfig/opencv.pc 
+    cd $mavbench_base_dir 
     echo "done" > ros_install_done.txt
 fi
 
-cd $mavbench_base_dir
 #--- point cloud library
+cd $mavbench_base_dir
 if [[ ! -d "pcl" ]]; then
     cd $mavbench_base_dir/ && git clone https://github.com/PointCloudLibrary/pcl.git &&\
     cd pcl && git checkout pcl-1.7.2rc2.1
@@ -94,11 +94,12 @@ cd $mavbench_base_dir/ && chmod +x relocate_pcl.sh && ./relocate_pcl.sh
 cd $mavbench_base_dir
 if [[ ! -d "AirSim" ]];then
     cd $mavbench_base_dir/ && git clone https://github.com/hngenc/AirSim.git
-    git fetch origin && \
-    git checkout -b future_darwing_dev origin/future_darwing_dev 
+    cd $mavbench_base_dir/"AirSim" &&\
+    git fetch origin &&\
+    git branch future_darwing_dev origin/future_darwing_dev  &&\
+    git checkout future_darwing_dev
 fi    
 
 cd $mavbench_base_dir/AirSim &&\
     ./setup.sh && \
     ./build.sh
-

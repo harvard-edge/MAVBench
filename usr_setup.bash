@@ -1,6 +1,7 @@
-#!/bin/bash
-source env.bash
-#export mavbench_base_dir=$PWD
+#! /bin/bash
+
+env_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source ${env_dir}/setup_env_var.sh
 
 set -x 
 set -e

@@ -24,7 +24,12 @@ pecially Thanks to Microsoft and University of EHTH zurich
 - sudo su /root_setup.bash 
 - /user_setup.bash
 
+#### build notes:
+- the usr might have to populate the .ssh with public/private key (for both root and usr) //not sure about this though
+- TODO: we need to make sure we build all the pkgs with -DCMAKE_BUILD_TYPE=Release
+
 ### How to Use
+source tx2/catkin_ws/devel/setup.bash
 
 
 ## Participate
