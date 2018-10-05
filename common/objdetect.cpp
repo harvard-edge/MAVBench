@@ -285,7 +285,7 @@ float hier_thresh = 0.8;
 
 YOLODetector::YOLODetector()
 {
-	char *home_path = getenv("HOME");
+	char *home_path = getenv("mavbench_base_dir");
 	std::string datacfg_str = std::string(home_path) + "/darknet/cfg/coco.data";
 	std::string cfgfile_str = std::string(home_path) + "/darknet/cfg/yolo.cfg";
 	std::string weightfile_str = std::string(home_path) + "/darknet/yolov2.weights";
