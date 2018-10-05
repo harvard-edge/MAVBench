@@ -11,7 +11,7 @@
   <arg name="nbvp/gain/range" default="6"/>
   <arg name="nbvp/tree/extension_range" default="4"/>
   <arg name="sensor_max_range" default="7" />
-  <arg name="planning_resolution" default=".15"/>
+  <arg name="planning_resolution" default=".8"/>
   <arg name="mapping_resolution" default="10" />
   <!-- distance_from_goal_threshold is a value betwen 0 and 1--> 
   <arg name="distance_from_goal_threshold" default=".85" />
