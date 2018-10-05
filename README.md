@@ -1,4 +1,4 @@
-# Welcome to MAVBench 
+# Welcome to MAVBench  (Note: We plan to release the code, build scripts and a docker by Micro conference 2018(Oct 20th))
 MAVBench is a framework targetting design and development of Macro Aerial Vehicles for roboticists, sofware and hardware designers. It consists of a closed-loop simulator and an end-to-end application
 benchmark suite. A closed-loop simulation platform is needed to probe and understand the intra-system (application data flow) and inter-system (system and environment) interactions in MAV applications
 to pinpoint bottlenecks and identify opportunities for hardware and software co-design and optimization. In addition to the simulator, MAVBench provides a benchmark suite, the first of its kind,
@@ -44,7 +44,7 @@ Note: make sure that mavbench_base_dir environment variable is set
 More technical details are available in our paper
 
 ## Contribute
-MAVBench aims at brining the robotics, software and hardware community together. We welcome any contributions such new kernels, new applications and new hardware setups.
+MAVBench aims at brining the robotics, software and hardware community together. We welcome any contributions such as new kernels, new applications and new hardware setups.
 
 ## contacts
 behzadboro@gmail.com
