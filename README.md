@@ -33,10 +33,12 @@ https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg?view_as=subscriber
   we can stick to a specific commit too)
 - if the user wants to build pkgs using catkin, he/she needs to make sure to source setup_var_env.sh first
 
-### How to Use
+### How to RUN 
+source tx2/setup_env.sh 
 source tx2/catkin_ws/devel/setup.bash
 
-
+Note: make sure that mavbench_base_dir environment variable is set
+      to the directory that tx2 was cloned to
 ## Participate
 ### Paper
 More technical details are available in our paper
