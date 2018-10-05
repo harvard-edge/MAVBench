@@ -6,11 +6,6 @@ source ${env_dir}/setup_env_var.sh
 set -x 
 set -e 
 
-# for some reason this is not necessary in the docker (but otherwise pcl
-# is gonna issue an error
-cd /usr/lib/aarch64-linux-gnu/
-sudo ln -sf tegra/libGL.so libGL.so
-
 # should remove so if the previous runs have failed, it woulnd't cause an 
 # issue
 rm -f /etc/apt/sources.list.d/ros-latest.list # if we don't remove, we can't be 
@@ -23,7 +18,7 @@ echo "deb-src http://packages.ros.org/ros/ubuntu xenial main" >> /etc/apt/source
 
 apt-get update
 ##--- install ros-kinetic-desktop-full
-apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools
+apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-ompl
 
 # intall ROS OpenCV
 if [[ ! -d "$mavbench_base_dir/opencv" ]];then
@@ -64,7 +59,7 @@ if [[ ! -e ros_install_done.txt ]]; then
 	apt-get install -y ros-kinetic-opencv3 --allow-unauthenticated && \
 	sed -i -e "s/#//g" /etc/apt/sources.list.d/ros-latest.list && \
 	apt-get update && \
-	apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-octomap*
+	apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-octomap* ros-kinetic-ompl
     cp /opt/ros/kinetic/lib/aarch64-linux-gnu/pkgconfig/opencv-3.3.1-dev.pc /opt/ros/kinetic/lib/aarch64-linux-gnu/pkgconfig/opencv.pc 
     cd $mavbench_base_dir 
     echo "done" > ros_install_done.txt
@@ -76,6 +71,12 @@ if [[ ! -d "pcl" ]]; then
     cd $mavbench_base_dir/ && git clone https://github.com/PointCloudLibrary/pcl.git &&\
     cd pcl && git checkout pcl-1.7.2rc2.1
 fi
+
+
+# for some reason this is not necessary in the docker (but otherwise pcl
+# is gonna issue an error
+cd /usr/lib/aarch64-linux-gnu/
+sudo ln -sf tegra/libGL.so libGL.so
 
 cd $mavbench_base_dir/pcl
 if [[ ! `git status --porcelain`  ]]; then

@@ -5,6 +5,8 @@ to pinpoint bottlenecks and identify opportunities for hardware and software co-
 consisting of a variety of MAV applications designed to enable computer architects to perform characterization and develop future aerial computing systems. This work is built on top of a host of open
 pecially Thanks to Microsoft and University of EHTH zurich
 
+## Youtube Channel
+https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg?view_as=subscriber
 
 ## Building MAVBench and Using it
 
@@ -20,13 +22,16 @@ pecially Thanks to Microsoft and University of EHTH zurich
 ### How to Build
 - git clone  https://github.com/MAVBench/tx2.git
 - cd tx2
-- source env.bash
+- source setup_env_var.sh
 - sudo su /root_setup.bash 
 - /user_setup.bash
 
 #### build notes:
 - the usr might have to populate the .ssh with public/private key (for both root and usr) //not sure about this though
 - TODO: we need to make sure we build all the pkgs with -DCMAKE_BUILD_TYPE=Release
+- TODO: should use git submodule insted of git cloning manually in the setup.bash (note that this way,
+  we can stick to a specific commit too)
+- if the user wants to build pkgs using catkin, he/she needs to make sure to source setup_var_env.sh first
 
 ### How to Use
 source tx2/catkin_ws/devel/setup.bash
