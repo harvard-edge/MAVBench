@@ -32,7 +32,7 @@ https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg?view_as=subscriber
 - TODO: should use git submodule insted of git cloning manually in the setup.bash (note that this way,
   we can stick to a specific commit too)
 - if the user wants to build pkgs using catkin, he/she needs to make sure to source setup_var_env.sh first
-
+- augment setup_env_var to export host_ip which will be used by all the aps. 
 ### How to RUN 
 source tx2/setup_env.sh 
 source tx2/catkin_ws/devel/setup.bash
