@@ -39,8 +39,8 @@ source tx2/catkin_ws/devel/setup.bash
 
 Note: make sure that mavbench_base_dir environment variable is set
       to the directory that tx2 was cloned to
-## Participate
-### Paper
+
+## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
 
 ## Contribute
