@@ -6,7 +6,7 @@ consisting of a variety of MAV applications designed to enable computer architec
 pecially Thanks to Microsoft and University of EHTH zurich
 
 ## Youtube Channel
-https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg?view_as=subscriber
+https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg
 
 ## Building MAVBench and Using it
 
