@@ -41,7 +41,7 @@ Note: make sure that mavbench_base_dir environment variable is set
       to the directory that tx2 was cloned to
 ## Participate
 ### Paper
-More technical details are available in our paper(https://d.pr/f/fqspYT);
+More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
 
 ## Contribute
 MAVBench aims at brining the robotics, software and hardware community together. We welcome any contributions such as new kernels, new applications and new hardware setups.
