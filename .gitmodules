@@ -1,0 +1,33 @@
+[submodule "deps/publishAirsimImgs"]
+	path = deps/publishAirsimImgs
+	url = https://github.com/marcelinomalmeidan/publishAirsimImgs.git
+[submodule "deps/perception_pcl"]
+	path = deps/perception_pcl
+	url = https://github.com/ros-perception/perception_pcl.git
+[submodule "deps/catkin_simple"]
+	path = deps/catkin_simple
+	url = https://github.com/catkin/catkin_simple.git
+[submodule "deps/eigen_checks"]
+	path = deps/eigen_checks
+	url = https://github.com/ethz-asl/eigen_catkin.git
+[submodule "deps/glog_catkin"]
+	path = deps/glog_catkin
+	url = https://github.com/ethz-asl/glog_catkin.git
+[submodule "deps/mav_comm"]
+	path = deps/mav_comm
+	url = https://github.com/ethz-asl/mav_comm.git
+[submodule "deps/nlopt"]
+	path = deps/nlopt
+	url = https://github.com/ethz-asl/nlopt.git
+[submodule "deps/mav_trajectory_generation"]
+	path = deps/mav_trajectory_generation
+	url = https://github.com/ethz-asl/mav_trajectory_generation.git
+[submodule "deps/gflags_catkin"]
+	path = deps/gflags_catkin
+	url = https://github.com/ethz-asl/gflags_catkin.git
+[submodule "deps/minkindr"]
+	path = deps/minkindr
+	url = https://github.com/ethz-asl/minkindr.git
+[submodule "deps/minkindr_ros"]
+	path = deps/minkindr_ros
+	url = https://github.com/ethz-asl/minkindr_ros.git
