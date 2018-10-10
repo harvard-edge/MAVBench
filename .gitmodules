@@ -28,9 +28,9 @@
 [submodule "deps/minkindr_ros"]
 	path = deps/minkindr_ros
 	url = https://github.com/ethz-asl/minkindr_ros.git
-[submodule "deps/eigen_catkin"]
-	path = deps/eigen_catkin
-	url = https://github.com/ethz-asl/eigen_checks.git
 [submodule "deps/eigen_checks"]
 	path = deps/eigen_checks
 	url = https://github.com/ethz-asl/eigen_checks.git
+[submodule "deps/eigen_catkin"]
+	path = deps/eigen_catkin
+	url = https://github.com/ethz-asl/eigen_catkin.git
