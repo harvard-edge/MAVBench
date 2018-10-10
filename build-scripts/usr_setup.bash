@@ -17,9 +17,9 @@ source /opt/ros/kinetic/setup.bash
 #    cd darknet && git checkout d528cbdb7bf58c094026377aa80c26971d0ae1b0
 #fi
 #
-cd $darknet_base_dir/darknet
+cd $darknet_base_dir
 if [[ ! `git status --porcelain`  ]]; then
-    cp $base_dir/build-scripts/darknet.patch $darknet_base_dir/darknet/	 &&\
+    cp $base_dir/build-scripts/darknet.patch $darknet_base_dir	 &&\
     git apply --whitespace=fix darknet.patch
     # TODO turn the next couple of lines to a patch aswell
     sed -i 's/GPU=0/GPU=1/' Makefile &&\
@@ -27,9 +27,9 @@ if [[ ! `git status --porcelain`  ]]; then
     sed -i 's/\(LDFLAGS+= -L\/usr\/local\/cuda\/lib64\)/\1 -L\/usr\/local\/cuda\/lib64\/stubs /' Makefile 
 fi
 
-cd $darknet_base_dir/darknet
+cd $darknet_base_dir
 make -j3
-cd $darknet_base_dir/darknet && wget -nc https://pjreddie.com/media/files/yolov2.weights
+cd $darknet_base_dir && wget -nc https://pjreddie.com/media/files/yolov2.weights
 
 
 # mavbench
@@ -42,14 +42,14 @@ catkin_make
 #    git clone --recursive  -b refactor https://github.com/hngenc/mav-bench.git 
 #fi
 #
-cd $base_dir/mav-bench/deps/glog_catkin 
+cd $mavbench_apps_base_dir/deps/glog_catkin 
 if [[ ! `git status --porcelain`  ]]; then
        git apply $base_dir/build-scripts/glog_catkin.patch 
 fi
 
 cd $base_dir/catkin_ws/src 
 if [[ ! -d "mav-bench" ]];then
-ln -sf $base_dir/mav-bench mav-bench 
+ln -sf $mavbench_apps_base_dir mav-bench 
 fi
 #
 #

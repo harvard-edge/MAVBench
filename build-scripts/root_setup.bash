@@ -103,6 +103,6 @@ cd $mavbench_base_dir/build-deps && chmod +x relocate_pcl.sh && ./relocate_pcl.s
 #    git checkout future_darwing_dev
 #fi    
 #
-cd $base_dir/src/AirSim &&\
+cd $AirSim_base_dir &&\
     ./setup.sh && \
     ./build.sh
