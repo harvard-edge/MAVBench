@@ -33,10 +33,11 @@ cd $darknet_base_dir && wget -nc https://pjreddie.com/media/files/yolov2.weights
 
 
 # mavbench
+if [[ ! -d $base_dir/catkin_ws/src ]]; then
 mkdir -p $base_dir/catkin_ws/src
 cd $base_dir/catkin_ws/
 catkin_make
-
+fi
 #cd $mavbench_base_dir
 #if [[ ! -d "mav-bench" ]];then
 #    git clone --recursive  -b refactor https://github.com/hngenc/mav-bench.git 
