@@ -8,4 +8,4 @@
 [submodule "src/AirSim"]
 	path = src/AirSim
 	url = https://github.com/hngenc/AirSim.git
-	branch = future_darwin_dev
+	branch = future_darwing_dev
