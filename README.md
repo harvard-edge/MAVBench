@@ -20,26 +20,24 @@ https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg
 
 
 ### How to Build
-- git clone  https://github.com/MAVBench/tx2.git
-- cd tx2
-- source setup_env_var.sh
-- sudo su /root_setup.bash 
-- /user_setup.bash
+- git clone  --recursive https://github.com/MAVBench/tx2.git MAVBench_base
+- cd MAVBench_base
+- source build-scripts/setup_env_var.sh
+- sudo ./build-scripts/root_setup.bash 
+- ./build-scripts/user_setup.bash
 
 #### build notes:
 - the usr might have to populate the .ssh with public/private key (for both root and usr) //not sure about this though
 - TODO: we need to make sure we build all the pkgs with -DCMAKE_BUILD_TYPE=Release
-- TODO: should use git submodule insted of git cloning manually in the setup.bash (note that this way,
-  we can stick to a specific commit too)
 - if the user wants to build pkgs using catkin, he/she needs to make sure to source setup_var_env.sh first
 - augment setup_env_var to export host_ip which will be used by all the aps. 
 ### How to RUN 
-source tx2/setup_env.sh 
-source tx2/catkin_ws/devel/setup.bash
+source MAVBench_base/buil-scripts/setup_env_var.sh 
+source MAVBench_base/catkin_ws/devel/setup.bash
 
 Note: make sure that mavbench_base_dir environment variable is set
-      to the directory that tx2 was cloned to
-
+      to the directory that MAVBench_base  was cloned to
+- TODO: create a set of pre_missions for each app
 ## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
 

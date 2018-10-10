@@ -2,21 +2,15 @@
 
 env_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source ${env_dir}/setup_env_var.sh
-
 set -x 
 set -e
-
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/cuda/lib64" 
 export PATH="$PATH:/usr/local/cuda/bin"
 source /opt/ros/kinetic/setup.bash
 
-# darknet
-#cd $mavbench_base_dir
-#if [[ ! -d "darknet" ]]; then
-#    cd $mavbench_base_dir && git clone https://github.com/pjreddie/darknet.git &&\
-#    cd darknet && git checkout d528cbdb7bf58c094026377aa80c26971d0ae1b0
-#fi
-#
+########
+# darknet 
+########
 cd $darknet_base_dir
 if [[ ! `git status --porcelain`  ]]; then
     cp $base_dir/build-scripts/darknet.patch $darknet_base_dir	 &&\
@@ -31,18 +25,16 @@ cd $darknet_base_dir
 make -j3
 cd $darknet_base_dir && wget -nc https://pjreddie.com/media/files/yolov2.weights
 
-
+########
 # mavbench
+########
+# mavbench-clone
 if [[ ! -d $base_dir/catkin_ws/src ]]; then
 mkdir -p $base_dir/catkin_ws/src
 cd $base_dir/catkin_ws/
 catkin_make
 fi
-#cd $mavbench_base_dir
-#if [[ ! -d "mav-bench" ]];then
-#    git clone --recursive  -b refactor https://github.com/hngenc/mav-bench.git 
-#fi
-#
+
 cd $mavbench_apps_base_dir/deps/glog_catkin 
 if [[ ! `git status --porcelain`  ]]; then
        git apply $base_dir/build-scripts/glog_catkin.patch 
@@ -52,8 +44,8 @@ cd $base_dir/catkin_ws/src
 if [[ ! -d "mav-bench" ]];then
 ln -sf $mavbench_apps_base_dir mav-bench 
 fi
-#
-#
+
+# mavbench-build
 cd $base_dir/catkin_ws/ &&\
     source /opt/ros/kinetic/setup.bash &&\
     catkin_make -DCATKIN_WHITELIST_PACKAGES="catkin_simple" &&\
@@ -89,14 +81,3 @@ cd $base_dir/catkin_ws/ &&\
     catkin_make -DCATKIN_WHITELIST_PACKAGES="nbvplanner" -j3 &&\
     catkin_make -DCATKIN_WHITELIST_PACKAGES="mapping_and_sar" -j3 && \
     catkin_make -DCATKIN_WHITELIST_PACKAGES="follow_the_leader" -j3
-#   
-
-#--- probably need to delete the following
-##RUN	cp $mavbench_base_dir/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb /usr/src/deb/ &&\
-##    dpkg -i $mavbench_base_dir/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb 
-  
-
-#--- probably need to delete the following
-##RUN	cp $mavbench_base_dir/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb /usr/src/deb/ &&\
-##    dpkg -i $mavbench_base_dir/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb 
-
