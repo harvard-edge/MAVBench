@@ -3,8 +3,8 @@ project(mavbench_msgs)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11 -fno-omit-frame-pointer)
-set (common_utility_src $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_src $ENV{base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_include $ENV{base_dir}/catkin_ws/src/mav-bench/common)
 
 
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)
@@ -120,7 +120,7 @@ catkin_package(
 ## Build ##
 ###########
 
-set (Airlib_addr  $ENV{mavbench_base_dir}/AirSim/AirLib)
+set (Airlib_addr  $ENV{AirSim_base_dir}/AirLib)
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(

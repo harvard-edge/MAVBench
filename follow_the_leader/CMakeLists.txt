@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(follow_the_leader)
-set(darknet_include_dir  $ENV{mavbench_base_dir}/darknet/include $ENV{mavbench_base_dir}/darknet/src $ENV{mavbench_base_dir})
-set(darknet_lib_dir $ENV{mavbench_base_dir}/darknet/obj)
-set(darknet_lib_dir $ENV{mavbench_base_dir}/darknet/obj)
-set (common_utility_src $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/common)
+set(darknet_include_dir  $ENV{darknet_base_dir}/include $ENV{darknet_base_dir}/src $ENV{darknet_base_dir})
+set(darknet_lib_dir $ENV{darknet_base_dir}/obj)
+set(darknet_lib_dir $ENV{darknet_base_dir}/obj)
+set (common_utility_src $ENV{base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_include $ENV{base_dir}/catkin_ws/src/mav-bench/common)
 
 
 #-- collecting all the files in the darknet_obj folder
@@ -12,7 +12,7 @@ set (common_utility_include $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/comm
 #    "*.o"
 #)
 
-set (Airlib_addr  $ENV{mavbench_base_dir}/AirSim/AirLib)
+set (Airlib_addr  $ENV{AirSim_base_dir}/AirLib)
 set (CUDA_OPENCVLIBS
 opencv_cudaoptflow3
 opencv_cudawarping3
@@ -94,9 +94,9 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
-    $ENV{mavbench_base_dir}/AirSim/AirLib/include
-    $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/follow_the_leader
-    $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/follow_the_leader/src/kcf
+    $ENV{AirSim_base_dir}/AirLib/include
+    $ENV{base_dir}/catkin_ws/src/mav-bench/follow_the_leader
+    $ENV{base_dir}/catkin_ws/src/mav-bench/follow_the_leader/src/kcf
     ${CATKIN_DEVEL_PREFIX}/devel  
     ${common_utility_include} 
     ${darknet_include_dir}
@@ -104,16 +104,15 @@ include_directories(
 )
 
 link_directories(
-  $ENV{mavbench_base_dir}/AirSim/AirLib/lib
-  $ENV{mavbench_base_dir}/AirSim/AirLib/deps/rpclib/lib
-  $ENV{mavbench_base_dir}/AirSim/AirLib/deps/rpclib/lib
+    $ENV{AirSim_base_dir}/AirLib/lib
+    $ENV{AirSim_base_dir}/AirLib/deps/rpclib/lib
   /usr/local/cuda/lib64  #added by Behzad (for Behzad)
   ${Airlib_addr}/deps/MavLinkCom/lib  
   /usr/lib 
   /opt/ros/kinetic/lib
   /opt/ros/kinetic/lib/aarch64-linux-gnu
   ${darknet_lib_dir}  
-  $ENV{mavbench_base_dir}/darknet
+  $ENV{darknet_base_dir}
 )
 
 catkin_package(

@@ -18,15 +18,15 @@ extern "C" {
 
 #undef GPU
 #undef CUDNN
-#include "darknet/src/network.h"
-#include "darknet/src/region_layer.h"
-#include "darknet/src/cost_layer.h"
-#include "darknet/src/utils.h"
-#include "darknet/src/parser.h"
-#include "darknet/src/box.h"
-#include "darknet/src/demo.h"
-#include "darknet/src/option_list.h"
-#include "darknet/src/blas.h"
+#include "src/network.h"
+#include "src/region_layer.h"
+#include "src/cost_layer.h"
+#include "src/utils.h"
+#include "src/parser.h"
+#include "src/box.h"
+#include "src/demo.h"
+#include "src/option_list.h"
+#include "src/blas.h"
 image ipl_to_image(IplImage* src);
 #define GPU 1
 #define CUDNN 0
@@ -36,15 +36,15 @@ image ipl_to_image(IplImage* src);
 #if CUDNN==0
 #undef CUDNN
 #undef __cplusplus
-#include "darknet/src/network.h"
-#include "darknet/src/region_layer.h"
-#include "darknet/src/cost_layer.h"
-#include "darknet/src/utils.h"
-#include "darknet/src/parser.h"
-#include "darknet/src/box.h"
-#include "darknet/src/demo.h"
-#include "darknet/src/option_list.h"
-#include "darknet/src/blas.h"
+#include "src/network.h"
+#include "src/region_layer.h"
+#include "src/cost_layer.h"
+#include "src/utils.h"
+#include "src/parser.h"
+#include "src/box.h"
+#include "src/demo.h"
+#include "src/option_list.h"
+#include "src/blas.h"
 image ipl_to_image(IplImage* src);
 void cuda_set_device(int n);
 #define __cplusplus 201103
@@ -53,15 +53,15 @@ void cuda_set_device(int n);
 #else
 
 #undef __cplusplus
-#include "darknet/src/network.h"
-#include "darknet/src/region_layer.h"
-#include "darknet/src/cost_layer.h"
-#include "darknet/src/utils.h"
-#include "darknet/src/parser.h"
-#include "darknet/src/box.h"
-#include "darknet/src/demo.h"
-#include "darknet/src/option_list.h"
-#include "darknet/src/blas.h"
+#include "src/network.h"
+#include "src/region_layer.h"
+#include "src/cost_layer.h"
+#include "src/utils.h"
+#include "src/parser.h"
+#include "src/box.h"
+#include "src/demo.h"
+#include "src/option_list.h"
+#include "src/blas.h"
 image ipl_to_image(IplImage* src);
 void cuda_set_device(int n);
 #define __cplusplus 201103

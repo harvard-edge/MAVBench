@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(depth_image_proc)
 
-set (common_utility_src $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_src $ENV{base_dir}/catkin_ws/src/mav-bench/common)
 find_package(catkin REQUIRED cmake_modules cv_bridge eigen_conversions image_geometry image_transport message_filters nodelet sensor_msgs stereo_msgs tf2 tf2_ros)
 
 if(cv_bridge_VERSION VERSION_GREATER "1.12.0")
@@ -14,8 +14,8 @@ catkin_package(
 
 find_package(Boost REQUIRED)
 find_package(Eigen3 QUIET)
-set (common_utility_src $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_src $ENV{base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_include $ENV{base_dir}/catkin_ws/src/mav-bench/common)
 
 set (blah /home/nvidia/catkin_ws/devel/include)
 message(STATUS ${common_utility_include})

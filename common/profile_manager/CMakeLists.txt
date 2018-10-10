@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(profile_manager)
 
-set (Airlib_addr  $ENV{mavbench_base_dir}/AirSim/AirLib)
-set (common_utility_src $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{mavbench_base_dir}/catkin_ws/src/mav-bench/common)
+set (Airlib_addr  $ENV{AirSim_base_dir}/AirLib)
+set (common_utility_src $ENV{base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_include $ENV{base_dir}/catkin_ws/src/mav-bench/common)
 
 find_package(Eigen3 REQUIRED)
 find_package(CUDA REQUIRED)
@@ -49,15 +49,14 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
-    $ENV{mavbench_base_dir}/AirSim/AirLib/include
+    $ENV{AirSim_base_dir}/AirLib/include
     ${common_utility_include} 
     ${darknet_include_dir}
 )
 
 link_directories(
-  $ENV{mavbench_base_dir}/AirSim/AirLib/lib
-  $ENV{mavbench_base_dir}/AirSim/AirLib/deps/rpclib/lib
-  $ENV{mavbench_base_dir}/AirSim/AirLib/deps/rpclib/lib
+    $ENV{AirSim_base_dir}/AirLib/lib
+    $ENV{AirSim_base_dir}/AirLib/deps/rpclib/lib
   /usr/local/cuda/lib64  #added by Behzad (for Behzad)
   ${Airlib_addr}/deps/MavLinkCom/lib
 )

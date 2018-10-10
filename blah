@@ -1,0 +1,21 @@
+	modified:   .gitignore
+	modified:   common/control_drone/CMakeLists.txt
+	modified:   common/follow_trajectory/CMakeLists.txt
+	modified:   common/future_collision/CMakeLists.txt
+	modified:   common/gps_publisher/CMakeLists.txt
+	modified:   common/mavbench_msgs/CMakeLists.txt
+	modified:   common/objdetect.cpp
+	modified:   common/objdetect.h
+	modified:   common/profile_manager/CMakeLists.txt
+	modified:   common/publish_imu/CMakeLists.txt
+	modified:   follow_the_leader/CMakeLists.txt
+	modified:   mapping_and_sar/CMakeLists.txt
+	modified:   modified_dep/image_pipeline/depth_image_proc/CMakeLists.txt
+	modified:   package_delivery/CMakeLists.txt
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+
+	blah
+
+no changes added to commit (use "git add" and/or "git commit -a")
