@@ -11,15 +11,15 @@ export PATH="$PATH:/usr/local/cuda/bin"
 source /opt/ros/kinetic/setup.bash
 
 # darknet
-cd $mavbench_base_dir
-if [[ ! -d "darknet" ]]; then
-    cd $mavbench_base_dir && git clone https://github.com/pjreddie/darknet.git &&\
-    cd darknet && git checkout d528cbdb7bf58c094026377aa80c26971d0ae1b0
-fi
-
-cd $mavbench_base_dir/darknet
+#cd $mavbench_base_dir
+#if [[ ! -d "darknet" ]]; then
+#    cd $mavbench_base_dir && git clone https://github.com/pjreddie/darknet.git &&\
+#    cd darknet && git checkout d528cbdb7bf58c094026377aa80c26971d0ae1b0
+#fi
+#
+cd $darknet_base_dir/darknet
 if [[ ! `git status --porcelain`  ]]; then
-    cp $mavbench_base_dir/darknet.patch $mavbench_base_dir/darknet/	 &&\
+    cp $base_dir/build-scripts/darknet.patch $darknet_base_dir/darknet/	 &&\
     git apply --whitespace=fix darknet.patch
     # TODO turn the next couple of lines to a patch aswell
     sed -i 's/GPU=0/GPU=1/' Makefile &&\
@@ -27,33 +27,33 @@ if [[ ! `git status --porcelain`  ]]; then
     sed -i 's/\(LDFLAGS+= -L\/usr\/local\/cuda\/lib64\)/\1 -L\/usr\/local\/cuda\/lib64\/stubs /' Makefile 
 fi
 
-cd $mavbench_base_dir/darknet
+cd $darknet_base_dir/darknet
 make -j3
-cd $mavbench_base_dir/darknet && wget -nc https://pjreddie.com/media/files/yolov2.weights
+cd $darknet_base_dir/darknet && wget -nc https://pjreddie.com/media/files/yolov2.weights
 
 
 # mavbench
-mkdir -p $mavbench_base_dir/catkin_ws/src
-cd $mavbench_base_dir/catkin_ws/
+mkdir -p $base_dir/catkin_ws/src
+cd $base_dir/catkin_ws/
 catkin_make
 
-cd $mavbench_base_dir
-if [[ ! -d "mav-bench" ]];then
-    git clone --recursive  -b refactor https://github.com/hngenc/mav-bench.git 
-fi
-
-cd $mavbench_base_dir/mav-bench/deps/glog_catkin 
+#cd $mavbench_base_dir
+#if [[ ! -d "mav-bench" ]];then
+#    git clone --recursive  -b refactor https://github.com/hngenc/mav-bench.git 
+#fi
+#
+cd $base_dir/mav-bench/deps/glog_catkin 
 if [[ ! `git status --porcelain`  ]]; then
-       git apply $mavbench_base_dir/glog_catkin.patch 
+       git apply $base_dir/build-scripts/glog_catkin.patch 
 fi
 
-cd $mavbench_base_dir/catkin_ws/src 
+cd $base_dir/catkin_ws/src 
 if [[ ! -d "mav-bench" ]];then
-ln -sf $mavbench_base_dir/mav-bench mav-bench 
+ln -sf $base_dir/mav-bench mav-bench 
 fi
 #
 #
-cd $mavbench_base_dir/catkin_ws/ &&\
+cd $base_dir/catkin_ws/ &&\
     source /opt/ros/kinetic/setup.bash &&\
     catkin_make -DCATKIN_WHITELIST_PACKAGES="catkin_simple" &&\
     catkin_make -DCATKIN_WHITELIST_PACKAGES="eigen_catkin" &&\

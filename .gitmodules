@@ -1,0 +1,11 @@
+[submodule "src/mav-bench-apps"]
+	path = src/mav-bench-apps
+	url = https://github.com/hngenc/mav-bench.git
+	branch = refactor
+[submodule "src/darknet"]
+	path = src/darknet
+	url = https://github.com/pjreddie/darknet.git
+[submodule "src/AirSim"]
+	path = src/AirSim
+	url = https://github.com/hngenc/AirSim.git
+	branch = future_darwin_dev

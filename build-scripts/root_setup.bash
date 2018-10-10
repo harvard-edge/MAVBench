@@ -1,7 +1,7 @@
 #! /bin/bash
 
-env_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source ${env_dir}/setup_env_var.sh
+env_dir="$(dirname $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd))"
+source ${env_dir}/build-scripts/setup_env_var.sh
 
 set -x 
 set -e 
@@ -20,22 +20,24 @@ apt-get update
 ##--- install ros-kinetic-desktop-full
 apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-ompl
 
+mkdir -p $base_dir/build
+
 # intall ROS OpenCV
-if [[ ! -d "$mavbench_base_dir/opencv" ]];then
-	cd $mavbench_base_dir && \
+if [[ ! -d "$base_dir/build/opencv" ]];then
+	cd $base_dir && \
 		git clone -b 3.1.0-with-cuda8 https://github.com/daveselinger/opencv opencv
 fi
 
 # the following needs to change so that it's not specific to a version of opencv
 # (if we want to stick to a version we need to provide the source code ourselves
-cd $mavbench_base_dir 
+cd $base_dir/src
 if [[ ! -e "ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb" ]];then
-    cd $mavbench_base_dir 
+    cd $base_dir/src
     rm -rf ros-kinetic-opencv3-3.3.1  
     apt-get source ros-kinetic-opencv3
-	cp $mavbench_base_dir/opencv/modules/cudalegacy/src/graphcuts.cpp $mavbench_base_dir/ros-kinetic-opencv3-3.3.1/modules/cudalegacy/src/graphcuts.cpp
+	cp $base_dir/src/opencv/modules/cudalegacy/src/graphcuts.cpp $base_dir/src/ros-kinetic-opencv3-3.3.1/modules/cudalegacy/src/graphcuts.cpp
     # Dependencies
-    cd $mavbench_base_dir/ros-kinetic-opencv3-3.3.1 && \
+    cd $base_dir/src/ros-kinetic-opencv3-3.3.1 && \
 	   apt-get build-dep -y ros-kinetic-opencv3
     # Now build (we ignore missing dependencies, because we have them on our system anyways)
     sed -i 's/\(\bdh_shlibdeps.*\)$/\1 --dpkg-shlibdeps-params=--ignore-missing-info/' debian/rules || exit 1
@@ -43,10 +45,10 @@ if [[ ! -e "ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb" ]];then
 fi
 
  
-if [[ ! -e ros_install_done.txt ]]; then
+if [[ ! -e $base_dir/build-deps/ros_install_done.txt ]]; then
     rm -rf /usr/src/deb_mavbench 
     mkdir /usr/src/deb_mavbench
-	cp $mavbench_base_dir/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb /usr/src/deb_mavbench/
+	cp $base_dir/src/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb /usr/src/deb_mavbench/
     cd /usr/src/deb_mavbench/
     chmod a+wr /usr/src/deb_mavbench && \
 	apt-ftparchive packages . | gzip -c9 > Packages.gz && \
@@ -61,14 +63,14 @@ if [[ ! -e ros_install_done.txt ]]; then
 	apt-get update && \
 	apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-octomap* ros-kinetic-ompl
     cp /opt/ros/kinetic/lib/aarch64-linux-gnu/pkgconfig/opencv-3.3.1-dev.pc /opt/ros/kinetic/lib/aarch64-linux-gnu/pkgconfig/opencv.pc 
-    cd $mavbench_base_dir 
+    cd $base_dir/build
     echo "done" > ros_install_done.txt
 fi
 
 #--- point cloud library
-cd $mavbench_base_dir
+cd $base_dir/src
 if [[ ! -d "pcl" ]]; then
-    cd $mavbench_base_dir/ && git clone https://github.com/PointCloudLibrary/pcl.git &&\
+    cd $base_dir/src && git clone https://github.com/PointCloudLibrary/pcl.git &&\
     cd pcl && git checkout pcl-1.7.2rc2.1
 fi
 
@@ -80,27 +82,27 @@ sudo ln -sf tegra/libGL.so libGL.so
 
 cd $mavbench_base_dir/pcl
 if [[ ! `git status --porcelain`  ]]; then
-    cp $mavbench_base_dir/lzf_image_io.cpp $mavbench_base_dir/pcl/io/src/ 
+    cp $base_dir/build-scripts/lzf_image_io.cpp $base_dir/src/pcl/io/src/ 
 fi
 
-cd $mavbench_base_dir/pcl && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++11" ..
-cd $mavbench_base_dir/pcl/build && make -j 4
-cd $mavbench_base_dir/pcl/build && make -j 4 install
+cd $base_dir/src/pcl && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++11" ..
+cd $base_dir/src/pcl/build && make -j 4
+cd $base_dir/src/pcl/build && make -j 4 install
 
 # TODO: this is gonna cause linker for libs that use pcl to run everytime
 #       somehow, we need to figure out how to avoid doing it everytime
-cd $mavbench_base_dir/ && chmod +x relocate_pcl.sh && ./relocate_pcl.sh
+cd $mavbench_base_dir/build-deps && chmod +x relocate_pcl.sh && ./relocate_pcl.sh
 
 # airsim
-cd $mavbench_base_dir
-if [[ ! -d "AirSim" ]];then
-    cd $mavbench_base_dir/ && git clone https://github.com/hngenc/AirSim.git
-    cd $mavbench_base_dir/"AirSim" &&\
-    git fetch origin &&\
-    git branch future_darwing_dev origin/future_darwing_dev  &&\
-    git checkout future_darwing_dev
-fi    
-
-cd $mavbench_base_dir/AirSim &&\
+#cd $mavbench_base_dir
+#if [[ ! -d "AirSim" ]];then
+#    cd $mavbench_base_dir/ && git clone https://github.com/hngenc/AirSim.git
+#    cd $mavbench_base_dir/"AirSim" &&\
+#    git fetch origin &&\
+#    git branch future_darwing_dev origin/future_darwing_dev  &&\
+#    git checkout future_darwing_dev
+#fi    
+#
+cd $base_dir/src/AirSim &&\
     ./setup.sh && \
     ./build.sh
