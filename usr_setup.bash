@@ -32,57 +32,27 @@ make -j3
 cd $mavbench_base_dir/darknet && wget -nc https://pjreddie.com/media/files/yolov2.weights
 
 
-
 # mavbench
 mkdir -p $mavbench_base_dir/catkin_ws/src
-cd $mavbench_base_dir/catkin_ws/src
-#
-listethzOfRepos="eigen_catkin eigen_checks glog_catkin mav_comm nlopt \
-                 mav_trajectory_generation gflags_catkin \
-                 minkindr minkindr_ros"
+cd $mavbench_base_dir/catkin_ws/
+catkin_make
 
-cd $mavbench_base_dir/catkin_ws/src
-for repo in $listethzOfRepos
-do
-    if [[ ! -d $repo ]];then
-        git clone https://github.com/ethz-asl/"$repo".git
-    fi
-done
-
-
-if [[ ! -d "catkin_simple" ]];then
-    git clone https://github.com/catkin/catkin_simple.git
-fi 
-
-cd $mavbench_base_dir/catkin_ws/src
-if [[ ! -d "perception_pcl" ]];then
-    git clone "https://github.com/ros-perception/perception_pcl.git"
-fi
-
-if [[ ! -d "publishAirsimImgs" ]];then
-    git clone https://github.com/marcelinomalmeidan/publishAirsimImgs.git
-fi
-
-cd $mavbench_base_dir/catkin_ws/src
+cd $mavbench_base_dir
 if [[ ! -d "mav-bench" ]];then
-    git clone --recursive  https://github.com/hngenc/mav-bench.git  &&  \
-    cd mav-bench && \
-    git checkout -b refactor origin/refactor
+    git clone --recursive  -b refactor https://github.com/hngenc/mav-bench.git 
 fi
 
-cd $mavbench_base_dir/catkin_ws/src/glog_catkin 
+cd $mavbench_base_dir/mav-bench/deps/glog_catkin 
 if [[ ! `git status --porcelain`  ]]; then
-       git checkout de911f71cb832dcc0668bca56727b4b7b1e42126 && \
-       git apply $mavbench_base_dir/catkin_ws/src/mav-bench/misc/glog_catkin.patch 
+       git apply $mavbench_base_dir/glog_catkin.patch 
 fi
 
-cd $mavbench_base_dir/catkin_ws/src/mav_trajectory_generation 
-git checkout ee318fc2478a04c85a95e96dedb4a7be6731720c
-
-cd $mavbench_base_dir/catkin_ws/src/mav_comm
-git checkout 521b2b21ffb6c86e724a9b6144b0171a371c9ee4 
-
-
+cd $mavbench_base_dir/catkin_ws/src 
+if [[ ! -d "mav-bench" ]];then
+ln -sf $mavbench_base_dir/mav-bench mav-bench 
+fi
+#
+#
 cd $mavbench_base_dir/catkin_ws/ &&\
     source /opt/ros/kinetic/setup.bash &&\
     catkin_make -DCATKIN_WHITELIST_PACKAGES="catkin_simple" &&\
@@ -118,7 +88,12 @@ cd $mavbench_base_dir/catkin_ws/ &&\
     catkin_make -DCATKIN_WHITELIST_PACKAGES="nbvplanner" -j3 &&\
     catkin_make -DCATKIN_WHITELIST_PACKAGES="mapping_and_sar" -j3 && \
     catkin_make -DCATKIN_WHITELIST_PACKAGES="follow_the_leader" -j3
-   
+#   
+
+#--- probably need to delete the following
+##RUN	cp $mavbench_base_dir/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb /usr/src/deb/ &&\
+##    dpkg -i $mavbench_base_dir/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb 
+  
 
 #--- probably need to delete the following
 ##RUN	cp $mavbench_base_dir/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb /usr/src/deb/ &&\
