@@ -9,3 +9,10 @@
 	path = src/AirSim
 	url = https://github.com/hngenc/AirSim.git
 	branch = future_darwing_dev
+[submodule "src/opencv"]
+	path = src/opencv
+	url = https://github.com/daveselinger/opencv
+	branch = 3.1.0-with-cuda8
+[submodule "src/pcl"]
+	path = src/pcl
+	url = https://github.com/PointCloudLibrary/pcl.git
