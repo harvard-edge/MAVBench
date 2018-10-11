@@ -9,6 +9,15 @@ pecially Thanks to Microsoft and University of EHTH zurich
 https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg
 
 ## Building MAVBench and Using it
+closed-loop operation is an integral component of autonomous MAVs. In such systems, the data flows in a (closed) loop, starting from the environment, going through the MAV and back to the environment
+. The process involves sensing the environment (Sensors), interpreting it and making decisions (Compute), and finally navigating within or modifying the environment (Actuators) in a loop. 
+In our simulator, sensors, actuators, environment and the flight controler are simulated with the help of Unreal and Airsim.
+These components need to run on a powerfull machine. Our tested setup uses an Intel Core i7 CPU and a high-end NVIDIA GTX 1080 Ti GPU.   
+
+MAVBench simulator is a closeloop simulator modeling 
+
+
+
 
 ### System Requirements
 **Hardware**:  
