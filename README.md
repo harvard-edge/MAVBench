@@ -15,7 +15,7 @@ https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg
 
 ## Demos
 
-![alt text](https://www.youtube.com/watch?v=B_hOO7o0-Bk)
+[![Watch the video](https://www.youtube.com/watch?v=B_hOO7o0-Bk)
 ## Building MAVBench and Using it
 closed-loop operation is an integral component of autonomous MAVs. In such systems, the data flows in a (closed) loop, starting from the environment, going through the MAV and back to the environment
 . The process involves sensing the environment (Sensors), interpreting it and making decisions (Compute), and finally navigating within or modifying the environment (Actuators) in a loop. 
