@@ -90,6 +90,7 @@ If uppon running host_root_setup.cmd (while in running in "Start x64 Native Tool
 Note: that if you want to run as a user, you need to give access to the Community folder (in admin mode) using "icacls "./Community"  /grant $your_user_name:M /T)
 
 Uppon running Unreal, if you get the follow error:
+![alt text](https://github.com/MAVBench/tx2/blob/master/docs/images/unreal_error.PNG)
 - right click the game solution from your solution explorer and select the option "Set as StartUp Project" and that should highlight the game solution. Cntrl-F5 will then work
 
 
