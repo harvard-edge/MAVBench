@@ -1,0 +1,104 @@
+{
+    "user_setting":{	
+        "game_path" : "C:\\Users\\Behzad\\Desktop\\Fo\\WindowsNoEditor\\Blocks.exe",
+        "usr_name": "nvidia" ,
+        "pass_code":  "nvidia",
+        "host_to_cnct_to": "10.157.90.135",
+        "catkin_dir": "/home/nvidia/catkin_ws",
+        "mav_bench_dir" : "/home/nvidia/catkin_ws/src/mav-bench/",
+        "AirSim_dir": "C:\\Users\\Behzad\\Documents\\AirSim",
+        "stats_file_on_comp_computer": "stats.json"
+    },
+    "experiment_setting_list": [
+        {      
+            "application": "mapping", 
+            "ros_params": {
+                "nbvp/gain/range": 12.5,
+                "nbvp/tree/extension_range": 12,
+                "sensor_max_range": 15,   
+                "planning_resolution":0.4,
+                "coverage_threshold": 95,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 5,
+            "max_run_time":1500 ,
+            "processor_frequency":2035200,
+            "map_name": "mapping_high_featured"
+        },
+        {      
+            "application": "mapping", 
+            "ros_params": {
+                "nbvp/gain/range": 8.5,
+                "nbvp/tree/extension_range": 8,
+                "sensor_max_range": 15,   
+                "planning_resolution":0.4,
+                "coverage_threshold": 95,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 5,
+            "max_run_time":1500 ,
+            "processor_frequency":2035200,
+            "map_name": "mapping_high_featured"
+        },
+        {      
+            "application": "mapping", 
+            "ros_params": {
+                "nbvp/gain/range": 4.5,
+                "nbvp/tree/extension_range": 4,
+                "sensor_max_range": 15,   
+                "planning_resolution":0.4,
+                "coverage_threshold": 95,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 5,
+            "max_run_time":1500 ,
+            "processor_frequency":2035200,
+            "map_name": "mapping_high_featured"
+        },
+        {      
+            "application": "mapping", 
+            "ros_params": {
+                "nbvp/gain/range": 12.5,
+                "nbvp/tree/extension_range": 12,
+                "sensor_max_range": 15,   
+                "planning_resolution":0.25,
+                "coverage_threshold": 95,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 5,
+            "max_run_time":1500 ,
+            "processor_frequency":2035200,
+            "map_name": "mapping_high_featured"
+        },
+        {      
+            "application": "mapping", 
+            "ros_params": {
+                "nbvp/gain/range": 8.5,
+                "nbvp/tree/extension_range": 8,
+                "sensor_max_range": 15,   
+                "planning_resolution":0.25,
+                "coverage_threshold": 95,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 5,
+            "max_run_time":1500 ,
+            "processor_frequency":2035200,
+            "map_name": "mapping_high_featured"
+        },
+        {      
+            "application": "mapping", 
+            "ros_params": {
+                "nbvp/gain/range": 4.5,
+                "nbvp/tree/extension_range": 4,
+                "sensor_max_range": 15,   
+                "planning_resolution":0.25,
+                "coverage_threshold": 95,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 5,
+            "max_run_time":1500 ,
+            "processor_frequency":2035200,
+            "map_name": "mapping_high_featured"
+        }
+    ]
+}

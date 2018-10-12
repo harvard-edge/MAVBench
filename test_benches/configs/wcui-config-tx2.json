@@ -1,0 +1,24 @@
+{
+   "user_setting":{	
+       "game_path" : "C:\\Users\\Behzad\\Desktop\\Fo\\WindowsNoEditor\\Blocks.exe",
+       "usr_name": "nvidia" ,
+       "pass_code":  "nvidia",
+       "host_to_cnct_to": "10.145.2.182",
+       "catkin_dir": "/home/nvidia/catkin_ws",
+       "mav_bench_dir" : "/home/nvidia/catkin_ws/src/mav-bench/",
+	   "stats_dir_on_host": "C:\\Users\\Behzad\\Documents\\AirSim",
+	   "stats_file_on_comp_computer": "stats.json"
+   },
+   "experiment_setting_list": [
+       {      
+           "application": "mapping", 
+           "number_of_runs": 2,
+           "max_run_time":9000 
+           
+		}
+
+   ]
+}
+
+
+

@@ -1,0 +1,32 @@
+{
+   "user_setting":{	
+       "game_path" : "C:\\Users\\Behzad\\Desktop\\Fo\\WindowsNoEditor\\Blocks.exe",
+       "usr_name": "wcui" ,
+       "pass_code":  "rur3dd1",
+       "host_to_cnct_to": "10.157.90.62",
+       "catkin_dir": "/home/wcui/catkin_ws",
+       "mav_bench_dir" : "/home/wcui/catkin_ws/src/mav-bench/",
+       "AirSim_dir": "C:\\Users\\Behzad\\Documents\\AirSim",
+       "stats_file_on_comp_computer": "stats.json",
+       "platform": "desktop"
+   },
+    "experiment_setting_list": [
+        {      
+            "application": "mapping", 
+            "ros_params": {
+                "sensor_max_range": 7,  
+                "nbvp/gain/range": 6.5,
+                "nbvp/tree/extension_range": 6,
+                "coverage_threshold": 85,
+                "planning_resolution":0.15,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 10,
+            "max_run_time":2700,
+            "processor_frequency":2035200,
+            "map_name": "mapping_high_featured"
+        }
+    ]
+}
+
+
