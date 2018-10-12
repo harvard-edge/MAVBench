@@ -90,6 +90,12 @@ Some introduction
 **For the reckless with no life**:
 ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Follow the **How to Use Airsim** Section.  
 
+### Profiling
+- cd MAVBench_base_dir/test_benches
+- (somehow they need to set the companion_comp ip)
+- python clct_data.py
+
+
 ## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
 
