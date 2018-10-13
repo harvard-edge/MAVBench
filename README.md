@@ -47,6 +47,7 @@ MAVBench simulator is a closeloop simulator modeling
 - augment setup_env_var to export host_ip which will be used by all the aps. 
 
 ### How to RUN 
+- make sure you have set the host_ip in setup_env_var.sh
 source MAVBench_base/buil-scripts/setup_env_var.sh 
 source MAVBench_base/catkin_ws/devel/setup.bash
 
@@ -91,9 +92,11 @@ Some introduction
 ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Follow the **How to Use Airsim** Section.  
 
 ### Profiling
+- cd MAVBench_base_dir/build-scripts
+- modify the host_setup_env_var to reflect your environment variables
+- host_setup_env_var.cmd 
 - cd MAVBench_base_dir/test_benches
-- (somehow they need to set the companion_comp ip)
-- python clct_data.py
+- python loader\clct_data.py --config configs\${your_config_file}  (example hello_world.config.json)
 
 
 ## Paper
