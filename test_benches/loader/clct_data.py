@@ -198,9 +198,7 @@ def mk_data_dir(ssh_client):
 
 def modify_freq(freq, ssh_client):
     print freq
-    stdin,stdout,stderr= ssh_client.exec_command("echo nvidia | sudo -S python "+ mavbench_apps_base_dir+"/misc/set_freq_for_all.py " + str(freq), get_pty=True)
-    #we need the following two statement to make it block, otherwise it won;t
-    # have an effect for some reason
+    stdin,stdout,stderr= ssh_client.exec_command("echo nvidia | sudo -S python "+ mavbench_apps_base_dir+"/misc/set_freq_for_all.py " + str(freq), get_pty=True) #we need the following two statement to make it block, otherwise it won;t # have an effect for some reason
     outlines = stdout.readlines() 
     result=''.join(outlines)
     print(result)
@@ -219,6 +217,8 @@ def main():
             print "companion_com_msg doesn't exist to remove. This might be ok"
         """
         time.sleep(3) #there needs to be a sleep between restart and change_level
+
+        start_unreal(companion_setting)
         for  experiment_setting in  experiment_setting_list:
             num_of_runs = experiment_setting["number_of_runs"]
             application = experiment_setting["application"]
@@ -235,7 +235,6 @@ def main():
             else:
                 restart_unreal()
             
-            #start_unreal(companion_setting)
             ssh_client = creat_ssh_client(companion_setting)     
             mk_data_dir(ssh_client) 
             modify_freq(proc_freq, ssh_client) 
@@ -253,7 +252,7 @@ def main():
                     os.remove(companion_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt")
                 except:
                     print "companion_com_msg doesn't exist to remove. This might be ok"
-                restart_unreal()
+                #restart_unreal()
                 time.sleep(3) #there needs to be a sleep between restart and change_level
                 write_to_stats_file(stat_file_addr, '\t'+'\\"app\\":\\"'+str(application)+'\\",',  companion_setting, ssh_client)
                 write_to_stats_file(stat_file_addr, '\t'+'\\"processor_freq\\":\\"'+str(proc_freq)+'\\",',  companion_setting, ssh_client)
@@ -263,16 +262,17 @@ def main():
                 write_to_stats_file(stat_file_addr, '\t\\"experiment_number\\":'+str(total_run_ctr),  companion_setting, ssh_client)
                 if (experiment_run_ctr < num_of_runs - 1): 
                     write_to_stats_file(stat_file_addr, "},",  companion_setting, ssh_client)
+
             
             write_to_stats_file(stat_file_addr, "}],",  companion_setting, ssh_client)
 
-        #stop_unreal() 
         #write_to_stats_file(stat_file_addr, '\\"experiment_number\\":'+str(experiment_run_ctr)+"}",  companion_setting, ssh_client)
         #write_to_stats_file(stat_file_addr, "]}",  companion_setting, ssh_client)
+
+        stop_unreal()
     except Exception as e:
         pass
         print(traceback.format_exception(*sys.exc_info()))
-        #stop_unreal()
 
 if __name__ == "__main__":
     main()
