@@ -41,6 +41,8 @@ def creat_ssh_client(companion_setting):
 
 def start_unreal(companion_setting):
     game_path =  companion_setting["game_path"]
+    if game_path == "":
+        return
     if not(os.path.isfile(game_path)):
         print("file:" + game_path + " doesn't exist")
         sys.exit()
@@ -217,7 +219,7 @@ def main():
             print "companion_com_msg doesn't exist to remove. This might be ok"
         """
         time.sleep(3) #there needs to be a sleep between restart and change_level
-
+        
         start_unreal(companion_setting)
         for  experiment_setting in  experiment_setting_list:
             num_of_runs = experiment_setting["number_of_runs"]
