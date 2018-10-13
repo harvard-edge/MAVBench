@@ -84,7 +84,7 @@ Some introduction
 7. This will create ready to use plugin bits in the MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project 
 - follow along with the AirSim instuctions provided by Microsoft https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). 
 
-### fixing AirSims depth map issue
+#### fixing AirSims depth map issue
 (*This step may have a problem) Fix a Depth image bug by following this issue: https://github.com/Microsoft/AirSim/issues/491. 
 1. Go to BP_PIPCamera (within the unreal editor. This is located under Blueprints (Note: if you can’t find this in the content broweser, click on window->Find in blueprints and serach for BP_RIPCamera)
 1. Click on DepthPlannerCaptureComponent (on the left hand side under Components tab). Then in the Details window, click on “post process Materials” and change the material to “DepthMapMaterial”
@@ -92,10 +92,10 @@ Some introduction
 ![alt text](https://github.com/MAVBench/tx2/blob/master/docs/images/BP_PIP_depth-map-modification.PNG)
 
 ### How to RUN 
-**For the lazy yet happy**:
+**For the lazy yet happy** (method 1):
 1. cd MAVBench_base/games
 2. execute the binary
-**For the reckless with no life**:
+**For the reckless with no life** (method 2):
 ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Follow the **How to Use Airsim** Section.  
 
 
@@ -108,7 +108,8 @@ ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/
 - cd MAVBench_base_dir/test_benches
 - python loader\clct_data.py --config configs\${your_config_file}  (example hello_world.config.json)
 
-
+Note: if you use method 1 for profiling, game_path needs to be set to the executable address which is in (tell them where);however
+      if you use method 2 for profiling, game_path needs to be left empty and unreal needs to be started at the time of profiling
 ## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
 
