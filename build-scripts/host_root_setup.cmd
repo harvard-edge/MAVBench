@@ -1,8 +1,8 @@
 set ROOT_DIR=%~dp0
 chdir %ROOT_DIR%..\src\AirSim
-REM build.cmd
-
-powershell -command "& { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; iwr https://drive.google.com/file/d/1dbJzjN_rH5wXW94eqF6E1eXyL3nPYW65/view -OutFile .\Unreal\Plugins\AirSim\Content\HUDAssets\DepthMapMaterial.uasset}" 
-
+build.cmd
+set depth_map_src="%ROOT_DIR%DepthMapMaterial.uasset"
+set depth_map_des="%ROOT_DIR%..\src\AirSim\Unreal\Plugins\AirSim\Content\HUDAssets"
+copy %depth_map_src% %depth_map_des%
 chdir %ROOT_DIR%..\
 
