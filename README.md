@@ -89,6 +89,8 @@ Some introduction
 1. Go to BP_PIPCamera (within the unreal editor. This is located under Blueprints (Note: if you can’t find this in the content broweser, click on window->Find in blueprints and serach for BP_RIPCamera)
 1. Click on DepthPlannerCaptureComponent (on the left hand side under Components tab). Then in the Details window, click on “post process Materials” and change the material to “DepthMapMaterial”
 
+![alt text](https://github.com/MAVBench/tx2/blob/master/docs/images/BP_PIP_depth-map-modification.PNG)
+
 ### How to RUN 
 **For the lazy yet happy**:
 1. cd MAVBench_base/games
