@@ -1,0 +1,29 @@
+{
+    "companion_setting":{	
+        "game_path" : "C:\\Users\\Behzad\\Desktop\\Fo\\WindowsNoEditor\\Blocks.exe",
+        "usr_name": "nvidia" ,
+        "pass_code":  "nvidia",
+        "host_ip": "0.0.0.0",
+	"base_dir": "/home/nvidia/tx2_new",
+        "AirSim_dir": "C:\\Users\\Behzad\\Documents\\AirSim",
+        "stats_file_on_comp_computer": "stats.json",
+        "platform": "tx2"
+    },
+    "experiment_setting_list": [
+        {      
+            "application": "package_delivery", 
+            "ros_params": {
+                "sensor_max_range": 7,  
+                "nbvp/gain/range": 6.5,
+                "nbvp/tree/extension_range": 6,
+                "coverage_threshold": 85,
+                "planning_resolution":0.15,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 1,
+            "max_run_time":200,
+            "processor_frequency":2035200,
+            "map_name": "follow_the_leader"
+	}
+    ]
+}

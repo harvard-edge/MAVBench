@@ -22,22 +22,25 @@ parser.add_argument('--config', metavar='c', type=str,
 
 args = parser.parse_args()
 data_clct_conf_file_addr = args.config
+data_clct_conf_obj = DataClctConf(data_clct_conf_file_addr) #parse config file and instantiate a 
+companion_setting =  data_clct_conf_obj.get_config_data()["companion_setting"]
+mavbench_apps_base_dir = companion_setting["base_dir"]+"/catkin_ws/src/mav-bench"
 
 
-def creat_ssh_client(user_setting):
+def creat_ssh_client(companion_setting):
     
     # paramiko
     ssh_client=paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-    ssh_client.connect(user_setting["host_to_cnct_to"],
+    ssh_client.connect(companion_setting["host_ip"],
             22,
-            user_setting["usr_name"],
-            user_setting["pass_code"])
+            companion_setting["usr_name"],
+            companion_setting["pass_code"])
     return ssh_client 
 
-def start_unreal(user_setting):
-    game_path =  user_setting["game_path"]
+def start_unreal(companion_setting):
+    game_path =  companion_setting["game_path"]
     if not(os.path.isfile(game_path)):
         print("file:" + game_path + " doesn't exist")
         sys.exit()
@@ -67,30 +70,29 @@ def get_ros_cmd(experiment_setting):
         print("this application not defined")
         sys.exit()
 
-def get_supervisor_cmd(user_setting, experiment_setting):
-   mav_bench_dir = user_setting["mav_bench_dir"]
+def get_supervisor_cmd(companion_setting, experiment_setting):
    termination =  experiment_setting["max_run_time"]
    app = experiment_setting["application"]
    return  "python "+\
-            mav_bench_dir+"run_time/supervisor.py" +\
-            " " + mav_bench_dir  +\
+            mavbench_apps_base_dir+"/run_time/supervisor.py" +\
+            " " + mavbench_apps_base_dir  +\
             " " + app +\
             " " +  str(termination)
 
 
 def get_pre_mission_cmd(application):
-    return "./catkin_ws/src/mav-bench/pre_mission/"+application+"/pre_mission_cmds.sh"
+    return mavbench_apps_base_dir+"/pre_mission/"+application+"/pre_mission_cmds.sh"
 
-def check_start_moving(user_setting, experiment_setting):
+def check_start_moving(companion_setting, experiment_setting):
     time_to_move = False
-    file_to_write_to =  user_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt"
+    file_to_write_to =  companion_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt"
     time.sleep(12)
     file_to_write_to_handle.open(file_to_write_to, "w")
     file_to_write_to_handle.close()
     sys.exit(0) 
     """ 
     while(not(time_to_move)):
-        stdout = ssh_client.exec_command("python " + user_setting["mav_bench_dir"]+
+        stdout = ssh_client.exec_command("python " + companion_setting["mavbench_apps_base_dir"]+
                 "/misc/check_start_moving.py")
         print stdout 
         if stdout == "true":
@@ -106,21 +108,22 @@ def signal_start_moving(file_to_write_to):
 
 def get_bind_node_cmd(platform):
     if (platform == "tx2"): 
-        return "python ./catkin_ws/src/mav-bench/run_time/bind_nodes.py"
+        return "python  " + mavbench_apps_base_dir+"/run_time/bind_nodes.py"
     else:
-        return "echo hello"
+        return "echo platform not supported"
 
-def schedule_tasks(user_setting, experiment_setting, ssh_client):
+def schedule_tasks(companion_setting, experiment_setting, ssh_client):
     #--- cmds to schedul e
-    src_ros_cmd = "source " + user_setting["catkin_dir"]+"/devel/setup.bash"
+    src_ros_cmd = "source " + companion_setting["base_dir"] + "/catkin_ws/devel/setup.bash"
+    src_companion_setup= "source " + companion_setting['base_dir'] + "./build-scripts/companion_setup_env_var.sh"
     ros_launch_cmd = get_ros_cmd(experiment_setting) 
-    run_time_supervisor_cmd = get_supervisor_cmd(user_setting, experiment_setting)
-    #run_time_supervisor_cmd = ""#get_supervisor_cmd(user_setting, experiment_setting)
+    run_time_supervisor_cmd = get_supervisor_cmd(companion_setting, experiment_setting)
+    #run_time_supervisor_cmd = ""#get_supervisor_cmd(companion_setting, experiment_setting)
     pre_mission_cmds = get_pre_mission_cmd(experiment_setting["application"])
-    platform = user_setting["platform"] 
-    all_cmds = src_ros_cmd + ";" + run_time_supervisor_cmd + "& " +  pre_mission_cmds +  "|" + ros_launch_cmd  + "|" + get_bind_node_cmd(platform)
+    platform = companion_setting["platform"] 
+    all_cmds = src_ros_cmd + ";" + src_companion_setup + ";" + run_time_supervisor_cmd + "& " +  pre_mission_cmds +  "|" + ros_launch_cmd  + "|" + get_bind_node_cmd(platform)
     #all_cmds = src_ros_cmd + ";" + run_time_supervisor_cmd + "& " +  pre_mission_cmds +  "|" + ros_launch_cmd
-    p = Process(target= signal_start_moving, args=(user_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt",))
+    p = Process(target= signal_start_moving, args=(companion_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt",))
     if (experiment_setting["application"] == "follow_the_leader"):
         p.start()
     #--- pramiko
@@ -138,11 +141,11 @@ def schedule_tasks(user_setting, experiment_setting, ssh_client):
     return result
 """
 def copy_results_over(data_clct_conf_obj, ssh_client):
-   mav_bench_dir = data_clct_conf_obj.get_config_data()["mav_bench_dir"]
+   mavbench_apps_base_dir = data_clct_conf_obj.get_config_data()["mav_bench_dir"]
    application = data_clct_conf_obj.get_config_data()["application"]
    stats_file_name_on_comp_computer = data_clct_conf_obj.get_config_data()["stats_file_on_comp_computer"]
    stats_dir_on_host = data_clct_conf_obj.get_config_data()["stats_dir_on_host"]
-   data_addr = mav_bench_dir +"/data/"+application+"/" + stats_file_name_on_comp_computer
+   data_addr = mavbench_apps_base_dir +"/data/"+application+"/" + stats_file_name_on_comp_computer
    
    scp_client = SCPClient(ssh_client.get_transport()) 
    scp_client.get(data_addr)
@@ -168,8 +171,8 @@ def signal_handler(signal, frame):
 	stop_unreal()
 	sys.exit(0)
 
-def write_to_stats_file(stat_file_addr, string_to_write, user_setting, ssh_client):
-        python_file_to_run = user_setting["mav_bench_dir"]+ "common/python_files/write_to_file.py"
+def write_to_stats_file(stat_file_addr, string_to_write, companion_setting, ssh_client):
+        python_file_to_run = mavbench_apps_base_dir + "/common/python_files/write_to_file.py"
         cmd = "python" + " " + python_file_to_run + " " + stat_file_addr + " " + string_to_write
         stdin,stdout,stderr= ssh_client.exec_command(cmd, get_pty=True)
         outlines = stdout.readlines() 
@@ -180,40 +183,51 @@ def write_to_stats_file(stat_file_addr, string_to_write, user_setting, ssh_clien
         # print(resp_err)
         return result
 
+
+def mk_data_dir(ssh_client):
+    cmd = "cd "+mavbench_apps_base_dir + ";" + "mkdir -p data/package_delivery data/scanning data/mapping data/sar data/follow_the_leader" 
+    stdin,stdout,stderr= ssh_client.exec_command(cmd, get_pty=True)
+    outlines = stdout.readlines() 
+    result=''.join(outlines)
+    print(result)
+    # errlines = stderr.readlines() 
+    # resp_err=''.join(errlines)
+    # print(resp_err)
+    print result 
+    return result
+
 def modify_freq(freq, ssh_client):
     print freq
-    stdin,stdout,stderr= ssh_client.exec_command("echo nvidia | sudo -S python /home/nvidia/catkin_ws/src/mav-bench/misc/assign_all.py " + str(freq), get_pty=True)
+    stdin,stdout,stderr= ssh_client.exec_command("echo nvidia | sudo -S python "+ mavbench_apps_base_dir+"/misc/set_freq_for_all.py " + str(freq), get_pty=True)
     #we need the following two statement to make it block, otherwise it won;t
     # have an effect for some reason
     outlines = stdout.readlines() 
     result=''.join(outlines)
-    #print(result)
+    print(result)
 def main():
     try:
-        data_clct_conf_obj = DataClctConf(data_clct_conf_file_addr) #parse config file and instantiate a 
-        user_setting =  data_clct_conf_obj.get_config_data()["user_setting"]
+        #companion_setting =  data_clct_conf_obj.get_config_data()["companion_setting"]
         experiment_setting_list =  data_clct_conf_obj.get_config_data()["experiment_setting_list"]
         total_run_ctr = 0
         experiment_set_ctr = 0 
-        #write_to_stats_file(stat_file_addr, "{",  user_setting, ssh_client)
+        #write_to_stats_file(stat_file_addr, "{",  companion_setting, ssh_client)
         #--- removing the file that triggers the char (only usefull for follow_the_leader) 
         """ 
         try: 
-            os.remove(user_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt")
+            os.remove(companion_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt")
         except: 
             print "companion_com_msg doesn't exist to remove. This might be ok"
         """
         time.sleep(3) #there needs to be a sleep between restart and change_level
-        
         for  experiment_setting in  experiment_setting_list:
             num_of_runs = experiment_setting["number_of_runs"]
             application = experiment_setting["application"]
             ros_params =  experiment_setting["ros_params"]
             proc_freq = experiment_setting["processor_frequency"]
-            stat_file_addr = user_setting["mav_bench_dir"]+"data/"+application+ "/"+"stats.json"
+            stat_file_addr = mavbench_apps_base_dir+"/data/"+application+ "/"+"stats.json"
             
             try: 
-                    os.remove(user_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt")
+                    os.remove(companion_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt")
             except:
                 print "companion_com_msg doesn't exist to remove. This might be ok"
             if ("map_name" in  experiment_setting.keys()):
@@ -221,41 +235,40 @@ def main():
             else:
                 restart_unreal()
             
-            #start_unreal(user_setting)
-            ssh_client = creat_ssh_client(user_setting)     
+            #start_unreal(companion_setting)
+            ssh_client = creat_ssh_client(companion_setting)     
+            mk_data_dir(ssh_client) 
             modify_freq(proc_freq, ssh_client) 
-            
+           
             #--- preparting the result file 
-            write_to_stats_file(stat_file_addr, '\t\\"experiment_set_'+ str(experiment_set_ctr) +'\\":',  user_setting, ssh_client)
-            write_to_stats_file(stat_file_addr, '[',  user_setting, ssh_client)
+            write_to_stats_file(stat_file_addr, '\t\\"experiment_set_'+ str(experiment_set_ctr) +'\\":',  companion_setting, ssh_client)
+            write_to_stats_file(stat_file_addr, '[',  companion_setting, ssh_client)
             experiment_set_ctr +=1 
             #minimize_the_window()
-            
             #--- start collecting data 
             for  experiment_run_ctr  in range(0, num_of_runs):
                 total_run_ctr += 1
-                result = schedule_tasks(user_setting, experiment_setting, ssh_client)
-                
+                result = schedule_tasks(companion_setting, experiment_setting, ssh_client)
                 try: 
-                    os.remove(user_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt")
+                    os.remove(companion_setting["AirSim_dir"]+ "\\"+ "companion_comp_msgs.txt")
                 except:
                     print "companion_com_msg doesn't exist to remove. This might be ok"
                 restart_unreal()
                 time.sleep(3) #there needs to be a sleep between restart and change_level
-                write_to_stats_file(stat_file_addr, '\t'+'\\"app\\":\\"'+str(application)+'\\",',  user_setting, ssh_client)
-                write_to_stats_file(stat_file_addr, '\t'+'\\"processor_freq\\":\\"'+str(proc_freq)+'\\",',  user_setting, ssh_client)
+                write_to_stats_file(stat_file_addr, '\t'+'\\"app\\":\\"'+str(application)+'\\",',  companion_setting, ssh_client)
+                write_to_stats_file(stat_file_addr, '\t'+'\\"processor_freq\\":\\"'+str(proc_freq)+'\\",',  companion_setting, ssh_client)
                 for  param in ros_params.keys():
-                    write_to_stats_file(stat_file_addr, '\t\\"'+param + '\\":\\"'+str(ros_params[param])+'\\",',  user_setting, ssh_client)
+                    write_to_stats_file(stat_file_addr, '\t\\"'+param + '\\":\\"'+str(ros_params[param])+'\\",',  companion_setting, ssh_client)
                 
-                write_to_stats_file(stat_file_addr, '\t\\"experiment_number\\":'+str(total_run_ctr),  user_setting, ssh_client)
+                write_to_stats_file(stat_file_addr, '\t\\"experiment_number\\":'+str(total_run_ctr),  companion_setting, ssh_client)
                 if (experiment_run_ctr < num_of_runs - 1): 
-                    write_to_stats_file(stat_file_addr, "},",  user_setting, ssh_client)
+                    write_to_stats_file(stat_file_addr, "},",  companion_setting, ssh_client)
             
-            write_to_stats_file(stat_file_addr, "}],",  user_setting, ssh_client)
+            write_to_stats_file(stat_file_addr, "}],",  companion_setting, ssh_client)
 
         #stop_unreal() 
-        #write_to_stats_file(stat_file_addr, '\\"experiment_number\\":'+str(experiment_run_ctr)+"}",  user_setting, ssh_client)
-        #write_to_stats_file(stat_file_addr, "]}",  user_setting, ssh_client)
+        #write_to_stats_file(stat_file_addr, '\\"experiment_number\\":'+str(experiment_run_ctr)+"}",  companion_setting, ssh_client)
+        #write_to_stats_file(stat_file_addr, "]}",  companion_setting, ssh_client)
     except Exception as e:
         pass
         print(traceback.format_exception(*sys.exc_info()))
