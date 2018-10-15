@@ -1,4 +1,6 @@
 # Welcome to MAVBench  (Note: We plan to release the code, build scripts and a docker by Micro conference 2018(Oct 20th). As is, the code needs to get cleaned up and the repos might be merged, so please stay tuned)
+
+
 FORMATTING TODOs: change all the bulles for instructions to numbers.
 
 
@@ -24,6 +26,7 @@ These components need to run on a powerfull machine. Our tested setup uses an In
 
 MAVBench simulator is a closeloop simulator modeling 
 
+NOTE: Always setup the companion computer before the host.
 
 ## Companion Computer 
 ### System Requirements
