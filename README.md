@@ -69,12 +69,12 @@ Some introduction
 
 
 ### How to Build 
+git clone  --recursive https://github.com/MAVBench/tx2.git mavbench_base_dir
 **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply exectued by the user.
-1. git clone  --recursive https://github.com/MAVBench/tx2.git.
-2. cd MAVBench_base
-3. ./build-scripts/download_games.cmd
+2. cd MAVBench_base/build-scripts
+3. download_games.cmd
 
-**For the reckless with no life**: In case the user wants to build from scratch (this can be helpful if the user wants to try out new environment maps), follow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md) only replacing the **Build AirSim** section with the following instructinos:
+**For the reckless with no life** (most likely you won't fall within this group): In case the user wants to build from scratch (this can be helpful if the user wants to try out new environment maps), follow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md) only replacing the **Build AirSim** section with the following instructinos:
 1. You will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x).
 2. Start x64 Native Tools Command Prompt for VS 2017. 
 3.Create a folder for the repo (here on refered to as MAVBench_base) and
@@ -103,13 +103,13 @@ ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/
 
 ### Profiling
 - cd MAVBench_base_dir/build-scripts
-- modify the host_setup_env_var to reflect your environment variables
 - host_setup_env_var.cmd 
-- cd MAVBench_base_dir/test_benches
-- python loader\clct_data.py --config configs\${your_config_file}  (example hello_world.config.json)
+- cd MAVBench_base_dir/test_benches/configs
+- modify the config file as you like (provide a link here as to the descriptions of the variables in jason file)
+- python loader\clct_data.py --config configs\${your_config_file}  (example hellworld-config.json)
 
-Note: if you use method 1 for profiling, game_path needs to be set to the executable address which is in (tell them where);however
-      if you use method 2 for profiling, game_path needs to be left empty and unreal needs to be started at the time of profiling
+Note: For follow the leader (you can trigger the person (leader) to start moving by pressing r. This time can also be set using
+the config file)
 ## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
 
