@@ -99,6 +99,7 @@ Notes to internal developers:
 
 ![alt text](https://github.com/MAVBench/tx2/blob/master/docs/images/BP_PIP_depth-map-modification.PNG)
 
+
 ### How to RUN 
 **For the lazy yet happy** (method 1):
 1. cd MAVBench_base/games
@@ -125,6 +126,13 @@ More technical details are available in our paper published in Micro 2018.(https
 ## Contribute
 MAVBench aims at brining the robotics, software and hardware community together. We welcome any contributions such as new kernels, new applications and new hardware setups.
 
+### Games:
+Steps to create, upload and deploy games: (for internal developers)
+      - make a game in unreal
+      - package it
+      - zip it (use 7zip please in windows)
+      - uploaded it to the google drive
+      - get a sharable link and paste the id (what's after "id" in the shared link before the next "/") to host_setup_env_var.sh game_fileid variable
 ## contacts
 behzadboro@gmail.com
 hngenc@berkeley.edu
