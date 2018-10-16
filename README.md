@@ -1,5 +1,5 @@
-# Welcome to MAVBench  (Note: We plan to release the code, build scripts and a docker by Micro conference 2018(Oct 20th). As is, the code needs to get cleaned up and the repos might be merged, so please stay tuned)
-
+# Welcome to MAVBench  (Note: We plan to release the code, build scripts and a docker by Micro conference 2018(Oct 20th). As is, the code needs to get cleaned up and the repos might be merged, so please STAY TUNED!!!)
+This README explains how to setup and use MAVBench.
 
 FORMATTING TODOs: change all the bulles for instructions to numbers.
 
@@ -7,8 +7,8 @@ FORMATTING TODOs: change all the bulles for instructions to numbers.
 MAVBench is a framework targetting design and development of Micro Aerial Vehicles for roboticists, sofware and hardware designers. It consists of a closed-loop simulator and an end-to-end application
 benchmark suite. A closed-loop simulation platform is needed to probe and understand the intra-system (application data flow) and inter-system (system and environment) interactions in MAV applications
 to pinpoint bottlenecks and identify opportunities for hardware and software co-design and optimization. In addition to the simulator, MAVBench provides a benchmark suite, the first of its kind,
-consisting of a variety of MAV applications designed to enable computer architects to perform characterization and develop future aerial computing systems. This work is built on top of a host of open
-pecially Thanks to Microsoft and University of EHTH zurich
+consisting of a variety of MAV applications designed to enable computer architects to perform characterization and develop future aerial computing systems. This work is built on top of a host of open source software.
+A big shout out to Microsoft and University of EHTH zurich. 
 
 TODO: upload all the videos right here
 
@@ -16,19 +16,18 @@ TODO: upload all the videos right here
 https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg
 
 ## Demos
-
 [![Watch the video](https://www.youtube.com/watch?v=B_hOO7o0-Bk)
+
 ## Building MAVBench and Using it
-closed-loop operation is an integral component of autonomous MAVs. In such systems, the data flows in a (closed) loop, starting from the environment, going through the MAV and back to the environment
+Closed-loop operation is an integral component of autonomous MAVs. In such systems, the data flows in a (closed) loop, starting from the environment, going through the MAV and back to the environment
 . The process involves sensing the environment (Sensors), interpreting it and making decisions (Compute), and finally navigating within or modifying the environment (Actuators) in a loop. 
-In our simulator, sensors, actuators, environment and the flight controler are simulated with the help of Unreal and Airsim.
-These components need to run on a powerfull machine. Our tested setup uses an Intel Core i7 CPU and a high-end NVIDIA GTX 1080 Ti GPU.   
+In our simulator, sensors, actuators, environment and the flight controler are simulated with the help of Unreal and Airsim. Compute subsystem can run on an embedded system.
 
-MAVBench simulator is a closeloop simulator modeling 
 
-NOTE: Always setup the companion computer before the host.
+NOTE1: Please read till the end before setting up your system. 
+NOTE2: Please setup the companion computer before the host.
 
-## Companion Computer 
+## Companion Computer  (C
 ### System Requirements
 **Hardware**:  
 + Jetson TX2  
