@@ -66,7 +66,7 @@ Some introduction
 + A system with powerfull CPU + GPU (Our tested setup uses an Intel Core i7 CPU and a high-end NVIDIA GTX 1080 Ti GPU).
 
 **Software**:  
-+ Windows 10   (at thist point, we only support windows for the host)
++ Windows 10, 64 bit   (at thist point, we only support windows for the host)
 + Python 2 (also make sure pip is installed)
 + Visual Studio (tested with visual studio 15.8, 2017 community eddition)  (optional: only if you want to build from scratch)
 + Unreal ( tested with 4.18) (optional: only if you want to build from scratch)
