@@ -67,6 +67,7 @@ Some introduction
 **Software**:  
 + Windows 10, 64 bit   (at thist point, we only support windows for the host)
 + Python 2 (also make sure pip is installed)
++ make sure python is in the PATH
 + Visual Studio (tested with visual studio 15.8, 2017 community eddition)  (optional: only if you want to build from scratch)
 + Unreal ( tested with 4.18) (optional: only if you want to build from scratch)
 
