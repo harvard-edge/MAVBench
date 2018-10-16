@@ -3,7 +3,7 @@
 	 "usr_name": "nvidia" ,
         "pass_code":  "nvidia",
         "host_ip": "10.16.0.180",
-	"base_dir": "/home/nvidia/tx2_new",
+	    "base_dir": "/home/nvidia/tx2_new",
         "stats_file_on_comp_computer": "stats.json",
         "platform": "tx2"
     },
@@ -12,18 +12,18 @@
     },
     "experiment_setting_list": [
         {      
-            "application": "package_delivery", 
+            "application": "sar", 
 	    "time_to_trigger_object": "25",
 	    "ros_params": {
                 "sensor_max_range": 7,  
                 "nbvp/gain/range": 6.5,
                 "nbvp/tree/extension_range": 6,
                 "coverage_threshold": 85,
-                "planning_resolution":0.15,
+                "planning_resolution":0.05,
                 "mapping_resolution": 0.1
             },
             "number_of_runs": 1,
-            "max_run_time":200,
+            "max_run_time":500,
             "processor_frequency":2035200,
             "map_name": "sar_simple"
 	},
