@@ -88,7 +88,7 @@ host_root_setup.cmd
 7. build-scripts/host_root_setup_from_src.cmd
 7. This will create ready to use plugin bits in the MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project 
 - follow along with the AirSim instuctions provided by Microsoft https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). 
-Notes to developers: 
+Notes to internal developers: 
       1. If you decided to make your own executable and upload to google drive, use windows to zip and windows to unzip (you can use tar in windows now). I had issues with using tar for unziping.The generated executable was erroring out.
       2. a folder with the name of game/WindowsNoEditor need to be zipped to the google cloud
 #### fixing AirSims depth map issue
