@@ -1,13 +1,13 @@
 #import spur
 import os 
-import win32gui, win32con
+#import win32gui, win32con
 import time
 from os import sys
 from data_clct_conf_class import *
 from control_unreal import *
 import traceback
 import signal
-from scp import SCPClient
+#from scp import SCPClient
 import paramiko
 import sys
 from shutil import copy 
