@@ -66,24 +66,27 @@ Some introduction
 + A system with powerfull CPU + GPU (Our tested setup uses an Intel Core i7 CPU and a high-end NVIDIA GTX 1080 Ti GPU).
 
 **Software**:  
-+ Windows 10   (at thist point, we only support windows for the host)  
++ Windows 10   (at thist point, we only support windows for the host)
++ Python 2 (also make sure pip is installed)
 + Visual Studio (tested with visual studio 15.8, 2017 community eddition)  (optional: only if you want to build from scratch)
 + Unreal ( tested with 4.18) (optional: only if you want to build from scratch)
 
 
 ### How to Build 
 git clone  --recursive https://github.com/MAVBench/tx2.git mavbench_base_dir
+
 **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply exectued by the user.
 2. cd MAVBench_base/build-scripts
-3. download_games.cmd
+3. host_setup_env_var.cmd 
+host_root_setup.cmd
 
 **For the reckless with no life** (most likely you won't fall within this group): In case the user wants to build from scratch (this can be helpful if the user wants to try out new environment maps), follow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md) only replacing the **Build AirSim** section with the following instructinos:
 1. You will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x).
 2. Start x64 Native Tools Command Prompt for VS 2017. 
 3.Create a folder for the repo (here on refered to as MAVBench_base) and
-4. git clone  --recursive https://github.com/MAVBench/tx2.git.
 5. cd MAVBench_base 
-6. sudo ./build-scripts/host_root_setup.cmd
+6. host_setup_env_var.cmd 
+7. build-scripts/host_root_setup_from_src.cmd
 7. This will create ready to use plugin bits in the MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project 
 - follow along with the AirSim instuctions provided by Microsoft https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). 
 
@@ -98,6 +101,7 @@ git clone  --recursive https://github.com/MAVBench/tx2.git mavbench_base_dir
 **For the lazy yet happy** (method 1):
 1. cd MAVBench_base/games
 2. execute the binary
+
 **For the reckless with no life** (method 2):
 ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Follow the **How to Use Airsim** Section.  
 
