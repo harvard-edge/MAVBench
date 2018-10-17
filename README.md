@@ -37,7 +37,7 @@ NOTE2: Please setup the companion computer before the host.
 + JetPack: 3.2 (we have only tested our setup with 3.2 but we suspect, it'll work with higher versions as well)  
 
 ### How to Build 
-- git clone  --recursive https://github.com/MAVBench/tx2.git MAVBench_base
+- git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base
 - cd MAVBench_base
 - source build-scripts/setup_env_var.sh
 - sudo ./build-scripts/companion_root_setup.bash 
@@ -75,7 +75,7 @@ Some introduction
 
 
 ### How to Build 
-git clone  --recursive https://github.com/MAVBench/tx2.git mavbench_base_dir
+git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir
 
 **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply exectued by the user.
 2. cd MAVBench_base/build-scripts
@@ -99,7 +99,7 @@ Notes to internal developers:
 1. Go to BP_PIPCamera (within the unreal editor. This is located under Blueprints (Note: if you can’t find this in the content broweser, click on window->Find in blueprints and serach for BP_RIPCamera)
 1. Click on DepthPlannerCaptureComponent (on the left hand side under Components tab). Then in the Details window, click on “post process Materials” and change the material to “DepthMapMaterial”
 
-![alt text](https://github.com/MAVBench/tx2/blob/master/docs/images/BP_PIP_depth-map-modification.PNG)
+![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/BP_PIP_depth-map-modification.PNG)
 
 
 ### How to RUN 
@@ -151,7 +151,7 @@ Note: that if you want to run as a user, you need to give access to the Communit
 
 Uppon running Unreal, if you get the follow error:
 
-![alt text](https://github.com/MAVBench/tx2/blob/master/docs/images/unreal_error.PNG)
+![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/unreal_error.PNG)
 - right click the game solution from your solution explorer and select the option "Set as StartUp Project" and that should highlight the game solution. Cntrl-F5 will then work
 
 
