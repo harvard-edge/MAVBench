@@ -48,36 +48,37 @@ fi
 # mavbench-build
 cd $base_dir/catkin_ws/ &&\
     source /opt/ros/kinetic/setup.bash &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="catkin_simple" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="eigen_catkin" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="glog_catkin" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="eigen_checks" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="mav_msgs" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="mav_comm" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="nlopt" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="mav_visualization" && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="planning_msgs" && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="mav_trajectory_generation" && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="mav_trajectory_generation_ros" && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="gflags_catkin" && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="minkindr" && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="minkindr_conversions" && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="volumetric_map_base" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="volumetric_msgs" &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="profile_manager" -j3 &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="octomap_world" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="multiagent_collision_check" -j3 &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="octomap_server" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="future_collision" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="publish_imu" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="follow_trajectory" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="octomap_mapping" -j3 &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="depth_image_proc" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="package_delivery" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="airsim_img_publisher" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="kdtree" -j3 &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="nbvplanner" -j3 &&\
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="mapping_and_sar" -j3 && \
-    catkin_make -DCATKIN_WHITELIST_PACKAGES="follow_the_leader" -j3
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="catkin_simple" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="eigen_catkin" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="glog_catkin" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="eigen_checks" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_msgs" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_comm" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="nlopt" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_visualization" && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="planning_msgs" && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_trajectory_generation" && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_trajectory_generation_ros" && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="gflags_catkin" && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="minkindr" && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="minkindr_conversions" && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="volumetric_map_base" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="volumetric_msgs" &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="profile_manager" -j3 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="octomap_world" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="multiagent_collision_check" -j3 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="octomap_server" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="future_collision" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="publish_imu" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="follow_trajectory" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="octomap_mapping" -j3 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="depth_image_proc" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="package_delivery" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="airsim_img_publisher" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="kdtree" -j3 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="nbvplanner" -j3 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mapping_and_sar" -j3 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="follow_the_leader" -j3 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="control_drone" -j3
