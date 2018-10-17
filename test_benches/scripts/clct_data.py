@@ -109,19 +109,20 @@ def get_bind_node_cmd(platform):
         return "echo platform not supported"
 
 
-def trigger_obj_motion(host_base_dir, host_setting):
+def trigger_obj_motion(host_base_dir, experiment_setting):
        trigger_exe_path = host_base_dir + "\\test_benches\\scripts\\trigger.exe"
        p = Popen(trigger_exe_path, stdin=PIPE)
-       p.stdin.write(host_setting["time_to_trigger_object"])
-       p.communicate()[0]
+       p.stdin.write(experiment_setting["time_to_trigger_object"])
+       #p.communicate()[0]
+       time.sleep(.4)
        p.stdin.close()
 
 def schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_dir):
     if (experiment_setting["application"] == "follow_the_leader"):
-        trigger_obj_motion(host_base_dir, host_setting)
+        trigger_obj_motion(host_base_dir, experiment_setting)
     #--- cmds to schedul e
     src_ros_cmd = "source " + companion_setting["base_dir"] + "/catkin_ws/devel/setup.bash"
-    src_companion_setup= "source " + companion_setting['base_dir'] + "./build-scripts/companion_setup_env_var.sh"
+    src_companion_setup= "source " + companion_setting['base_dir'] + "/build-scripts/companion_setup_env_var.sh"
     ros_launch_cmd = get_ros_cmd(experiment_setting) 
     run_time_supervisor_cmd = get_supervisor_cmd(companion_setting, experiment_setting)
     #run_time_supervisor_cmd = ""#get_supervisor_cmd(companion_setting, experiment_setting)
@@ -136,10 +137,8 @@ def schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_
     outlines = stdout.readlines() 
     result=''.join(outlines)
     
-    print(result)
-    
-    if (experiment_setting["application"] == "follow_the_leader"):
-        p.join()
+    #if (experiment_setting["application"] == "follow_the_leader"):
+    #    p.join()
     # errlines = stderr.readlines() 
     # resp_err=''.join(errlines)
     # print(resp_err)
@@ -241,7 +240,6 @@ def main():
                 change_level(experiment_setting["map_name"])
             else:
                 restart_unreal()
-            
             ssh_client = creat_ssh_client(companion_setting, host_base_dir)     
             mk_data_dir(ssh_client) 
             modify_freq(proc_freq, ssh_client) 
@@ -253,6 +251,7 @@ def main():
             #minimize_the_window()
             #--- start collecting data 
             for  experiment_run_ctr  in range(0, num_of_runs):
+                
                 total_run_ctr += 1
                 result = schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_dir)
                 #restart_unreal()

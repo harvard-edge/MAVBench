@@ -18,7 +18,11 @@ def change_level(level):
         f = open(path, "w");
 	f.write(level)
 	f.close()
-	os.rename(path, os.path.join(messages_dir(), "change_level"))
+        try: 
+            os.remove(os.path.join(messages_dir(), "change_level"))
+        except OSError:
+            pass
+        os.rename(path, os.path.join(messages_dir(), "change_level"))
 	
 def restart_level():
 	f = open(os.path.join(messages_dir(), "restart"), "w");
