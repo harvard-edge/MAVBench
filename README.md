@@ -18,7 +18,7 @@ Autonomous drones similar to other autonomous machines require a new breed of ar
 
 We developed MAVBench---a framework consisting of a hardware-in-the-loop simulator and a set of end-to-end benchmarks. To accurately model the drone's system and its environment, our simulator has three core components (\Fig{fig:end-to-end}). The drone's environments, sensors, and actuators are simulated using a game engine called Unreal augmented with AirSim libraries  (\Fig{fig:end-to-end}, top). By using a physics engine, they provide the ability to simulate the drone's behavior, its environment and the interaction between the two such as accurate collision detection. The flight controller (flight stack and the autopilot hardware) is responsible for the drone's stabilization (\Fig{fig:end-to-end}, bottom right). We use a software-simulated flight controller provided by AirSim. However, AirSim also supports other FCs, such as the Pixhawk. Much of the drone's perception and trajectory planning is done using an onboard computer, which is generally responsible for running any compute-intensive workloads (\Fig{fig:end-to-end}, bottom left). We used an NVIDIA Jetson TX2, although our setup allows for swapping this embedded board with other platforms like a RISC-V based platform. 
 
-![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/end-to-end-simulation.pdf)
+![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/end-to-end-simulation.png)
 
 
 ## Youtube Channel
