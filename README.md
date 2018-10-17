@@ -56,7 +56,9 @@ source MAVBench_base/catkin_ws/devel/setup.bash
 Note: make sure that mavbench_base_dir environment variable is set
       to the directory that MAVBench_base  was cloned to
 - TODO: create a set of pre_missions for each app
-
+-- you can use the roslaunch to directory call our applications and interact with them, or you can use
+pre_mission.sh to send commands. 
+Internal developer Notes: 'c' needs to be pressed always after everything is loaded, so e.g. if it takes a long time for the object detection to get loaded, c needs to be pressed according.
 
 ## Host Computer
 Some introduction
@@ -102,14 +104,14 @@ Notes to internal developers:
 
 ### How to RUN 
 **For the lazy yet happy** (method 1):
-1. cd MAVBench_base/games
-2. execute the binary
+1. cd MAVBench_base/games/WindowsNoEditor
+2. execute the .exe
 
 **For the reckless with no life** (method 2):
 ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Follow the **How to Use Airsim** Section.  
 
 
-###
+#### Runnin Hello World
 
 ### Profiling
 - cd MAVBench_base_dir/build-scripts
@@ -117,6 +119,9 @@ ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/
 - cd MAVBench_base_dir/test_benches/configs
 - modify the config file as you like (provide a link here as to the descriptions of the variables in jason file)
 - python loader\clct_data.py --config configs\${your_config_file}  (example hellworld-config.json)
+
+#### Interpreting the Results
+      the results will be saved in the data/$pkg_name in a jason file
 
 Note: For follow the leader (you can trigger the person (leader) to start moving by pressing r. This time can also be set using
 the config file)
@@ -130,7 +135,7 @@ MAVBench aims at brining the robotics, software and hardware community together.
 Steps to create, upload and deploy games: (for internal developers)
       - make a game in unreal
       - package it
-      - zip it (use 7zip please in windows)
+      - zip it (I usually right click->send to->compressed (zipped) folder. I believe 7zip should work too, but not entirely sure)
       - uploaded it to the google drive
       - get a sharable link and paste the id (what's after "id" in the shared link before the next "/") to host_setup_env_var.sh game_fileid variable
 ## contacts
