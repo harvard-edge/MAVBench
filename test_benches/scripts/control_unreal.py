@@ -2,7 +2,7 @@ import os
 from subprocess import call, Popen, PIPE
 
 def messages_dir():
-	return os.path.expanduser("~/Documents/AirSim");
+	return os.path.expanduser("~\Documents\AirSim");
 
 def start_game(path, in_editor=False):
 	if in_editor:
@@ -14,7 +14,7 @@ def stop_game():
 	f.close()
 	
 def change_level(level):
-	path = os.path.join(messages_dir(), "change_level.txt")
+        path = os.path.join(messages_dir(), "change_level.txt")
         f = open(path, "w");
 	f.write(level)
 	f.close()

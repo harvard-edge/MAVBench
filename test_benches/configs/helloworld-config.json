@@ -3,7 +3,7 @@
 	 "usr_name": "nvidia" ,
         "pass_code":  "nvidia",
         "host_ip": "10.16.0.180",
-	"base_dir": "/home/nvidia/tx2_new",
+    	"base_dir": "/home/nvidia/tx2_new",
         "stats_file_on_comp_computer": "stats.json",
         "platform": "tx2"
     },
