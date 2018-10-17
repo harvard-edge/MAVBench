@@ -22,8 +22,6 @@ We developed MAVBench---a framework consisting of a hardware-in-the-loop simulat
 
 
 ## Youtube Channel
-[![IMAGE ALT TEXT HERE](https://github.com/MAVBench/MAVBench/blob/master/docs/images/end-to-end-simulation.png)](https://www.youtube.com/watch?v=4mb58WQic8g)
-
 https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg
 
 ## Demos
