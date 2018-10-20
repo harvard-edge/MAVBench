@@ -60,16 +60,20 @@ NOTE2: Please setup the companion computer before the host.
 
 - use rolaunch to interact with the individual applications that is roslaunch $pkg_name $application.launch:
   
-  exampe: roslaunch package_delivery scanning.launch
-- Note: all our applications require a set of (what we call) pre-mission steps to prime them. 
-pre_mission.sh to send commands. 
-Internal developer Notes: 'c' needs to be pressed always after everything is loaded, so e.g. if it takes a long time for the object detection to get loaded, c needs to be pressed according.
+  example: roslaunch package_delivery scanning.launch
+- Note: all our applications require a set of (what we call) pre-mission steps to prime them. We have provided a pre_mission-cmd.sh for each application, so to run an application with pre-mission commands use: 
+  
+./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.sh | roslaunch $pkg_name $application.launch 
 
-#### Running Notes :
+
+#### Running Notes:
 - If the user has manually built our ROS packages, they need to set all the variabiles in teh companion_setup_env_var.sh accordingly.
 
-## Host Computer
-Some introduction
+- For internal developer Notes: 'c' needs to be pressed always after everything is loaded, so e.g. if it takes a long time for the object detection to get loaded, c needs to be pressed according.- 
+
+
+## Host Computer (Responsible for running the drone/environment simualtors + autopilot subsystem)
+
 ### System Requirements
 **Hardware**:  
 + A system with powerfull CPU + GPU (Our tested setup uses an Intel Core i7 CPU and a high-end NVIDIA GTX 1080 Ti GPU).
@@ -77,31 +81,31 @@ Some introduction
 **Software**:  
 + Windows 10, 64 bit   (at thist point, we only support windows for the host)
 + Python 2 (also make sure pip is installed)
-+ make sure python is in the PATH
-+ Visual Studio (tested with visual studio 15.8, 2017 community eddition)  (optional: only if you want to build from scratch)
-+ Unreal ( tested with 4.18) (optional: only if you want to build from scratch)
++ Visual Studio (optional: only if you want to build from scratch) (tested with visual studio 15.8, 2017 community eddition)  
++ Unreal (optional: only if you want to build from scratch) ( tested with 4.18) 
 
 
 ### How to Build 
 git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir
 
-**For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply exectued by the user.
-2. cd MAVBench_base/build-scripts
-3. host_setup_env_var.cmd 
-host_root_setup.cmd
+**For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply exectued by the user. To do so:
+1. cd MAVBench_base/build-scripts
+2. host_setup_env_var.cmd 
+3.host_root_setup.cmd
 
 **For the reckless with no life** (most likely you won't fall within this group): In case the user wants to build from scratch (this can be helpful if the user wants to try out new environment maps), follow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md) only replacing the **Build AirSim** section with the following instructinos:
 1. You will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x).
 2. Start x64 Native Tools Command Prompt for VS 2017. 
 3.Create a folder for the repo (here on refered to as MAVBench_base) and
-5. cd MAVBench_base 
+5. cd MAVBench_base/build-scripts 
 6. host_setup_env_var.cmd 
-7. build-scripts/host_root_setup_from_src.cmd
-7. This will create ready to use plugin bits in the MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project 
+7. host_root_setup_from_src.cmd
+7. This will create ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project 
 - follow along with the AirSim instuctions provided by Microsoft https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). 
 Notes to internal developers: 
       1. If you decided to make your own executable and upload to google drive, use windows to zip and windows to unzip (you can use tar in windows now). I had issues with using tar for unziping.The generated executable was erroring out.
       2. a folder with the name of game/WindowsNoEditor need to be zipped to the google cloud
+
 #### fixing AirSims depth map issue
 (*This step may have a problem) Fix a Depth image bug by following this issue: https://github.com/Microsoft/AirSim/issues/491. 
 1. Go to BP_PIPCamera (within the unreal editor. This is located under Blueprints (Note: if you can’t find this in the content broweser, click on window->Find in blueprints and serach for BP_RIPCamera)
@@ -119,7 +123,6 @@ Notes to internal developers:
 ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Follow the **How to Use Airsim** Section.  
 
 
-#### Runnin Hello World
 
 ### Profiling
 - cd MAVBench_base_dir/build-scripts
@@ -133,6 +136,11 @@ ollow the insurction provided by Microsoft (https://github.com/Microsoft/AirSim/
 
 Note: For follow the leader (you can trigger the person (leader) to start moving by pressing r. This time can also be set using
 the config file)
+
+
+### Runnin Hello World
+- HelloWorld: You can run the hello world with: ./MAVbench_base/src/mav-bench-apps/control_drone/pre_mission_cmds.sh | roslaunch control_drone control_drone.launch. What you should see if running this program is the drone navigatin a square around a warehouse  //TODO, where should this come given that you need to host too. 
+
 ## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
 
