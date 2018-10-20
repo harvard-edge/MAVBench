@@ -13,10 +13,10 @@ to pinpoint bottlenecks and identify opportunities for hardware and software co-
 consisting of a variety of MAV applications designed to enable computer architects to perform characterization and develop future aerial computing systems. This work is built on top of a host of open source software.
 A big shout out to Microsoft and University of EHTH zurich. 
 
-**Why MAVBench**
+**Why MAVBench?**
 Autonomous drones similar to other autonomous machines require a new breed of architectural simulators. Unlike in traditional architectural simulators, information in an autonomous machine flows in a loop. Information flows in from the machine's environment via its sensors, gets processed by the computing subsystem, and flows back out into the environment via actuators and controls. Hence, autonomous machines require a tightly coupled closed-loop feedback system for architectural investigation.
 
-We developed MAVBench---a framework consisting of a hardware-in-the-loop simulator and a set of end-to-end benchmarks. To accurately model the drone's system and its environment, our simulator has three core components (\Fig{fig:end-to-end}). The drone's environments, sensors, and actuators are simulated using a game engine called Unreal augmented with AirSim libraries  (\Fig{fig:end-to-end}, top). By using a physics engine, they provide the ability to simulate the drone's behavior, its environment and the interaction between the two such as accurate collision detection. The flight controller (flight stack and the autopilot hardware) is responsible for the drone's stabilization (\Fig{fig:end-to-end}, bottom right). We use a software-simulated flight controller provided by AirSim. However, AirSim also supports other FCs, such as the Pixhawk. Much of the drone's perception and trajectory planning is done using an onboard computer, which is generally responsible for running any compute-intensive workloads (\Fig{fig:end-to-end}, bottom left). We used an NVIDIA Jetson TX2, although our setup allows for swapping this embedded board with other platforms like a RISC-V based platform. 
+We developed MAVBench---a framework consisting of a hardware-in-the-loop simulator and a set of end-to-end benchmarks. To accurately model the drone's system and its environment. Our simulator has three core components (\Fig{fig:end-to-end}). The drone's environments, sensors, and actuators are simulated using a game engine called Unreal augmented with AirSim libraries  (\Fig{fig:end-to-end}, top). By using a physics engine, they provide the ability to simulate the drone's behavior, its environment and the interaction between the two such as accurate collision detection. The flight controller (flight stack and the autopilot hardware) is responsible for the drone's stabilization (\Fig{fig:end-to-end}, bottom right). We use a software-simulated flight controller provided by AirSim. However, AirSim also supports other FCs, such as the Pixhawk. Much of the drone's perception and trajectory planning is done using an onboard computer, which is generally responsible for running any compute-intensive workloads (\Fig{fig:end-to-end}, bottom left). We used an NVIDIA Jetson TX2, although our setup allows for swapping this embedded board with other platforms like a RISC-V based platform. 
 
 ![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/end-to-end-simulation.png)
 
@@ -24,47 +24,49 @@ We developed MAVBench---a framework consisting of a hardware-in-the-loop simulat
 ## Youtube Channel
 https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg
 
-## Demos
-[![Watch the video](https://www.youtube.com/watch?v=B_hOO7o0-Bk)
 
 ## Building MAVBench and Using it
 
-NOTE1: Please read till the end before setting up your system. 
+NOTE1: Please read untill the end before setting up your system. 
 
 NOTE2: Please setup the companion computer before the host.
 
-## Companion Computer  (C
+## Companion Computer  (Responsible for running the compute intensive workloads)
+
 ### System Requirements
 **Hardware**:  
 + Jetson TX2  
 
 **Software**:  
 + Ubuntu: 16.04  
-+ JetPack: 3.2 (we have only tested our setup with 3.2 but we suspect, it'll work with higher versions as well)  
++ JetPack: 3.2 (We have only tested our setup with 3.2 but we suspect, it'll work with higher versions as well)  
 
-### How to Build 
-- git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base
-- cd MAVBench_base
-- source build-scripts/setup_env_var.sh
-- sudo ./build-scripts/companion_root_setup.bash 
-- ./build-scripts/companion_user_setup.bash
-#### build notes :
-- the usr might have to populate the .ssh with public/private key (for both root and usr) //not sure about this though
-- TODO: we need to make sure we build all the pkgs with -DCMAKE_BUILD_TYPE=Release
-- if the user wants to build pkgs using catkin, he/she needs to make sure to source setup_var_env.sh first
-- augment setup_env_var to export host_ip which will be used by all the aps. 
+### Building It 
+1. git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base
+2. cd MAVBench_base
+2. source build-scripts/companion_setup_env_var.sh
+3. sudo ./build-scripts/companion_root_setup.bash 
+4. ./build-scripts/companion_user_setup.bash
 
-### How to RUN 
-- make sure you have set the host_ip in setup_env_var.sh
-source MAVBench_base/buil-scripts/setup_env_var.sh 
-source MAVBench_base/catkin_ws/devel/setup.bash
 
-Note: make sure that mavbench_base_dir environment variable is set
-      to the directory that MAVBench_base  was cloned to
-- TODO: create a set of pre_missions for each app
--- you can use the roslaunch to directory call our applications and interact with them, or you can use
+#### Build Notes :
+- If the user wants to manually build some of our ROS packages using catkin, they need to make sure to source setup_var_env.sh first  
+
+
+### Running It
+- Set the host_ip in setup_env_var.sh to the host ip.
+- source MAVBench_base/buil-scripts/companion_setup_env_var.sh 
+- source MAVBench_base/catkin_ws/devel/setup.bash
+
+- use rolaunch to interact with the individual applications that is roslaunch $pkg_name $application.launch:
+  
+  exampe: roslaunch package_delivery scanning.launch
+- Note: all our applications require a set of (what we call) pre-mission steps to prime them. 
 pre_mission.sh to send commands. 
 Internal developer Notes: 'c' needs to be pressed always after everything is loaded, so e.g. if it takes a long time for the object detection to get loaded, c needs to be pressed according.
+
+#### Running Notes :
+- If the user has manually built our ROS packages, they need to set all the variabiles in teh companion_setup_env_var.sh accordingly.
 
 ## Host Computer
 Some introduction
