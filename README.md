@@ -1,4 +1,4 @@
-# Welcome to MAVBench  (Note: We plan to release the code, build scripts and a docker by Micro conference 2018(Oct 24th). As is, the code needs to get cleaned up and the repos might be merged, so please STAY TUNED!!!)
+# Welcome to MAVBench  (Note: We plan to release the code, build scripts and a docker by Micro conference 2018(Oct 24th). Please STAY TUNED!!!)
 This README explains how to setup and use MAVBench.
 
 FORMATTING TODOs: change all the bulles for instructions to numbers.
