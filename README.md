@@ -18,17 +18,41 @@ We developed MAVBench---a framework consisting of a hardware-in-the-loop simulat
 
 
 ## Youtube Channel
-https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg
+[Please visit our youtube channel.](https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg)
 
-## Building it
-[How to build MAVBench](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/building.md)
+## System Requirements
+### Companion Computer  (Responsible for running the compute intensive workloads)
+**Hardware**:  
++ Jetson TX2  
+
+**Software**:  
++ Ubuntu: 16.04  
++ JetPack: 3.2 (We have only tested our setup with 3.2 but we suspect, it'll work with higher versions as well)  
+
+# Host Computer (Responsible for running the drone/environment simualtors + autopilot subsystem)
+
+## System Requirements
+**Hardware**:  
++ A system with powerfull CPU + GPU (Our tested setup uses an Intel Core i7 CPU and a high-end NVIDIA GTX 1080 Ti GPU).
+
+**Software**:  
++ Windows 10, 64 bit   (at thist point, we only support windows for the host)
++ Python 2 (also make sure pip is installed)
++ Visual Studio (optional: only if you want to build from scratch) (tested with visual studio 15.8, 2017 community eddition)  
++ Unreal (optional: only if you want to build from scratch) ( tested with 4.18) 
 
 
-## Running it
-[How to run MAVBench](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/running.md)
+
+
+## Building
+[Instructions to build MAVBench.](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/building.md)
+
+
+## Running 
+[Instruction to run MAVBench.](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/running.md)
 
 ## Profiling
-[How to profile and interprete the results](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/building.md)
+[Instruction to profile and interprete the results](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/building.md)
 
 ## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
@@ -41,17 +65,6 @@ behzadboro@gmail.com
 hngenc@berkeley.edu
 
 ## FAQ
-### host computer build:
-If uppon running host_root_setup.cmd (while in running in "Start x64 Native Tools Command Prompt for VS 2017" shell), you get the following error "The C compiler identification is unknown":
-- open up the aformentioned shell in admin mode (right click->Run as an Administrator)
-- Proceed to the folder that normaly loads when running "x64 Native Tools Command Prompt for VS 2017" asan user (e.g. C:\Program Files (x86)\Microsoft Visual Studio\2017\Community). start from step 3 again 
-Note: that if you want to run as a user, you need to give access to the Community folder (in admin mode) using "icacls "./Community"  /grant $your_user_name:M /T)
-
-Uppon running Unreal, if you get the follow error:
-
-![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/unreal_error.PNG)
-- right click the game solution from your solution explorer and select the option "Set as StartUp Project" and that should highlight the game solution. Cntrl-F5 will then work
-
 
 
 
