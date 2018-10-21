@@ -21,10 +21,14 @@ We developed MAVBench---a framework consisting of a hardware-in-the-loop simulat
 https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg
 
 ## Building it
-[ a link]()
+[How to build MAVBench](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/building)
+
 
 ## Running it
-[ a link]()
+[How to run MAVBench](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/running)
+
+## Profiling
+[How to profile and interprete the results](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/profiling)
 
 ## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
