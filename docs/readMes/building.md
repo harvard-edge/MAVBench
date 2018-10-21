@@ -68,3 +68,13 @@ Notes to internal developers:
 ![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/BP_PIP_depth-map-modification.PNG)
 
 
+
+## Building Games (mainly for internal developers):
+Steps to create, upload and deploy games: (for internal developers)
+      - make a game in unreal
+      - package it
+      - zip it (I usually right click->send to->compressed (zipped) folder. I believe 7zip should work too, but not entirely sure)
+      - uploaded it to the google drive
+      - get a sharable link and paste the id (what's after "id" in the shared link before the next "/") to host_setup_env_var.sh game_fileid variable
+
+
