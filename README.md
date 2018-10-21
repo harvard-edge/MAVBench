@@ -29,9 +29,8 @@ We developed MAVBench---a framework consisting of a hardware-in-the-loop simulat
 + Ubuntu: 16.04  
 + JetPack: 3.2 (We have only tested our setup with 3.2 but we suspect, it'll work with higher versions as well)  
 
-# Host Computer (Responsible for running the drone/environment simualtors + autopilot subsystem)
+### Host Computer (Responsible for running the drone/environment simualtors + autopilot subsystem)
 
-## System Requirements
 **Hardware**:  
 + A system with powerfull CPU + GPU (Our tested setup uses an Intel Core i7 CPU and a high-end NVIDIA GTX 1080 Ti GPU).
 
