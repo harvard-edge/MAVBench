@@ -110,7 +110,7 @@ Notes to internal developers:
 ![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/BP_PIP_depth-map-modification.PNG)
 
 
-### How to RUN 
+### How to run 
 **For the lazy yet happy** (method 1):
 1. cd MAVBench_base/games/WindowsNoEditor
 2. execute the .exe
