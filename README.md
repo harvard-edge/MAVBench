@@ -18,7 +18,7 @@ This means, unlike traditional simulators, autonomous machines require a tightly
 Flight controller (flight stack and the autopilot hardware) is responsible for the drone's stabilization (bottom right). We use a software-simulated flight controller provided by AirSim. However, AirSim also supports other flight controllers, such as the Pixhawk. Much of the drone's perception and trajectory planning is done using an onboard computer, which is generally 
 responsible for running any compute-intensive workloads (bottom left). 
 We used an NVIDIA Jetson TX2, although our setup allows for swapping this embedded board with other platforms like a RISC-V based platform.   
-<img src="https://github.com/MAVBench/MAVBench/blob/master/docs/images/end-to-end-simulation.png" width="400">
+<img center src="https://github.com/MAVBench/MAVBench/blob/master/docs/images/end-to-end-simulation.png" width="400">
 
 2. Benchmark Suite: To quantify the power and performance demands of typical MAV applications, we created a set of workloads that we compiled into a benchmark suite. Our benchmarks run on top of our closed-loop simulation environment. The suite aims to cover a wide range of representative applications. Each workload is an end-to-end application that allows us to study the kernels' impact on the whole application as well as to investigate the interactions and dependencies between kernel. 
   By providing holistic end-to-end applications instead of only focusing on individual kernels, MAVBench allows for the examination of kernels' impacts and their optimization at the application level. This is a lesson learned from Amdahl's law, which recognizes that the true impact of a component's improvement needs to be evaluated globally rather than locally.
