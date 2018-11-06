@@ -73,19 +73,15 @@ More technical details are available in our paper published in Micro 2018.(https
 MAVBench aims at brining the robotics, software and hardware community together. We welcome any contributions such as new sensor/actuator models, new kernels/applications and new hardware setups.
 
 ## Contributors
-Behzad Boroujerdian (UT Austin, Harvard, SiFive)
-
-Hassan Genc (UC Berkeley)
-
+Behzad Boroujerdian (UT Austin, Harvard, SiFive)   
+Hassan Genc (UC Berkeley)  
 Srivatsan Krishnan (Harvard)
+Aleksandra Faust (Google Brain)  
+Vijay Janapa Reddi  (UT Austin, Harvard, Google)  
 
-Aleksandra Faust (Google Brain)
-
-Vijay Janapa Reddi  (UT Austin, Harvard, Google)
 
 ## Current Maintainers
-behzadboro@gmail.com
-
-hngenc@berkeley.edu
+behzadboro@gmail.com  
+hngenc@berkeley.edu  
 
 ## FAQ
