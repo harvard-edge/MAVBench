@@ -13,7 +13,7 @@ A big shout out to Microsoft and ETH Zurich University.
 We developed MAVBench to accurately model the drone's system and its environment. We identify two main ingredients toward this end.
 
 1. Simulator: Autonomous drones similar to other autonomous machines require a new breed of architectural simulators. Unlike traditional machines (desktops, servers, cellphones and others), information flows in a loop for an autonomous machine . Such flow starts from the machine's environment via sensors, gets processed by the computing subsystem, and flows back out into the environment via actuators.
-This means, unlike traditional simulators, autonomous machines require a tightly coupled closed-loop feedback simulator for architectural investigation. 
+This means, unlike traditional simulators, autonomous machines require a tightly coupled closed-loop feedback simulator for architectural investigation.   
   Our simulator has three core components as shown in the figure bellow. The drone's environments, sensors, and actuators are simulated using a game engine called Unreal augmented with AirSim libraries (top). By using a physics engine, they provide the ability to simulate the drone's behavior, its environment and the interaction between the two such as accurate collision detection. 
 Flight controller (flight stack and the autopilot hardware) is responsible for the drone's stabilization (bottom right). We use a software-simulated flight controller provided by AirSim. However, AirSim also supports other flight controllers, such as the Pixhawk. Much of the drone's perception and trajectory planning is done using an onboard computer, which is generally 
 responsible for running any compute-intensive workloads (bottom left). 
