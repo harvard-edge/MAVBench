@@ -1,5 +1,5 @@
-# Welcome to MAVBench  (Note: We plan to release the code, build scripts and a docker by Micro conference 2018(Oct 24th). Please STAY TUNED!!!)
-This README explains how to setup and use MAVBench.
+# Welcome to MAVBench 
+This README explains how to setup and use MAVBench, A benchmark and a simulator for Micro Aerial Vehicles.
 
 
 **What is MAVBench?**
@@ -7,7 +7,7 @@ MAVBench is a framework targetting design and development of Micro Aerial Vehicl
 benchmark suite. A closed-loop simulation platform is needed to probe and understand the intra-system (application data flow) and inter-system (system and environment) interactions in MAV applications
 to pinpoint bottlenecks and identify opportunities for hardware and software co-design and optimization. In addition to the simulator, MAVBench provides a benchmark suite, the first of its kind,
 consisting of a variety of MAV applications designed to enable computer architects to perform characterization and develop future aerial computing systems. This work is built on top of a host of open source software.
-A big shout out to Microsoft and University of EHTH zurich. 
+A big shout out to Microsoft and University of EHTH zurich.
 
 **Why MAVBench?**
 Autonomous drones similar to other autonomous machines require a new breed of architectural simulators. Unlike in traditional architectural simulators, information in an autonomous machine flows in a loop. Information flows in from the machine's environment via its sensors, gets processed by the computing subsystem, and flows back out into the environment via actuators and controls. Hence, autonomous machines require a tightly coupled closed-loop feedback system for architectural investigation.
