@@ -19,7 +19,8 @@ Flight controller (flight stack and the autopilot hardware) is responsible for t
 responsible for running any compute-intensive workloads (bottom left). 
 We used an NVIDIA Jetson TX2, although our setup allows for swapping this embedded board with other platforms like a RISC-V based platform.   
 
-<img align="right" src="https://github.com/MAVBench/MAVBench/blob/master/docs/images/end-to-end-simulation.png" width="400">
+
+<img align="center" src="https://github.com/MAVBench/MAVBench/blob/master/docs/images/end-to-end-simulation.png" width="400">
 
 
 2. Benchmark Suite: To quantify the power and performance demands of typical MAV applications, we created a set of workloads that we compiled into a benchmark suite. Our benchmarks run on top of our closed-loop simulation environment. The suite aims to cover a wide range of representative applications. Each workload is an end-to-end application that allows us to study the kernels' impact on the whole application as well as to investigate the interactions and dependencies between kernel. 
