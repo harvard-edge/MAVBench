@@ -2,13 +2,15 @@ This document describes the steps necessary for running the MAVBench toolset.
 # Companion Computer  
 
 ## Running It
-1. Set the host_ip in setup_env_var.sh to the host IP. 
-2. source MAVBench_base/buil-scripts/companion_setup_env_var.sh   
-3. source MAVBench_base/catkin_ws/devel/setup.bash  
-4. Use roslaunch to interact with the individual applications: 
-  roslaunch $pkg_name $application.launch
-  example: roslaunch package_delivery scanning.launch
-5. At this point, you can interact with the applications
++ Set the host_ip in setup_env_var.sh to the host IP.   
+> source MAVBench_base/buil-scripts/companion_setup_env_var.sh;    
+source MAVBench_base/catkin_ws/devel/setup.bash;    
+
++ Use roslaunch to interact with the individual applications:   
+> roslaunch $pkg_name $application.launch
+ 
+ example: roslaunch package_delivery scanning.launch
++ At this point, you can interact with the applications
 5. (alternatively) you can use our pre-defined missions (encapsulating a set of initial interactions) to prime the drone for a specific goal. These pre-defined missions are provided for each application in a file called pre_mission_cmds.sh: 
 ./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.sh | roslaunch $pkg_name $application.launch  
 example: ./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.sh | roslaunch $pkg_name $application.launch 
