@@ -41,7 +41,7 @@ This computer is responsible for running the drone/environment simulators + auto
 
 
 ## Building It
-1. git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir
+1. git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir   
    **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so: 
   2. cd MAVBench_base/build-scripts . 
   3. host_setup_env_var.cmd   
