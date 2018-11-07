@@ -50,10 +50,10 @@ This computer is responsible for running the drone/environment simulators + auto
    
    **For the reckless with no life** (most likely you won't fall within this group): In case the user wants to build from scratch (this can be helpful if the user wants to try out their own environment maps):  
       follow the instruction provided by Microsoft      (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md), and only replacing the **Build AirSim** section with the following instructions (note that you will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x).      
-      Start x64 Native Tools Command Prompt for VS 2017.            
-      > mkdir MAVBench_base;         
+      Start x64 Native Tools Command Prompt for VS 2017.
+      > mkdir MAVBench_base;
       > cd MAVBench_base/build-scripts;       
-      > host_setup_env_var.cmd .       
+      > host_setup_env_var.cmd;
       > host_root_setup_from_src.cmd           
       This will create ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project. Follow along with the AirSim instructions provided by Microsoft   https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md).       
 
