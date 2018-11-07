@@ -6,7 +6,7 @@ This document describes the steps necessary for running the MAVBench toolset.
 > source MAVBench_base/buil-scripts/companion_setup_env_var.sh;    
 source MAVBench_base/catkin_ws/devel/setup.bash;    
 
-+ Use roslaunch to interact with the individual applications:   
+- Use roslaunch to interact with the individual applications:   
 > roslaunch $pkg_name $application.launch
  
  example: roslaunch package_delivery scanning.launch
