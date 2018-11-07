@@ -1,3 +1,4 @@
+This document describes the steps necessary for running the MAVBench toolset. 
 # Companion Computer  
 
 ## Running It
@@ -20,7 +21,7 @@ example: ./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.s
 
 # Host Computer
 
-## How to run 
+## Running it 
 **For the lazy yet happy** (method 1):
 1. cd MAVBench_base/games/WindowsNoEditor
 2. execute the .exe
