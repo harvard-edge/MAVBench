@@ -35,28 +35,6 @@ We used an NVIDIA Jetson TX2, although our setup allows for swapping this embedd
 ## Youtube Channel
 [Please visit our youtube channel.](https://www.youtube.com/channel/UC_bNkXcP5BHSRcNJ4R4GTvg)
 
-## System Requirements
-### Companion Computer  (Responsible for running the compute intensive workloads)
-**Hardware**:  
-+ Jetson TX2  
-
-**Software**:  
-+ Ubuntu: 16.04  
-+ JetPack (NVIDIA SDK): 3.2 (We have only tested our setup with 3.2 but we speculate that it will work with higher versions as well)  
-
-### Host Computer (Responsible for running the drone/environment simulators + autopilot subsystem)
-
-**Hardware**:  
-+ A system with powerful CPU + GPU (Our tested setup uses an Intel Core i7 CPU and a high-end NVIDIA GTX 1080 Ti GPU).
-
-**Software**:  
-+ Windows 10, 64 bit (at the moment, we only support windows for the host)
-+ Python 2 (also make sure pip is installed)
-+ Visual Studio (optional: only if you want to build from scratch) (tested with visual studio 15.8, 2017 community edition)  
-+ Unreal (optional: only if you want to build from scratch) (tested with 4.18) 
-
-
-
 
 ## Building
 [Instructions to build MAVBench.](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/building.md)
