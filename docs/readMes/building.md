@@ -41,26 +41,26 @@ This computer is responsible for running the drone/environment simulators + auto
 
 
 ## Building It
-git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir
+1. git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir
 
 **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:
-1. cd MAVBench_base/build-scripts
-2. host_setup_env_var.cmd 
-3. host_root_setup.cmd
+2. cd MAVBench_base/build-scripts
+3. host_setup_env_var.cmd 
+4. host_root_setup.cmd
 
-**For the reckless with no life** (most likely you won't fall within this group): In case the user wants to build from scratch (this can be helpful if the user wants to try out their own environment maps), follow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md), and only replacing the **Build AirSim** section with the following instructions:
-1. You will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x).
-2. Start x64 Native Tools Command Prompt for VS 2017. 
-3. Create a folder for the repo (here on referred to as MAVBench_base) and
-5. cd MAVBench_base/build-scripts 
-6. host_setup_env_var.cmd 
-7. host_root_setup_from_src.cmd
-8. This will create ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project 
-9. Follow along with the AirSim instructions provided by Microsoft https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). 
+**For the reckless with no life** (most likely you won't fall within this group): In case the user wants to build from scratch (this can be helpful if the user wants to try out their own environment maps):
+2. follow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md), and only replacing the **Build AirSim** section with the following instructions:
+3. You will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x).
+4. Start x64 Native Tools Command Prompt for VS 2017. 
+5. Create a folder for the repo (here on referred to as MAVBench_base) and
+6. cd MAVBench_base/build-scripts 
+7. host_setup_env_var.cmd 
+8. host_root_setup_from_src.cmd
+9. This will create ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project 
+10. Follow along with the AirSim instructions provided by Microsoft https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). 
 
 Notes to internal developers: 
-      1. If you decided to make your own executable and upload to google drive, use windows to zip and windows to unzip (you can use tar in windows now). I had issues with using tar for unziping. The generated executable was erroring out.
-      2. A folder with the name of game/WindowsNoEditor need to be zipped to the google cloud.
+If you decided to make your own executable and upload to google drive, use windows to zip and windows to unzip (you can use tar in windows now). I had issues with using tar for unziping. The generated executable was erroring out.A folder with the name of game/WindowsNoEditor need to be zipped to the google cloud.
 
 ### Fixing AirSim's Depth Map Issue
 Fix a Depth image bug by following this issue: https://github.com/Microsoft/AirSim/issues/491. 
