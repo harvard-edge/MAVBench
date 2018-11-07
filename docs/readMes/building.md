@@ -42,8 +42,7 @@ This computer is responsible for running the drone/environment simulators + auto
 
 ## Building It
 1. git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir
-
-  **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so: 
+   **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so: 
   2. cd MAVBench_base/build-scripts . 
   3. host_setup_env_var.cmd   
   4. host_root_setup.cmd . 
@@ -59,7 +58,8 @@ This computer is responsible for running the drone/environment simulators + auto
   9. This will create ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project. 
   10. Follow along with the AirSim instructions provided by Microsoft   https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). 
 
-Notes to internal developers: 
+### Build Notes :
+for internal developers: 
 If you decided to make your own executable and upload to google drive, use windows to zip and windows to unzip (you can use tar in windows now). I had issues with using tar for unziping. The generated executable was erroring out.A folder with the name of game/WindowsNoEditor need to be zipped to the google cloud.
 
 ### Fixing AirSim's Depth Map Issue
