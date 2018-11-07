@@ -1,4 +1,4 @@
-This document describes the steps necessary for building MAVBench toolset. 
+This document describes the steps necessary for building MAVBench toolset.    
 Note: Please read until the end before setting up your system.   
 Note: Please setup the companion computer before the host.  
 
