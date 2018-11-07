@@ -1,4 +1,4 @@
-# Building MAVBench and Using it
+# Building MAVBench
 Note: Please read until the end before setting up your system.   
 Note: Please setup the companion computer before the host.  
 
@@ -38,7 +38,7 @@ This computer is responsible for running the drone/environment simulators + auto
 + Unreal (optional: only if you want to build from scratch) ( tested with 4.18) 
 
 
-## How to Build 
+## Building It
 git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir
 
 **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:
