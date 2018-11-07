@@ -3,7 +3,7 @@ Note: Please read until the end before setting up your system.
 Note: Please setup the companion computer before the host.  
 
 [comment]: <p align="center"> 
-# Companion Computer** 
+# Companion Computer 
 
 This computer is responsible for running the compute intensive workloads.
 
