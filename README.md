@@ -55,7 +55,7 @@ MAVBench aims at brining the robotics, software and hardware community together.
 ## Contributors
 Behzad Boroujerdian (UT Austin, Harvard, SiFive)   
 Hassan Genc (UC Berkeley)  
-Srivatsan Krishnan (Harvard) .  
+Srivatsan Krishnan (Harvard)  
 Aleksandra Faust (Google Brain)  
 Vijay Janapa Reddi  (UT Austin, Harvard, Google)  
 
