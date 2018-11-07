@@ -48,8 +48,8 @@ This computer is responsible for running the drone/environment simulators + auto
    > host_setup_env_var.cmd;              
    > host_root_setup.cmd              
    
-   **For the reckless with no life** (most likely you won't fall within this group): In case the user wants to build from scratch (this can be helpful if the user wants to try out their own environment maps):  
-      follow the instruction provided by Microsoft      (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md), and only replacing the **Build AirSim** section with the following instructions (note that you will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x).      
+   **For the reckless with no life** (most likely you won't fall within this group): 
+   By building from scratch the user can try out their own environment maps. Inorder to do so, folow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Note that you will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x). Replacing the **Build AirSim** section with the following instructions:      
       Start x64 Native Tools Command Prompt for VS 2017.
       > mkdir MAVBench_base;
       > cd MAVBench_base/build-scripts;       
