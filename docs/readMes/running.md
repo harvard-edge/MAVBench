@@ -11,8 +11,9 @@ source MAVBench_base/catkin_ws/devel/setup.bash;
  
  example: roslaunch package_delivery scanning.launch
 + At this point, you can interact with the applications
-5. (alternatively) you can use our pre-defined missions (encapsulating a set of initial interactions) to prime the drone for a specific goal. These pre-defined missions are provided for each application in a file called pre_mission_cmds.sh: 
-./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.sh | roslaunch $pkg_name $application.launch  
++ (alternatively) you can use our pre-defined missions (encapsulating a set of initial interactions) to prime the drone for a specific goal. These pre-defined missions are provided for each application in a file called pre_mission_cmds.sh: 
+> ./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.sh | roslaunch $pkg_name $application.launch  
+
 example: ./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.sh | roslaunch $pkg_name $application.launch 
 
 
@@ -25,8 +26,8 @@ example: ./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.s
 
 ## Running it 
 **For the lazy yet happy** (method 1):
-1. cd MAVBench_base/games/WindowsNoEditor
-2. execute the .exe
+> cd MAVBench_base/games/WindowsNoEditor
++ execute the .exe
 
 **For the reckless with no life** (method 2):
 Follow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Follow the **How to Use Airsim** Section.  
