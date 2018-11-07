@@ -42,10 +42,11 @@ This computer is responsible for running the drone/environment simulators + auto
 
 ## Building It
 1. git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir   
+   
    **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so: 
-  2. cd MAVBench_base/build-scripts . 
-  3. host_setup_env_var.cmd   
-  4. host_root_setup.cmd . 
+    2. cd MAVBench_base/build-scripts . 
+    3. host_setup_env_var.cmd   
+    4. host_root_setup.cmd . 
 
   **For the reckless with no life** (most likely you won't fall within this group): In case the user wants to build from scratch (this can be helpful if the user wants to try out their own environment maps):  
   2. follow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md), and only replacing the **Build AirSim** section with the following instructions:  
