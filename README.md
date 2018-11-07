@@ -44,7 +44,7 @@ We used an NVIDIA Jetson TX2, although our setup allows for swapping this embedd
 [Instruction to run MAVBench.](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/running.md)
 
 ## Profiling
-[Instruction to profile and interpret the results](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/building.md)
+[Instruction to profile and interpret the results.](https://github.com/MAVBench/MAVBench/blob/master/docs/readMes/building.md)
 
 ## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
