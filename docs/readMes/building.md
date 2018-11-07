@@ -54,7 +54,7 @@ This computer is responsible for running the drone/environment simulators + auto
    >  mkdir MAVBench_base;  
    > cd MAVBench_base/build-scripts;  
    > host_setup_env_var.cmd;  
-   > host_root_setup_from_src.cmd           
+   > host_root_setup_from_src.cmd;  
    This will create ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project. Follow along with the AirSim instructions provided by Microsoft   https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md).       
 
 ### Build Notes :
