@@ -1,6 +1,7 @@
 Various mission metrics such mission-time, energy, etc. and compute metrics such as various processes' throughput can be profiled using our toolset. This document descirbes steps toward this end. 
 
-1. cd MAVBench_base_dir/build-scripts
+1.   
+> cd MAVBench_base_dir/build-scripts
 > host_setup_env_var.cmd;   
  cd MAVBench_base_dir/test_benches/configs
  
