@@ -14,7 +14,7 @@ source MAVBench_base/catkin_ws/devel/setup.bash;
 + (alternatively) you can use our pre-defined missions (encapsulating a set of initial interactions) to prime the drone for a specific goal. These pre-defined missions are provided for each application in a file called pre_mission_cmds.sh: 
 > ./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.sh | roslaunch $pkg_name $application.launch  
 
-example: ./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.sh | roslaunch $pkg_name $application.launch 
+example: ./MAVbench_base/src/mav-bench-apps/package_delivery/pre_mission_cmds.sh | roslaunch $package_delivery $scanning.launch 
 
 
 ### Running Notes:
