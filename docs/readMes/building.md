@@ -2,7 +2,7 @@ This document describes the steps necessary for building MAVBench toolset.
 Note: Please read until the end before setting up your system.   
 Note: Please setup the companion computer before the host.  
 
-# Companion Computer  
+# <center> Companion Computer </center>
 This computer is responsible for running the compute intensive workloads.
 
 ## System Requirements
