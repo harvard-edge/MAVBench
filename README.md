@@ -12,7 +12,7 @@ A big shout out to Microsoft and ETH Zurich University.
 **Why MAVBench?**
 We developed MAVBench to accurately model the drone's system and its environment. We identify two main ingredients toward this end.
 
-<img align="right" src="https://github.com/MAVBench/MAVBench/blob/master/docs/images/end-to-end-simulation.png" width="500">  
+<img align="right" src="https://github.com/MAVBench/MAVBench/blob/master/docs/images/end_to_end_simulation.png" width="500">  
 1. Simulator: Autonomous drones similar to other autonomous machines require a new breed of architectural simulators. Unlike traditional machines (desktops, servers, cellphones and others), information flows in a loop for an autonomous machine . Such flow starts from the machine's environment via sensors, gets processed by the computing subsystem, and flows back out into the environment via actuators.
 This means, unlike traditional simulators, autonomous machines require a tightly coupled closed-loop feedback simulator for architectural investigation.   
   Our simulator has three core components as shown in the figure bellow. The drone's environments, sensors, and actuators are simulated using a game engine called Unreal augmented with AirSim libraries (top). By using a physics engine, they provide the ability to simulate the drone's behavior, its environment and the interaction between the two such as accurate collision detection. 
@@ -21,7 +21,7 @@ responsible for running any compute-intensive workloads (bottom left).
 We used an NVIDIA Jetson TX2, although our setup allows for swapping this embedded board with other platforms like a RISC-V based platform.   
 
 
-<img align="right" src="https://github.com/MAVBench/MAVBench/blob/master/docs/images/Suite-vertical.png" width="500">
+<img align="right" src="https://github.com/MAVBench/MAVBench/blob/master/docs/images/suite_vertical.png" width="500">
 2. Benchmark Suite: To quantify the power and performance demands of typical MAV applications, we created a set of workloads that we compiled into a benchmark suite. Our benchmarks run on top of our closed-loop simulation environment. The suite aims to cover a wide range of representative applications. Each workload is an end-to-end application that allows us to study the kernels' impact on the whole application as well as to investigate the interactions and dependencies between kernel. 
   By providing holistic end-to-end applications instead of only focusing on individual kernels, MAVBench allows for the examination of kernels' impacts and their optimization at the application level. This is a lesson learned from Amdahl's law, which recognizes that the true impact of a component's improvement needs to be evaluated globally rather than locally.
 

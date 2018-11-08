@@ -69,7 +69,7 @@ Fix a Depth image bug by following this issue: https://github.com/Microsoft/AirS
 1. Go to BP_PIPCamera (within the unreal editor, this is located under Blueprints (Note: if you can’t find this in the content browser, click on "window->Find" in blueprints and search for BP_RIPCamera)
 1. Click on DepthPlannerCaptureComponent (on the left hand side under "Components" tab). Then in the "Details" window, click on “post process Materials” and change the material to “DepthMapMaterial”
 
-![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/BP_PIP_depth-map-modification.PNG)
+![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/BP_PIP_depth_map_modification.PNG)
 
 
 
