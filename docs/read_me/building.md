@@ -43,7 +43,7 @@ This computer is responsible for running the drone/environment simulators + auto
 
 
 ## Building It
-1.  clone our repository;
+1.  clone our repository
 ``` bash
 git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir;   
 ```   
