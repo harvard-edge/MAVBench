@@ -16,12 +16,13 @@ This computer is responsible for running the compute intensive workloads.
 + JetPack (Nvidia SDK): 3.2 (We have only tested our setup with 3.2 but we suspect, it'll work with higher versions as well)  
 
 ## Building It 
-> git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base;     
-> cd MAVBench_base;   
-> source build-scripts/companion_setup_env_var.sh;    
-> sudo ./build-scripts/companion_root_setup.bash;    
-> ./build-scripts/companion_user_setup.bash;  
-    
+```bash
+git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base;     
+cd MAVBench_base;   
+source build-scripts/companion_setup_env_var.sh;    
+sudo ./build-scripts/companion_root_setup.bash;    
+./build-scripts/companion_user_setup.bash;  
+```    
 
 ### Build Notes :
 - If the user wants to manually build some of our ROS (robotic operating system) packages using catkin, they need to make sure to source setup_var_env.sh first.  
