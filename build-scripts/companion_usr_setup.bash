@@ -13,7 +13,7 @@ source /opt/ros/kinetic/setup.bash
 ########
 cd $darknet_base_dir
 if [[ ! `git status --porcelain`  ]]; then
-    cp $base_dir/build-scripts/darknet.patch $darknet_base_dir	 &&\
+    cp $base_dir/build_scripts/darknet.patch $darknet_base_dir	 &&\
     git apply --whitespace=fix darknet.patch
     # TODO turn the next couple of lines to a patch aswell
     sed -i 's/GPU=0/GPU=1/' Makefile &&\
@@ -37,7 +37,7 @@ fi
 
 cd $mavbench_apps_base_dir/deps/glog_catkin 
 if [[ ! `git status --porcelain`  ]]; then
-       git apply $base_dir/build-scripts/glog_catkin.patch 
+       git apply $base_dir/build_scripts/glog_catkin.patch 
 fi
 
 cd $base_dir/catkin_ws/src 

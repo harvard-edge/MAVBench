@@ -1,7 +1,7 @@
 #! /bin/bash
 
 env_dir="$(dirname $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd))"
-source ${env_dir}/build-scripts/setup_env_var.sh
+source ${env_dir}/build_scripts/setup_env_var.sh
 set -x 
 set -e 
 
@@ -84,7 +84,7 @@ sudo ln -sf tegra/libGL.so libGL.so
 
 cd $base_dir/src/pcl
 if [[ ! `git status --porcelain`  ]]; then
-    cp $base_dir/build-scripts/lzf_image_io.cpp $base_dir/src/pcl/io/src/ 
+    cp $base_dir/build_scripts/lzf_image_io.cpp $base_dir/src/pcl/io/src/ 
 fi
 
 cd $base_dir/src/pcl && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++11" ..
