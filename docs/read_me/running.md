@@ -34,7 +34,7 @@ roslaunch $pkg_name $application.launch #example: roslaunch package_delivery sca
 ```bash
 cd MAVBench_base/games/WindowsNoEditor
 ```
-1. Execute the .exe
+2. Execute the .exe
 
 **For the reckless with no life** (method 2):
 Follow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Follow the **How to Use Airsim** Section.  
