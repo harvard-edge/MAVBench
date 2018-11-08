@@ -42,22 +42,22 @@ This computer is responsible for running the drone/environment simulators + auto
 + Unreal (optional: only if you want to build from scratch) ( tested with 4.18) 
 
 
-## Building It
-1.  clone our repository
+## Building It.
+1.  Clone our repository
 ``` bash
 git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir;   
 ```   
- **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:  
-    2. install some required python libraries; download our games;
+ **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:    
+2. Install some required python libraries; download our games;
 ```bash
 cd MAVBench_base/build-scripts;  
-    host_setup_env_var.cmd;  
-    host_root_setup.cmd              
+host_setup_env_var.cmd;  
+host_root_setup.cmd              
 ```   
    **For the reckless with no life** (most likely you won't fall within this group): 
    By building from scratch the user can try out their own environment maps. Inorder to do so, folow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Note that you will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x). Replace the **Build AirSim** section with the following instructions:    
    2.  Start x64 Native Tools Command Prompt for VS 2017.       
-   3. clone AirSim and build it. Download our games.
+   3. Clone AirSim and build it. Download our games.
    ```bash
    mkdir MAVBench_base;  
    cd MAVBench_base/build-scripts;  
