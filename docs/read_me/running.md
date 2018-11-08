@@ -41,6 +41,10 @@ Follow the instruction provided by Microsoft (https://github.com/Microsoft/AirSi
 
 
 # Running Hello World
-You can run the hello world with: ./MAVbench_base/src/mav-bench-apps/control_drone/pre_mission_cmds.sh | roslaunch control_drone control_drone.launch. Upon this, you shoud see the drone navigating a square around a warehouse, returning to initial coordinates and land.  
+You can run the hello world with: 
+```basH
+./MAVbench_base/src/mav-bench-apps/control_drone/pre_mission_cmds.sh | roslaunch control_drone control_drone.launch. 
+```
+while running, you shoud see the drone navigating a square around a warehouse, returning to initial coordinates and land.  
 
 
