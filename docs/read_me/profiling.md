@@ -6,9 +6,9 @@ cd MAVBench_base_dir/build-scripts;
 host_setup_env_var.cmd;   
 cd MAVBench_base_dir/test_benches/configs;
 ``` 
- 2. Modify the config file as you like to invoke the desired package, application and relevant parameters.
+ 2. Modify the json config file as you like to invoke the desired package, application and relevant parameters.
  ```bash
- python loader\clct_data.py --config configs\${your_config_file};  #(example hellworld-config.json)
+ python loader\clct_data.py --config configs\${your_config_file};  #example:  python loader\clct_data.py --config configs\helloworld_config.json;
  ``` 
 
 # Interpreting the Results
