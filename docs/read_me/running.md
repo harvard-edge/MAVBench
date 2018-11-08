@@ -5,8 +5,9 @@ This document describes the steps necessary for running the MAVBench toolset.
 1. Set the host_ip in companion_setup_env_var.sh to the host IP.   
 2. Source the relevant files.
 ```bash
-source MAVBench_base/build_scripts/companion_setup_env_var.sh;    
-source MAVBench_base/catkin_ws/devel/setup.bash;    
+cd MAVBench_base;
+source build_scripts/companion_setup_env_var.sh;    
+source catkin_ws/devel/setup.bash;    
 ```
 3.Use roslaunch to interact with the individual applications:   
 ```bash
