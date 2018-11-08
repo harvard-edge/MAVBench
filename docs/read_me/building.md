@@ -16,12 +16,14 @@ This computer is responsible for running the compute intensive workloads.
 + JetPack (Nvidia SDK): 3.2 (We have only tested our setup with 3.2 but we suspect, it'll work with higher versions as well)  
 
 ## Building It 
-> git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base;     
-> cd MAVBench_base;   
-> source build-scripts/companion_setup_env_var.sh;    
-> sudo ./build-scripts/companion_root_setup.bash;    
-> ./build-scripts/companion_user_setup.bash;  
-    
+The following steps, clone our repo and sub repos (AirSim, pointcloud, ...) and build them all;
+```bash
+git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base;     
+cd MAVBench_base;   
+source build-scripts/companion_setup_env_var.sh;    
+sudo ./build-scripts/companion_root_setup.bash;    
+./build-scripts/companion_usr_setup.bash;  
+```    
 
 ### Build Notes :
 - If the user wants to manually build some of our ROS (robotic operating system) packages using catkin, they need to make sure to source setup_var_env.sh first.  
@@ -40,25 +42,29 @@ This computer is responsible for running the drone/environment simulators + auto
 + Unreal (optional: only if you want to build from scratch) ( tested with 4.18) 
 
 
-## Building It
-1.  
-> git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir;   
-   
-   **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:  
-    2.
-> cd MAVBench_base/build-scripts;  
-    host_setup_env_var.cmd;  
-    host_root_setup.cmd              
-   
+## Building It.
+1.  Clone our repository
+``` bash
+git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_dir;   
+```   
+ **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:    
+2. Install some required python libraries; download our games;
+```bash
+cd MAVBench_base/build-scripts;  
+host_setup_env_var.cmd;  
+host_root_setup.cmd              
+```   
    **For the reckless with no life** (most likely you won't fall within this group): 
    By building from scratch the user can try out their own environment maps. Inorder to do so, folow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Note that you will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x). Replace the **Build AirSim** section with the following instructions:    
    2.  Start x64 Native Tools Command Prompt for VS 2017.       
-   >  mkdir MAVBench_base;  
-   > cd MAVBench_base/build-scripts;  
-   > host_setup_env_var.cmd;  
-   > host_root_setup_from_src.cmd;  
-   
-   This will create ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project. Follow along with the AirSim instructions provided by Microsoft   https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md).       
+   3. Clone AirSim and build it. Download our games.
+   ```bash
+   mkdir MAVBench_base;  
+   cd MAVBench_base/build-scripts;  
+   host_setup_env_var.cmd;  
+   host_root_setup_from_src.cmd;  
+   ```
+   At this point, you should have a ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project. Follow along with the AirSim instructions provided by Microsoft   https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md).       
 
 ### Build Notes :
 for internal developers: 
@@ -75,10 +81,10 @@ Fix a Depth image bug by following this issue: https://github.com/Microsoft/AirS
 
 ## Building Games (mainly for internal developers):
 Steps to create, upload and deploy games: (for internal developers):
-1. make a game in unreal.
-2. package it.
-3.  zip it (I usually right "click->send to->compressed" (zipped) folder. I believe 7zip should work too, but further investigation is required).
-4. uploaded it to the google drive.
-5. get a shareable link and paste the id (what's after "id" in the shared link before the next "/") to host_setup_env_var.sh game_fileid variable.
+1. Make a game in unreal.
+2. Package it.
+3. Zip it (I usually right "click->send to->compressed" (zipped) folder. I believe 7zip should work too, but further investigation is required).
+4. Uploaded it to the google drive.
+5. Get a shareable link and paste the id (what's after "id" in the shared link before the next "/") to host_setup_env_var.sh game_fileid variable.
 
 
