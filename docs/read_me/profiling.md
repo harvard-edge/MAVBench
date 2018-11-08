@@ -2,7 +2,7 @@ Various mission metrics such mission-time, energy, etc. and compute metrics such
 
 1. Setting up environment variables. 
 ```bash
-cd MAVBench_base_dir/build-scripts;
+cd MAVBench_base_dir/build_scripts;
 host_setup_env_var.cmd;   
 cd MAVBench_base_dir/test_benches/configs;
 ``` 

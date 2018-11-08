@@ -20,9 +20,9 @@ The following steps, clone our repo and sub repos (AirSim, pointcloud, ...) and 
 ```bash
 git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base;     
 cd MAVBench_base;   
-source build-scripts/companion_setup_env_var.sh;    
-sudo ./build-scripts/companion_root_setup.bash;    
-./build-scripts/companion_usr_setup.bash;  
+source build_scripts/companion_setup_env_var.sh;    
+sudo ./build_scripts/companion_root_setup.bash;    
+./build_scripts/companion_usr_setup.bash;  
 ```    
 
 ### Build Notes :
@@ -50,7 +50,7 @@ git clone  --recursive https://github.com/MAVBench/MAVBench.git mavbench_base_di
  **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:    
 2. Install some required python libraries; download our games;
 ```bash
-cd MAVBench_base/build-scripts;  
+cd MAVBench_base/build_scripts;  
 host_setup_env_var.cmd;  
 host_root_setup.cmd              
 ```   
@@ -60,7 +60,7 @@ host_root_setup.cmd
    3. Clone AirSim and build it. Download our games.
    ```bash
    mkdir MAVBench_base;  
-   cd MAVBench_base/build-scripts;  
+   cd MAVBench_base/build_scripts;  
    host_setup_env_var.cmd;  
    host_root_setup_from_src.cmd;  
    ```
