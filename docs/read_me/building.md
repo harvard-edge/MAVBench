@@ -81,10 +81,10 @@ Fix a Depth image bug by following this issue: https://github.com/Microsoft/AirS
 
 ## Building Games (mainly for internal developers):
 Steps to create, upload and deploy games: (for internal developers):
-1. make a game in unreal.
-2. package it.
-3.  zip it (I usually right "click->send to->compressed" (zipped) folder. I believe 7zip should work too, but further investigation is required).
-4. uploaded it to the google drive.
-5. get a shareable link and paste the id (what's after "id" in the shared link before the next "/") to host_setup_env_var.sh game_fileid variable.
+1. Make a game in unreal.
+2. Package it.
+3. Zip it (I usually right "click->send to->compressed" (zipped) folder. I believe 7zip should work too, but further investigation is required).
+4. Uploaded it to the google drive.
+5. Get a shareable link and paste the id (what's after "id" in the shared link before the next "/") to host_setup_env_var.sh game_fileid variable.
 
 
