@@ -1,7 +1,7 @@
 #! /bin/bash
 
 env_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source ${env_dir}/setup_env_var.sh
+source ${env_dir}/companion_setup_env_var.sh
 set -x 
 set -e
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/cuda/lib64" 

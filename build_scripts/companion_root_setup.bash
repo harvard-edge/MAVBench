@@ -1,7 +1,7 @@
 #! /bin/bash
 
 env_dir="$(dirname $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd))"
-source ${env_dir}/build_scripts/setup_env_var.sh
+source ${env_dir}/build_scripts/companion_setup_env_var.sh
 set -x 
 set -e 
 
@@ -88,8 +88,8 @@ if [[ ! `git status --porcelain`  ]]; then
 fi
 
 cd $base_dir/src/pcl && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++11" ..
-cd $base_dir/src/pcl/build && make -j 4
-cd $base_dir/src/pcl/build && make -j 4 install
+cd $base_dir/src/pcl/build && make -j 2
+cd $base_dir/src/pcl/build && make -j 2 install
 
 
 ########
