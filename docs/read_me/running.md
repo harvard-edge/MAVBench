@@ -2,17 +2,19 @@ This document describes the steps necessary for running the MAVBench toolset.
 # Companion Computer  
 
 ## Running It
-1. Set the host_ip in setup_env_var.sh to the host IP.   
+1. Set the host_ip in companion_setup_env_var.sh to the host IP.   
 2. Source the relevant files.
 ```bash
-source MAVBench_base/buil-scripts/companion_setup_env_var.sh;    
-source MAVBench_base/catkin_ws/devel/setup.bash;    
+cd MAVBench_base;
+source build_scripts/companion_setup_env_var.sh;    
+source catkin_ws/devel/setup.bash;    
 ```
 3.Use roslaunch to interact with the individual applications:   
 ```bash
 roslaunch $pkg_name $application.launch #example: roslaunch package_delivery scanning.launch;
 ``` 
- 
+Note that for the application to communicate with the game, the game needs to be running on the host computer (so follow the instruction on the host at this point to get the game running).
+
 4.At this point, you can interact with the applications
 4(alternative). you can use our pre-defined missions (encapsulating a set of initial interactions) to prime the drone for a specific goal. These pre-defined missions are provided for each application in a file called pre_mission_cmds.sh: 
 ```bash

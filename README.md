@@ -46,6 +46,26 @@ We used an NVIDIA Jetson TX2, although our setup allows for swapping this embedd
 ## Profiling
 [Instruction to profile and interpret the results.](https://github.com/MAVBench/MAVBench/blob/master/docs/read_me/building.md)
 
+## Directory Structure
+```bash
+.
+├── build_scripts # Scripts for building our repo and subrepos
+├── docs          # Documents
+│   ├── images    
+│   └── read_me   
+├── src           # All the src code
+│   ├── AirSim
+│   ├── darknet
+│   ├── mav-bench-apps
+│   ├── opencv
+│   └── pcl
+└── test_benches  # Test benches allowing the user to 1.use pre-defined missions
+                  #                                  2. profile
+    ├── configs   # Pre-defined missions (you can change this according to your
+   		    need)
+    └── scripts   # Scripts to load test benches and profile
+```
+
 ## Paper
 More technical details are available in our paper published in Micro 2018.(https://d.pr/f/fqspYT);
 
