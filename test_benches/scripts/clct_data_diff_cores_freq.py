@@ -79,7 +79,7 @@ def get_supervisor_cmd(user_setting, experiment_setting):
 
 
 def get_pre_mission_cmd(application):
-    return "./catkin_ws/src/mav-bench/pre_mission/"+application+"/pre_mission_cmds.sh"
+    return "./catkin_ws/src/MAV_apps/pre_mission/"+application+"/pre_mission_cmds.sh"
 
 def check_start_moving(user_setting, experiment_setting):
     time_to_move = False
@@ -106,7 +106,7 @@ def signal_start_moving(file_to_write_to):
 
 def get_bind_node_cmd(platform):
     if (platform == "tx2"): 
-        return "python ./catkin_ws/src/mav-bench/run_time/bind_nodes.py"
+        return "python ./catkin_ws/src/MAV_apps/run_time/bind_nodes.py"
     else:
         return "echo hello"
 
@@ -182,8 +182,8 @@ def write_to_stats_file(stat_file_addr, string_to_write, user_setting, ssh_clien
 
 def modify_freq(freq, ssh_client, num_of_core=6):
     print freq
-    #stdin,stdout,stderr= ssh_client.exec_command("echo nvidia | sudo -S python /home/nvidia/catkin_ws/src/mav-bench/misc/assign_all.py " + str(freq), get_pty=True)
-    stdin,stdout,stderr= ssh_client.exec_command("echo nvidia | sudo -S python /home/nvidia/catkin_ws/src/mav-bench/misc/setup_system.py " +  str(num_of_core) + " " + str(freq), get_pty=True)
+    #stdin,stdout,stderr= ssh_client.exec_command("echo nvidia | sudo -S python /home/nvidia/catkin_ws/src/MAV_apps/misc/assign_all.py " + str(freq), get_pty=True)
+    stdin,stdout,stderr= ssh_client.exec_command("echo nvidia | sudo -S python /home/nvidia/catkin_ws/src/MAV_apps/misc/setup_system.py " +  str(num_of_core) + " " + str(freq), get_pty=True)
     #we need the following two statement to make it block, otherwise it won;t
     # have an effect for some reason
     outlines = stdout.readlines() 

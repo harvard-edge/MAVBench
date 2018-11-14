@@ -34,7 +34,7 @@ data_clct_conf_obj = DataClctConf(data_clct_conf_file_addr) #parse config file a
 companion_setting =  data_clct_conf_obj.get_config_data()["companion_setting"]
 host_setting =  data_clct_conf_obj.get_config_data()["host_setting"]
 
-mavbench_apps_base_dir = companion_setting["base_dir"]+"/catkin_ws/src/mav-bench"
+mavbench_apps_base_dir = companion_setting["base_dir"]+"/catkin_ws/src/MAV_apps"
 
 
 def creat_ssh_client(companion_setting, host_base_dir):

@@ -1,6 +1,6 @@
-[submodule "src/mav-bench-apps"]
-	path = src/mav_apps
-    url = https://github.com/MAVBench/mav_apps.git
+[submodule "src/MAV_apps"]
+	path = src/MAV_apps
+    url = https://github.com/MAVBench/MAV_apps.git
     branch = refactor
 [submodule "src/darknet"]
 	path = src/darknet

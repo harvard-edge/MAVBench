@@ -16,8 +16,8 @@ roslaunch $pkg_name $application.launch #example: roslaunch package_delivery sca
 4.At this point, you can interact with the applications
 4(alternative). you can use our pre-defined missions (encapsulating a set of initial interactions) to prime the drone for a specific goal. These pre-defined missions are provided for each application in a file called pre_mission_cmds.sh: 
 ```bash
-#example: ./MAVbench_base/src/mav-bench-apps/package_delivery/pre_mission_cmds.sh | roslaunch $package_delivery $scanning.launch 
-./MAVbench_base/src/mav-bench-apps/$application_name/pre_mission_cmds.sh; | roslaunch $pkg_name $application.launch;  
+#example: ./MAVbench_base/src/MAV_apps/package_delivery/pre_mission_cmds.sh | roslaunch $package_delivery $scanning.launch 
+./MAVbench_base/src/MAV_apps/$application_name/pre_mission_cmds.sh; | roslaunch $pkg_name $application.launch;  
 ```
 
 
@@ -43,7 +43,7 @@ Follow the instruction provided by Microsoft (https://github.com/Microsoft/AirSi
 # Running Hello World
 You can run the hello world with: 
 ```basH
-./MAVbench_base/src/mav-bench-apps/control_drone/pre_mission_cmds.sh | roslaunch control_drone control_drone.launch. 
+./MAVbench_base/src/MAV_apps/control_drone/pre_mission_cmds.sh | roslaunch control_drone control_drone.launch. 
 ```
 while running, you shoud see the drone navigating a square around a warehouse, returning to initial coordinates and land.  
 

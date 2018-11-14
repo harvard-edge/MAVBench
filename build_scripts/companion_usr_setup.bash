@@ -41,8 +41,8 @@ if [[ ! `git status --porcelain`  ]]; then
 fi
 
 cd $base_dir/catkin_ws/src 
-if [[ ! -d "mav-bench" ]];then
-ln -sf $mavbench_apps_base_dir mav-bench 
+if [[ ! -d "MAV_apps" ]];then
+ln -sf $mavbench_apps_base_dir MAV_apps 
 fi
 
 # mavbench-build
