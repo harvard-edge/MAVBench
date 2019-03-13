@@ -12,7 +12,7 @@
 #include "Drone.h"
 #include "common.h"
 #include "Profiling.h"
-#include "slam_profiler.h"
+//#include "slam_profiler.h"
 
 #include <map>
 using namespace std;
@@ -383,8 +383,8 @@ void output_flight_summary(void){
     stats_ss << "\t\"StateOfCharge\": " << 100 - (g_init_stats.state_of_charge  - g_end_stats.state_of_charge) << "," << endl;
     stats_ss << "\t\"rotor energy consumed \": " << g_end_stats.energy_consumed - g_init_stats.energy_consumed << ","<<endl; 
 
-    stats_ss << "\t\"absolute_slam_error\": " << absoluteTrajectoryError(P, Q) << "," << endl;
-    stats_ss << "\t\"slam_lost:\": " << (g_slam_lost ? "true" : "false") << "," << endl;
+    //stats_ss << "\t\"absolute_slam_error\": " << absoluteTrajectoryError(P, Q) << "," << endl;
+    //stats_ss << "\t\"slam_lost:\": " << (g_slam_lost ? "true" : "false") << "," << endl;
 
     // the rest of metrics 
      
@@ -549,7 +549,7 @@ int main(int argc, char **argv)
         read_cpu_power_sample(&xs_cpu);
         #endif // NOT USE_INTEL
         
-        collectSLAMData(g_localization_method);
+        //collectSLAMData(g_localization_method);
 
         if (g_drone->getFlightStats().collision_count > 1) {
             //ROS_INFO_STREAM("collision count too high");

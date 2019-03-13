@@ -6,7 +6,6 @@ set(darknet_lib_dir $ENV{darknet_base_dir}/obj)
 set (common_utility_src $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
 set (common_utility_include $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
 
-
 #-- collecting all the files in the darknet_obj folder
 #file(GLOB darknet_obj_files
 #    "*.o"
@@ -110,7 +109,7 @@ link_directories(
   ${Airlib_addr}/deps/MavLinkCom/lib  
   /usr/lib 
   /opt/ros/kinetic/lib
-  /opt/ros/kinetic/lib/aarch64-linux-gnu
+  /opt/ros/kinetic/lib/$ENV{machine}-linux-gnu
   ${darknet_lib_dir}  
   $ENV{darknet_base_dir}
 )
