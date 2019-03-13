@@ -5,6 +5,9 @@ source ${env_dir}/build_scripts/companion_setup_env_var.sh
 set -x 
 set -e 
 
+pkg_arch="$(dpkg --print-architecture)"
+machine="$(uname -m)"
+
 # should remove so if the previous runs have failed, so that it woulnd't cause an 
 # issue
 rm -f /etc/apt/sources.list.d/ros-latest.list # if we don't remove, we can't be 
@@ -19,7 +22,6 @@ apt-get update
 ##--- install ros-kinetic-desktop-full
 apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-ompl
 
-
 ############
 # ROS OpenCV (installation)
 ############
@@ -31,7 +33,10 @@ apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-ki
 # the following needs to change so that it's not specific to a version of opencv
 # (if we want to stick to a version we need to provide the source code ourselves
 cd $base_dir/src
-if [[ ! -e "ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb" ]];then
+opencv_deb="ros-kinetic-opencv3_3.3.1-5xenial_"$pkg_arch".deb"
+ros_linux_gnu=$machine"-linux-gnu"
+
+if [[ ! -e $opencv_deb ]];then
     cd $base_dir/src
     rm -rf ros-kinetic-opencv3-3.3.1  
     apt-get source ros-kinetic-opencv3
@@ -47,7 +52,7 @@ fi
 if [[ ! -e $base_dir/src/ros_opencv_install_done.txt ]]; then
     rm -rf /usr/src/deb_mavbench 
     mkdir /usr/src/deb_mavbench
-	cp $base_dir/src/ros-kinetic-opencv3_3.3.1-5xenial_arm64.deb /usr/src/deb_mavbench/
+	cp $base_dir/src/$opencv_deb /usr/src/deb_mavbench/
     cd /usr/src/deb_mavbench/
     chmod a+wr /usr/src/deb_mavbench && \
 	apt-ftparchive packages . | gzip -c9 > Packages.gz && \
@@ -61,7 +66,7 @@ if [[ ! -e $base_dir/src/ros_opencv_install_done.txt ]]; then
 	sed -i -e "s/#//g" /etc/apt/sources.list.d/ros-latest.list && \
 	apt-get update && \
 	apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-octomap* ros-kinetic-ompl
-    cp /opt/ros/kinetic/lib/aarch64-linux-gnu/pkgconfig/opencv-3.3.1-dev.pc /opt/ros/kinetic/lib/aarch64-linux-gnu/pkgconfig/opencv.pc 
+    cp /opt/ros/kinetic/lib/$ros_linux_gnu/pkgconfig/opencv-3.3.1-dev.pc /opt/ros/kinetic/lib/$ros_linux_gnu/pkgconfig/opencv.pc 
     cd $base_dir/src
     echo "done" > ros_opencv_install_done.txt
 fi
@@ -79,8 +84,10 @@ fi
 
 # for some reason this is not necessary in the docker (but otherwise pcl
 # is gonna issue an error
+if [ $pkg_arch == "arm64"  ]; then
 cd /usr/lib/aarch64-linux-gnu/
 sudo ln -sf tegra/libGL.so libGL.so
+fi 
 
 cd $base_dir/src/pcl
 if [[ ! `git status --porcelain`  ]]; then
