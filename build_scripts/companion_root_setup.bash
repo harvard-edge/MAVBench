@@ -5,9 +5,6 @@ source ${env_dir}/build_scripts/companion_setup_env_var.sh
 set -x 
 set -e 
 
-pkg_arch="$(dpkg --print-architecture)"
-machine="$(uname -m)"
-
 # should remove so if the previous runs have failed, so that it woulnd't cause an 
 # issue
 rm -f /etc/apt/sources.list.d/ros-latest.list # if we don't remove, we can't be 
