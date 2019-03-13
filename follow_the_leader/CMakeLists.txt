@@ -3,8 +3,8 @@ project(follow_the_leader)
 set(darknet_include_dir  $ENV{darknet_base_dir}/include $ENV{darknet_base_dir}/src $ENV{darknet_base_dir})
 set(darknet_lib_dir $ENV{darknet_base_dir}/obj)
 set(darknet_lib_dir $ENV{darknet_base_dir}/obj)
-set (common_utility_src $ENV{base_dir}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_src $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
+set (common_utility_include $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
 
 
 #-- collecting all the files in the darknet_obj folder
@@ -95,8 +95,8 @@ include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIR}
     $ENV{AirSim_base_dir}/AirLib/include
-    $ENV{base_dir}/catkin_ws/src/mav-bench/follow_the_leader
-    $ENV{base_dir}/catkin_ws/src/mav-bench/follow_the_leader/src/kcf
+    $ENV{base_dir}/catkin_ws/src/MAV_apps/follow_the_leader
+    $ENV{base_dir}/catkin_ws/src/MAV_apps/follow_the_leader/src/kcf
     ${CATKIN_DEVEL_PREFIX}/devel  
     ${common_utility_include} 
     ${darknet_include_dir}

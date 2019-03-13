@@ -3,8 +3,8 @@ project(mavbench_msgs)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11 -fno-omit-frame-pointer)
-set (common_utility_src $ENV{base_dir}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_src $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
+set (common_utility_include $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
 
 
 set(CUDA_USE_STATIC_CUDA_RUNTIME OFF)

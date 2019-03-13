@@ -11,7 +11,7 @@
   <!--arg name="host_ip" default="10.157.90.62" /-->
   <!-- Sri's workstation ip --> 
   <!--arg name="host_ip" default="10.157.90.132" /-->
-  <arg name="host_ip" default="10.16.0.172" />
+  <arg name="host_ip" default="$(env host_ip)" />
 <param name="ip_addr" value="$(arg host_ip)" />
 
 
@@ -256,8 +256,8 @@
 		<param name="x_dist_to_sample_from__high_bound" value="50"/>
         <param name="y_dist_to_sample_from__low_bound" value="-5"/>
         <param name="y_dist_to_sample_from__high_bound" value="100"/>
-        <param name="z_dist_to_sample_from__low_bound" value="3"/>
-        <param name="z_dist_to_sample_from__high_bound" value="7"/>
+        <param name="z_dist_to_sample_from__low_bound" value="1"/>
+        <param name="z_dist_to_sample_from__high_bound" value="10"/>
 
         <param name="sampling_interval" value="0.5"/>
 

@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.8.3)
 project(profile_manager)
 
 set (Airlib_addr  $ENV{AirSim_base_dir}/AirLib)
-set (common_utility_src $ENV{base_dir}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_src $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
+set (common_utility_include $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
 
 find_package(Eigen3 REQUIRED)
 find_package(CUDA REQUIRED)

@@ -4,7 +4,7 @@
     <!--arg name="host_ip" value="10.157.90.132" /--> 
     <!--arg name="host_ip" value="169.254.153.158" /--> 
     <!-- Hasans's workstation ip --> 
-    <arg name="host_ip" value="10.157.90.49" /> 
+    <arg name="host_ip" default="$(env host_ip)" /> 
     
     <param name="/ip_addr" value="$(arg host_ip)" />
 

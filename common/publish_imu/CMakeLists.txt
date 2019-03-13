@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(publish_imu)
-set (common_utility_src $ENV{base_dir}/catkin_ws/src/mav-bench/common)
-set (common_utility_include $ENV{base_dir}/catkin_ws/src/mav-bench/common)
+set (common_utility_src $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
+set (common_utility_include $ENV{base_dir}/catkin_ws/src/MAV_apps/common)
 
 
 set (Airlib_addr  $ENV{AirSim_base_dir}/AirLib)
