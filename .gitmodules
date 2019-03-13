@@ -12,3 +12,7 @@
 [submodule "src/pcl"]
 	path = src/pcl
 	url = https://github.com/PointCloudLibrary/pcl.git
+[submodule "src/MAV_apps"]
+	path = src/MAV_apps
+	url = https://github.com/MAVBench/MAV_apps.git
+	branch = refactor
