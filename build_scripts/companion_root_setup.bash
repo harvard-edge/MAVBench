@@ -20,7 +20,7 @@ echo "deb-src http://packages.ros.org/ros/ubuntu xenial main" >> /etc/apt/source
 
 apt-get update
 ##--- install ros-kinetic-desktop-full
-apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-ompl
+apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-ompl autoconf
 
 ############
 # ROS OpenCV (installation)
