@@ -18,7 +18,7 @@ This computer is responsible for running the compute intensive workloads.
 ## Building It 
 The following steps, clone our repo and sub repos (AirSim, pointcloud, ...) and build them all;
 ```bash
-git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base;     
+git clone  --recursive https://github.com/harvard-edge/MAVBench.git MAVBench_base;     
 cd MAVBench_base;   
 source build_scripts/companion_setup_env_var.sh;    
 sudo ./build_scripts/companion_root_setup.bash;    
@@ -45,7 +45,7 @@ This computer is responsible for running the drone/environment simulators + auto
 ## Building It.
 1.  Clone our repository
 ``` bash
-git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base;   
+git clone  --recursive https://github.com/harvard-edge/MAVBench.git MAVBench_base;   
 ```   
  **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:    
 2. Install some required python libraries; download our games;
