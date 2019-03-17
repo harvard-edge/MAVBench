@@ -55,16 +55,16 @@ host_setup_env_var.cmd;
 host_root_setup.cmd              
 ```   
    **For the reckless with no life** (most likely you won't fall within this group): 
-   By building from scratch the user can try out their own environment maps. Inorder to do so, folow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Note that you will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x). Replace the **Build AirSim** section with the following instructions:    
+   By building from scratch the user can try out their own environment maps.    
    2.  Start x64 Native Tools Command Prompt for VS 2017.       
-   3. Clone AirSim and build it. Download our games.
+   3. Clone AirSim and build it as the following:
    ```bash
    mkdir MAVBench_base;  
    cd MAVBench_base/build_scripts;  
    host_setup_env_var.cmd;  
    host_root_setup_from_src.cmd;  
    ```
-   At this point, you should have a ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project. Follow along with the AirSim instructions provided by Microsoft   https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md).       
+   At this point, you should have a ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project. Follow along with the AirSim instructions provided by Microsoft   https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md) to do so.
 
 ### Build Notes :
 for internal developers: 
