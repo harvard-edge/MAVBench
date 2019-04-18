@@ -31,6 +31,7 @@
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>nodelet</build_depend>
   <build_depend>libpcl-all-dev</build_depend>
+  <build_depend>profile_manager</build_depend>
 
  <run_depend>roscpp</run_depend>
  <run_depend>visualization_msgs</run_depend>

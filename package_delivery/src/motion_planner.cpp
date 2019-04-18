@@ -6,7 +6,8 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
-	piecewise_trajectory piecewise_path;
+    cout<<"0000000000000000000000 GOT inside get_trajectory_fun"<<endl;	
+    piecewise_trajectory piecewise_path;
 	smooth_trajectory smooth_path;
 
     //----------------------------------------------------------------- 
@@ -34,6 +35,7 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
         res.multiDOFtrajectory.append = false;
         res.multiDOFtrajectory.reverse = true;
 
+        res.multiDOFtrajectory.header.stamp = req.header.stamp;
         traj_pub.publish(res.multiDOFtrajectory);
         return true;
     }
@@ -62,7 +64,7 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
 
         res.multiDOFtrajectory.append = false;
         res.multiDOFtrajectory.reverse = true;
-
+        res.multiDOFtrajectory.header.stamp = req.header.stamp;
         traj_pub.publish(res.multiDOFtrajectory);
         return true;
     }
@@ -70,6 +72,7 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
     create_response(res, smooth_path);
 
     // Publish the trajectory (for debugging purposes)
+    res.multiDOFtrajectory.header.stamp = req.header.stamp;
     traj_pub.publish(res.multiDOFtrajectory);
     smooth_traj_vis_pub.publish(smooth_traj_markers);
     piecewise_traj_vis_pub.publish(piecewise_traj_markers);
@@ -137,7 +140,7 @@ void MotionPlanner::future_col_callback(const mavbench_msgs::future_collision::C
 
         get_start_in_future(*drone, req.start, req.twist, req.acceleration);
         req.goal = g_goal_pos;
-
+        req.header.stamp = msg->header.stamp;
         get_trajectory_fun(req, res);
     }
 }

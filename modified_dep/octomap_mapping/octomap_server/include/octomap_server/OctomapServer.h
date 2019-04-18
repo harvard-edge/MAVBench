@@ -72,7 +72,6 @@
 #ifdef COLOR_OCTOMAP_SERVER
 #include <octomap/ColorOcTree.h>
 #endif
-
 namespace octomap_server {
 class OctomapServer {
 

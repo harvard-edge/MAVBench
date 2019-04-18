@@ -219,6 +219,8 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg,
         g_msg_time_stamp = msg->header.stamp;
         if (g_msg_time_stamp.sec != 0) {
             g_pt_cld_to_futurCol_commun_acc += (ros::Time::now() - msg->header.stamp).toSec()*1e9;
+            //std::cout<<"g_pt_cld_to_futurCol_commun_acc:"<<g_pt_cld_to_futurCol_commun_acc<<endl;
+            //exit(0); 
             g_traj_ctr++;
         } 
     }
@@ -332,6 +334,7 @@ int main(int argc, char **argv)
                         (ros::Time::now() - g_recieved_traj_t).toSec()*1e9;
                     if (g_msg_time_stamp.sec != 0) {
                         g_img_to_follow_acc += (ros::Time::now() - g_msg_time_stamp).toSec()*1e9;
+                        cout<<"========================================="<<g_img_to_follow_acc<<endl; 
                         g_follow_ctr++; 
                     }
                     if (DEBUG) {

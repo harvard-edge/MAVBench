@@ -34,7 +34,9 @@
   <build_depend>stereo_msgs</build_depend>
   <build_depend>tf2</build_depend>
   <build_depend>tf2_ros</build_depend>
-
+  <build_depend>mavbench_msgs</build_depend>
+  <build_depend>profile_manager</build_depend>
+  
   <run_depend>boost</run_depend>
   <run_depend>cv_bridge</run_depend>
   <run_depend>eigen_conversions</run_depend>
