@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(octomap_server)
-
+set(CMAKE_PREFIX_PATH /usr/local${CMAKE_PREFIX_PATH})
 set(PACKAGE_DEPENDENCIES
   roscpp
   visualization_msgs
@@ -20,7 +20,8 @@ find_package(catkin REQUIRED COMPONENTS ${PACKAGE_DEPENDENCIES})
 
 find_package(PCL REQUIRED QUIET COMPONENTS common sample_consensus io segmentation filters)
 
-find_package(octomap REQUIRED)
+find_package(octomap REQUIRED
+            HINTS /usr/local/)
 add_definitions(-DOCTOMAP_NODEBUGOUT)
 
 include_directories(
@@ -54,7 +55,7 @@ set(LINK_LIBS
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
 )
-
+#MESSAGE(${CMAKE_PREFIX_PATH})
 add_library(${PROJECT_NAME} src/OctomapServer.cpp src/OctomapServerMultilayer.cpp src/TrackingOctomapServer.cpp)
 target_link_libraries(${PROJECT_NAME} ${LINK_LIBS})
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)

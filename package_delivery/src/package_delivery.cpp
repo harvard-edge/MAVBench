@@ -410,7 +410,7 @@ int main(int argc, char **argv)
     //----------------------------------------------------------------- 
 	// *** F:DN knobs(params)
 	//----------------------------------------------------------------- 
-    const float goal_s_error_margin = 3.0; //ok distance to be away from the goal.
+    const float goal_s_error_margin = 6.0; //ok distance to be away from the goal.
                                            //this is b/c it's very hard 
                                            //given the issues associated with
                                            //flight controler to land exactly

@@ -63,7 +63,7 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
         trajectory_seq_id++;
 
         res.multiDOFtrajectory.append = false;
-        res.multiDOFtrajectory.reverse = true;
+        res.multiDOFtrajectory.reverse = false;
         res.multiDOFtrajectory.header.stamp = req.header.stamp;
         traj_pub.publish(res.multiDOFtrajectory);
         return true;

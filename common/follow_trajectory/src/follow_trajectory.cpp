@@ -46,6 +46,7 @@ ros::Time g_msg_time_stamp;
 long long g_pt_cld_to_futurCol_commun_acc = 0;
 int g_traj_ctr = 0; 
 ros::Time g_recieved_traj_t;
+ros::Time last_to_fly_backward;
 double g_max_velocity_reached = 0;
 
 
@@ -193,6 +194,7 @@ void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg,
 
     if (msg->reverse) {
         fly_backward = true;
+        last_to_fly_backward = ros::Time::now(); 
     } else if (trajectory.empty() && !new_trajectory.empty()) {
         // Add drift correction if the drone is currently idling (because it will float around while idling)
         const double max_idling_drift_distance = 0.5;
@@ -334,8 +336,9 @@ int main(int argc, char **argv)
                         (ros::Time::now() - g_recieved_traj_t).toSec()*1e9;
                     if (g_msg_time_stamp.sec != 0) {
                         g_img_to_follow_acc += (ros::Time::now() - g_msg_time_stamp).toSec()*1e9;
-                        cout<<"========================================="<<g_img_to_follow_acc<<endl; 
                         g_follow_ctr++; 
+                        cout<<"========================================="<<(g_img_to_follow_acc/1e9)/g_follow_ctr<<endl; 
+                        cout<<"this instance"<<(ros::Time::now() - g_msg_time_stamp).toSec();
                     }
                     if (DEBUG) {
                         //ROS_INFO_STREAM("follow_traj_cb to  func" << g_rcv_traj_to_follow_traj_t);
@@ -352,6 +355,15 @@ int main(int argc, char **argv)
         yaw_strategy_t yaw_strategy = follow_yaw;
         float max_velocity = g_v_max;
 
+        
+        if (fly_backward && ((ros::Time::now() - last_to_fly_backward).toSec() > 5)) { //prevent continous backward movement
+            ROS_INFO_STREAM("setting flying back_ward to false"); 
+            drone.fly_velocity(0, 0, 0);
+            drone.fly_velocity(0, 0, 0);
+            drone.fly_velocity(0, 0, 0);
+            fly_backward = false;
+        }
+
         if (!fly_backward) {
             forward_traj = &trajectory;
             rev_traj = &reverse_trajectory;
@@ -360,7 +372,7 @@ int main(int argc, char **argv)
             rev_traj = &trajectory;
 
             yaw_strategy = face_backward;
-            max_velocity = 1;
+            max_velocity = 3;
         }
 
         double max_velocity_reached = follow_trajectory(drone, forward_traj,
