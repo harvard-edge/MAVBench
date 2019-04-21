@@ -72,8 +72,11 @@ If you decided to make your own executable and upload to google drive, use windo
 
 ### Fixing AirSim's Depth Map Issue
 Fix a Depth image bug by following this issue: https://github.com/Microsoft/AirSim/issues/491. 
-1. Go to BP_PIPCamera (within the unreal editor, this is located under Blueprints (Note: if you can’t find this in the content browser, click on "window->Find" in blueprints and search for BP_RIPCamera)
-1. Click on DepthPlannerCaptureComponent (on the left hand side under "Components" tab). Then in the "Details" window, click on “post process Materials” and change the material to “DepthMapMaterial”
+1. Press "Play"
+2. Press F8 and click on the drone
+3. Under the "World Outliner" tab: select "BP_PIPCamera". Right click "BP_PIPCamera" and select "Edit BP_PIPCamera", then the BP_PIPCamera editor opens up.
+4. In BP_PIPCamera editor, click on DepthPlannerCaptureComponent (on the left hand side under "Components" tab). Then in the "Details" window, click on “post process Materials” and change the material to “DepthMapMaterial”
+(If you don't have the "Component Tab", select "Window" and check mark the "Component").
 
 ![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/BP_PIP_depth_map_modification.PNG)
 
