@@ -18,7 +18,7 @@ This computer is responsible for running the compute intensive workloads.
 ## Building It 
 The following steps, clone our repo and sub repos (AirSim, pointcloud, ...) and build them all;
 ```bash
-git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base;     
+git clone  --recursive https://github.com/harvard-edge/MAVBench.git MAVBench_base;     
 cd MAVBench_base;   
 source build_scripts/companion_setup_env_var.sh;    
 sudo ./build_scripts/companion_root_setup.bash;    
@@ -43,28 +43,27 @@ This computer is responsible for running the drone/environment simulators + auto
 
 
 ## Building It.
+open Developer Command Prompt for VS 2017 
 1.  Clone our repository
 ``` bash
-git clone  --recursive https://github.com/MAVBench/MAVBench.git MAVBench_base;   
+git clone  --recursive https://github.com/harvard-edge/MAVBench.git MAVBench_base  
 ```   
  **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:    
 2. Install some required python libraries; download our games;
 ```bash
-cd MAVBench_base/build_scripts;  
-host_setup_env_var.cmd;  
+cd MAVBench_base/build_scripts  
+host_setup_env_var.cmd 
 host_root_setup.cmd              
 ```   
    **For the reckless with no life** (most likely you won't fall within this group): 
-   By building from scratch the user can try out their own environment maps. Inorder to do so, folow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Note that you will need Visual Studio 2017 (make sure to install VC++ and Windows SDK 8.x). Replace the **Build AirSim** section with the following instructions:    
-   2.  Start x64 Native Tools Command Prompt for VS 2017.       
-   3. Clone AirSim and build it. Download our games.
+   2. Install some required python libraries and build airsim
    ```bash
    mkdir MAVBench_base;  
    cd MAVBench_base/build_scripts;  
    host_setup_env_var.cmd;  
    host_root_setup_from_src.cmd;  
    ```
-   At this point, you should have a ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project. Follow along with the AirSim instructions provided by Microsoft   https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md).       
+   At this point, you should have a ready to use plugin in MAVBench_base/src/AirSim/Unreal/Plugins folder that can be dropped into any Unreal project. Follow along with the AirSim instructions provided by Microsoft   https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md) to do so.
 
 ### Build Notes :
 for internal developers: 
@@ -72,8 +71,11 @@ If you decided to make your own executable and upload to google drive, use windo
 
 ### Fixing AirSim's Depth Map Issue
 Fix a Depth image bug by following this issue: https://github.com/Microsoft/AirSim/issues/491. 
-1. Go to BP_PIPCamera (within the unreal editor, this is located under Blueprints (Note: if you can’t find this in the content browser, click on "window->Find" in blueprints and search for BP_RIPCamera)
-1. Click on DepthPlannerCaptureComponent (on the left hand side under "Components" tab). Then in the "Details" window, click on “post process Materials” and change the material to “DepthMapMaterial”
+1. Press "Play"
+2. Press F8 and click on the drone
+3. Under the "World Outliner" tab: select "BP_PIPCamera". Right click "BP_PIPCamera" and select "Edit BP_PIPCamera", then the BP_PIPCamera editor opens up.
+4. In BP_PIPCamera editor, click on DepthPlannerCaptureComponent (on the left hand side under "Components" tab). Then in the "Details" window, click on “post process Materials” and change the material to “DepthMapMaterial”
+(If you don't have the "Component Tab", select "Window" and check mark the "Component").
 
 ![alt text](https://github.com/MAVBench/MAVBench/blob/master/docs/images/BP_PIP_depth_map_modification.PNG)
 
