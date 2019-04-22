@@ -502,7 +502,8 @@ MotionPlanner::smooth_trajectory MotionPlanner::smoothen_the_shortest_path(piece
 
 	// Optimize until no collisions are present
 	bool col;
-	do {
+    int smoothening_ctr = 0;	
+    do {
 		col = false;
 
 		// Estimate the time the drone should take flying between each node
@@ -565,8 +566,10 @@ MotionPlanner::smooth_trajectory MotionPlanner::smoothen_the_shortest_path(piece
                 //}
 			}
 		}
-	} while (col &&
-            ros::Time::now() < g_start_time+ros::Duration(g_planning_budget));
+     smoothening_ctr++;	
+    } while (col &&
+            smoothening_ctr < 40);
+            //ros::Time::now() < g_start_time+ros::Duration(g_planning_budget));
 
     if (col)
         return smooth_trajectory();

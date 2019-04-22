@@ -336,11 +336,11 @@ int main(int argc, char **argv)
                     g_rcv_traj_to_follow_traj_acc_t +=
                         (ros::Time::now() - g_recieved_traj_t).toSec()*1e9;
                     if (g_msg_time_stamp.sec != 0) {
-                        ROS_WARN_STREAM("========================================="<<(g_img_to_follow_acc/1e9)/g_follow_ctr<<endl); 
-                        cout<<"this instance"<<(ros::Time::now() - g_msg_time_stamp).toSec();
                         if ((ros::Time::now() - g_msg_time_stamp).toSec() < 5){
                             g_img_to_follow_acc += (ros::Time::now() - g_msg_time_stamp).toSec()*1e9;
                             g_follow_ctr++; 
+                            ROS_WARN_STREAM("========================================="<<(g_img_to_follow_acc/1e9)/g_follow_ctr<<endl); 
+                            ROS_WARN_STREAM("this instance"<<(ros::Time::now() - g_msg_time_stamp).toSec());
                         }
                     
                     
