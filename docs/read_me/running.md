@@ -43,7 +43,7 @@ Note: you only need to set the map_name in the json file (we have provided 5 map
 
 3. start the game
 ```bash
-cd MAVBench_base_dir\test_benches
+cd MAVBench_base_dir\test_benches;
 python scripts\run_games.py --config configs\${your_config_file} #example:  python scripts\run_games.py --config configs\run_game_config.json
 ```
 **For the reckless with no life** (method 2):
