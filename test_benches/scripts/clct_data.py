@@ -121,8 +121,8 @@ def schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_
     if (experiment_setting["application"] == "follow_the_leader"):
         trigger_obj_motion(host_base_dir, experiment_setting)
     #--- cmds to schedul e
-    src_ros_cmd = "source " + companion_setting["base_dir"] + "/catkin_ws/devel/setup.bash"
-    src_companion_setup= "source " + companion_setting['base_dir'] + "/build-scripts/companion_setup_env_var.sh"
+    src_ros_cmd = "source " + companion_setting["base_dir"] + "/catkin_ws/devel/setup.sh"
+    src_companion_setup= "source " + companion_setting['base_dir'] + "/build_scripts/companion_setup_env_var.sh"
     ros_launch_cmd = get_ros_cmd(experiment_setting) 
     run_time_supervisor_cmd = get_supervisor_cmd(companion_setting, experiment_setting)
     #run_time_supervisor_cmd = ""#get_supervisor_cmd(companion_setting, experiment_setting)
@@ -230,6 +230,7 @@ def main():
         time.sleep(3) #there needs to be a sleep between restart and change_level
         
         start_unreal(host_setting, host_base_dir)
+        time.sleep(7) #there needs to be a sleep between restart and change_level
         for  experiment_setting in  experiment_setting_list:
             num_of_runs = experiment_setting["number_of_runs"]
             application = experiment_setting["application"]
