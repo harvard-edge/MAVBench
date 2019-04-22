@@ -46,7 +46,7 @@ Note: you only need to set the map_name in the json file (we have provided 5 map
 
 3. start the game
 ```bash
-python scripts\run_games.py --config configs\${your_config_file} #example:  python scripts\run_games.py --config configs\run_game_hello_config.json
+python scripts\run_games.py --config configs\${your_config_file} #example:  python scripts\run_games.py --config configs\run_game_config.json
 ```
 **For the reckless with no life** (method 2):
 Follow the instruction provided by Microsoft (https://github.com/Microsoft/AirSim/blob/master/docs/build_windows.md). Follow the **How to Use Airsim** Section.  
