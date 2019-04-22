@@ -13,6 +13,8 @@ import sys
 from shutil import copy 
 import time
 from multiprocessing import Process
+import signal
+import sys
 
 import argparse
 
@@ -170,10 +172,13 @@ def minimize_the_window():
     Minimize = win32gui.GetForegroundWindow()
     win32gui.ShowWindow(Minimize, win32con.SW_MINIMIZE) 
 
+"""
 def signal_handler(signal, frame):
         print('You pressed Ctrl+C!')
-	stop_unreal()
+        restart_unreal()
+        stop_unreal()
 	sys.exit(0)
+"""
 
 def write_to_stats_file(stat_file_addr, string_to_write, companion_setting, ssh_client):
         python_file_to_run = mavbench_apps_base_dir + "/common/python_files/write_to_file.py"
@@ -209,10 +214,13 @@ def modify_freq(freq, ssh_client):
     print(result)
 
 
-
+def signal_handler(sig, frame):
+    restart_unreal(); 
+    sys.exit(0)
 
 
 def main():
+    signal.signal(signal.SIGINT, signal_handler)
     host_base_dir= get_host_base(); 
     try:
         #companion_setting =  data_clct_conf_obj.get_config_data()["companion_setting"]
@@ -231,6 +239,10 @@ def main():
     except Exception as e:
         pass
         print(traceback.format_exception(*sys.exc_info()))
+
+    while(1):
+        print("hello") 
+        time.sleep(3) #there needs to be a sleep between restart and change_level
 
 if __name__ == "__main__":
     main()
