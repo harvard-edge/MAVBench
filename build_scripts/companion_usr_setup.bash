@@ -27,6 +27,7 @@ cd $darknet_base_dir && wget -nc https://pjreddie.com/media/files/yolov2.weights
 
 ########
 # mavbench
+
 ########
 # mavbench-clone
 if [[ ! -d $base_dir/catkin_ws/src ]]; then
@@ -45,7 +46,19 @@ if [[ ! -d "MAV_apps" ]];then
 ln -sf $mavbench_apps_base_dir MAV_apps 
 fi
 
+# --- the following need more testing but the purpose is to compress the build
+# --- command
 # mavbench-build
+#first_set="catkin_simple;"\
+#"eigen_catkin;glog_catkin;eigen_checks;mav_msgs;profile_manager;mav_comm;nlopt;mavbench_msgs;"\
+#"mav_visualization;planning_msgs;mav_trajectory_generation;mav_trajectory_generation_ros;"
+#second_set="gflags_catkin;minkindr;minkindr_conversions;volumetric_map_base;volumetric_msgs;"\
+#"octomap_world;multiagent_collision_check;"\
+#"octomap_server;octomap_mapping;future_collision;publish_imu;follow_trajectory;depth_image_proc;"\
+#"control_drone;package_delivery;airsim_img_publisher;kdtree;nbvplanner;"
+#mapping_and_sar;follow_the_leader;"
+
+
 cd $base_dir/catkin_ws/ &&\
     source /opt/ros/melodic/setup.bash &&\
     catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="catkin_simple" &&\
@@ -82,3 +95,42 @@ cd $base_dir/catkin_ws/ &&\
     catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mapping_and_sar" -j3 && \
     catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="follow_the_leader" -j3 &&\
     catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="control_drone" -j3
+
+# --- for eclipse
+#    catkin build  catkin_simple --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  eigen_catkin --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  glog_catkin --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  eigen_checks --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  mav_msgs --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  mav_comm --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  nlopt --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    
+#    catkin build  mav_visualization --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  planning_msgs --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  mav_trajectory_generation --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    
+#    catkin build  mav_trajectory_generation_ros --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  gflags_catkin --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  minkindr --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  minkindr_conversions --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  mavbench_msgs --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  profile_manager --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  volumetric_map_base --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  volumetric_msgs --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  octomap_world --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  multiagent_collision_check --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  mavbench_msgs --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  octomap_server --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  future_collision --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  publish_imu --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  follow_trajectory --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  octomap_mapping --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  depth_image_proc --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  package_delivery --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  airsim_img_publisher --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  kdtree --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  nbvplanner --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  mapping_and_sar --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  folllow_the_leader --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
+#    catkin build  control_drone --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug
+#    

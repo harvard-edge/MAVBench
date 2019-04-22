@@ -26,4 +26,4 @@ def change_level(level):
 	
 def restart_level():
 	f = open(os.path.join(messages_dir(), "restart"), "w");
-	f.close()
+        f.close()
