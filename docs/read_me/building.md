@@ -43,21 +43,20 @@ This computer is responsible for running the drone/environment simulators + auto
 
 
 ## Building It.
+open Developer Command Prompt for VS 2017 
 1.  Clone our repository
 ``` bash
-git clone  --recursive https://github.com/harvard-edge/MAVBench.git MAVBench_base;   
+git clone  --recursive https://github.com/harvard-edge/MAVBench.git MAVBench_base  
 ```   
  **For the lazy yet happy**: We have provided a set of games (environments drone can fly within) that can be simply executed by the user. To do so:    
 2. Install some required python libraries; download our games;
 ```bash
-cd MAVBench_base/build_scripts;  
-host_setup_env_var.cmd;  
+cd MAVBench_base/build_scripts  
+host_setup_env_var.cmd 
 host_root_setup.cmd              
 ```   
    **For the reckless with no life** (most likely you won't fall within this group): 
-   By building from scratch the user can try out their own environment maps.    
-   2.  Start x64 Native Tools Command Prompt for VS 2017.       
-   3. Clone AirSim and build it as the following:
+   2. Install some required python libraries and build airsim
    ```bash
    mkdir MAVBench_base;  
    cd MAVBench_base/build_scripts;  
