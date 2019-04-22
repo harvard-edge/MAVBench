@@ -315,6 +315,13 @@ mavbench_msgs::multiDOFtrajectory request_trajectory(ros::ServiceClient& client,
     srv.request.goal = goal;
     srv.request.twist = twist; 
     srv.request.acceleration= acceleration; 
+
+    srv.request.header.stamp = ros::Time(0); //if package delivery askes for a plan
+                                             // that means that we have already stopped
+                                             // hence, don't callect sensory to actuation
+                                             // data (since we are not in motion, the limitation
+                                             // that we are worried about doesn't apply
+    srv.request.call_func = 2; //used for debugging purposes
     int fail_ctr = 0;
     
     while(true) {
@@ -332,7 +339,8 @@ mavbench_msgs::multiDOFtrajectory request_trajectory(ros::ServiceClient& client,
         } else {
             ROS_ERROR("Failed to call service.");
             //return trajectory_t();
-            // std::this_thread::sleep_for(std::chrono::milliseconds(100));
+             std::this_thread::sleep_for(std::chrono::milliseconds(50));
+             ros::service::waitForService("/get_trajectory_srv");
         }
     }
 
@@ -397,9 +405,17 @@ int main(int argc, char **argv)
     ros::Subscriber next_steps_sub = nh.subscribe("next_steps", 1, next_steps_callback);
     ros::Subscriber slam_lost_sub = nh.subscribe("/slam_lost", 1, slam_loss_callback);
 
-	ros::ServiceClient get_trajectory_client = 
-        nh.serviceClient<package_delivery::get_trajectory>("/get_trajectory_srv");
-	ros::ServiceClient record_profiling_data_client = 
+
+
+    ros::ServiceClient get_trajectory_client = 
+        nh.serviceClient<package_delivery::get_trajectory>("/get_trajectory_srv", true);
+    if(ros::service::waitForService("/get_trajectory_srv", 1000)){
+        get_trajectory_client = 
+            nh.serviceClient<package_delivery::get_trajectory>("/get_trajectory_srv", true);
+    }else{
+        ROS_ERROR("Could not find service");
+    }
+    ros::ServiceClient record_profiling_data_client = 
         nh.serviceClient<profile_manager::profiling_data_srv>("/record_profiling_data");
     ros::ServiceClient start_profiling_client = 
       nh.serviceClient<profile_manager::start_profiling_srv>("/start_profiling");
@@ -465,7 +481,7 @@ int main(int argc, char **argv)
         {
             if (CLCT_DATA)
                 start_hook_t = ros::Time::now(); 
-            
+            ROS_INFO_STREAM("requesting a trajectory in pd");
             normal_traj_msg = request_trajectory(get_trajectory_client, start,
                     goal, twist, acceleration);
            

@@ -6,16 +6,20 @@ bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
-    cout<<"0000000000000000000000 GOT inside get_trajectory_fun"<<endl;	
     piecewise_trajectory piecewise_path;
 	smooth_trajectory smooth_path;
 
     //----------------------------------------------------------------- 
     // *** F:DN Body 
     //----------------------------------------------------------------- 
-
+    if (DEBUG__global){
+        ROS_WARN_STREAM("call func is "<< req.call_func); // to see which node 
+                                                          // called motion planning
+                                                          // package_delivery or 
+                                                          // future_collision
+    }
+    
     auto hook_end_t_2 = ros::Time::now(); 
-
     auto hook_start_t = ros::Time::now();
 
     g_start_time = ros::Time::now();
@@ -141,6 +145,7 @@ void MotionPlanner::future_col_callback(const mavbench_msgs::future_collision::C
         get_start_in_future(*drone, req.start, req.twist, req.acceleration);
         req.goal = g_goal_pos;
         req.header.stamp = msg->header.stamp;
+        req.call_func = 1;  //used for debugging purposes
         get_trajectory_fun(req, res);
     }
 }

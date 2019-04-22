@@ -8,6 +8,7 @@ int32 length
 int32 width
 int32 n_pts_per_dir
 Header header
+int32 call_func
 ---
 # trajectory_msgs/MultiDOFJointTrajectory multiDOFtrajectory
 mavbench_msgs/multiDOFtrajectory multiDOFtrajectory

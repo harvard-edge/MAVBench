@@ -174,6 +174,7 @@ trajectory_t straight_line_trajectory(const P1& start, const P2& end, double v)
 
 void callback_trajectory(const mavbench_msgs::multiDOFtrajectory::ConstPtr& msg, Drone * drone)
 {
+    //ROS_INFO_STREAM("recieved a new trajectory -------- in ft"); 
     // Check for trajectories that arrive out of order
     if (msg->trajectory_seq < trajectory_seq) {
         ROS_ERROR("follow_trajectory: Trajectories arrived out of order! New seq: %d, old seq: %d", msg->trajectory_seq, trajectory_seq);
@@ -335,10 +336,14 @@ int main(int argc, char **argv)
                     g_rcv_traj_to_follow_traj_acc_t +=
                         (ros::Time::now() - g_recieved_traj_t).toSec()*1e9;
                     if (g_msg_time_stamp.sec != 0) {
-                        g_img_to_follow_acc += (ros::Time::now() - g_msg_time_stamp).toSec()*1e9;
-                        g_follow_ctr++; 
-                        cout<<"========================================="<<(g_img_to_follow_acc/1e9)/g_follow_ctr<<endl; 
+                        ROS_WARN_STREAM("========================================="<<(g_img_to_follow_acc/1e9)/g_follow_ctr<<endl); 
                         cout<<"this instance"<<(ros::Time::now() - g_msg_time_stamp).toSec();
+                        if ((ros::Time::now() - g_msg_time_stamp).toSec() < 5){
+                            g_img_to_follow_acc += (ros::Time::now() - g_msg_time_stamp).toSec()*1e9;
+                            g_follow_ctr++; 
+                        }
+                    
+                    
                     }
                     if (DEBUG) {
                         //ROS_INFO_STREAM("follow_traj_cb to  func" << g_rcv_traj_to_follow_traj_t);
