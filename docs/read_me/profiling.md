@@ -1,4 +1,5 @@
 Various mission metrics such mission-time, energy, etc. and compute metrics such as various processes' throughput can be profiled using our toolset. This document descirbes steps toward this end. 
+
 Open the Developer Command Prompt for VS 2017
 1. Setting up environment variables. 
 ```bash
