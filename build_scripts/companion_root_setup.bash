@@ -16,8 +16,8 @@ apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net:80 --recv-key 421C365BD
 echo "deb-src http://packages.ros.org/ros/ubuntu xenial main" >> /etc/apt/sources.list.d/ros-latest.list
 
 apt-get update
-##--- install ros-kinetic-desktop-full
-apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-ompl autoconf
+##--- install ros-melodic-desktop-full
+apt-get install -y ros-melodic-desktop-full ros-melodic-rviz-visual-tools ros-melodic-ompl autoconf
 
 ############
 # ROS OpenCV (installation)
@@ -29,44 +29,44 @@ apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-ki
 
 # the following needs to change so that it's not specific to a version of opencv
 # (if we want to stick to a version we need to provide the source code ourselves
-cd $base_dir/src
-opencv_deb="ros-kinetic-opencv3_3.3.1-5xenial_"$pkg_arch".deb"
-ros_linux_gnu=$machine"-linux-gnu"
+#cd $base_dir/src
+#opencv_deb="ros-melodic-opencv3_3.3.1-5xenial_"$pkg_arch".deb"
+#ros_linux_gnu=$machine"-linux-gnu"
 
-if [[ ! -e $opencv_deb ]];then
-    cd $base_dir/src
-    rm -rf ros-kinetic-opencv3-3.3.1  
-    apt-get source ros-kinetic-opencv3
-	cp $base_dir/src/opencv/modules/cudalegacy/src/graphcuts.cpp $base_dir/src/ros-kinetic-opencv3-3.3.1/modules/cudalegacy/src/graphcuts.cpp
+#if [[ ! -e $opencv_deb ]];then
+#    cd $base_dir/src
+#    rm -rf ros-melodic-opencv3-3.3.1  
+#    apt-get source ros-melodic-opencv3
+#	cp $base_dir/src/opencv/modules/cudalegacy/src/graphcuts.cpp $base_dir/src/ros-melodic-opencv3-3.3.1/modules/cudalegacy/src/graphcuts.cpp
     # Dependencies
-    cd $base_dir/src/ros-kinetic-opencv3-3.3.1 && \
-	   apt-get build-dep -y ros-kinetic-opencv3
+#    cd $base_dir/src/ros-melodic-opencv3-3.3.1 && \
+#	   apt-get build-dep -y ros-melodic-opencv3
     # Now build (we ignore missing dependencies, because we have them on our system anyways)
-    sed -i 's/\(\bdh_shlibdeps.*\)$/\1 --dpkg-shlibdeps-params=--ignore-missing-info/' debian/rules || exit 1
-	dpkg-buildpackage -b -uc 
-fi
+#    sed -i 's/\(\bdh_shlibdeps.*\)$/\1 --dpkg-shlibdeps-params=--ignore-missing-info/' debian/rules || exit 1
+#	dpkg-buildpackage -b -uc 
+#fi
  
-if [[ ! -e $base_dir/src/ros_opencv_install_done.txt ]]; then
-    rm -rf /usr/src/deb_mavbench 
-    mkdir /usr/src/deb_mavbench
-	cp $base_dir/src/$opencv_deb /usr/src/deb_mavbench/
-    cd /usr/src/deb_mavbench/
-    chmod a+wr /usr/src/deb_mavbench && \
-	apt-ftparchive packages . | gzip -c9 > Packages.gz && \
-	apt-ftparchive sources . | gzip -c9 > Sources.gz && \
-	chmod a+wr /etc/apt/sources.list.d/ros-latest.list && \
-	echo "deb file:/usr/src/deb_mavbench ./" >> /etc/apt/sources.list.d/ros-latest.list && \
-	sed -i -e "1,2s/^/#/g" /etc/apt/sources.list.d/ros-latest.list && \
-	apt-get update && \
-	apt-get remove -y ros-kinetic-opencv3 && \
-	apt-get install -y ros-kinetic-opencv3 --allow-unauthenticated && \
-	sed -i -e "s/#//g" /etc/apt/sources.list.d/ros-latest.list && \
-	apt-get update && \
-	apt-get install -y ros-kinetic-desktop-full ros-kinetic-rviz-visual-tools ros-kinetic-octomap* ros-kinetic-ompl
-    cp /opt/ros/kinetic/lib/$ros_linux_gnu/pkgconfig/opencv-3.3.1-dev.pc /opt/ros/kinetic/lib/$ros_linux_gnu/pkgconfig/opencv.pc 
-    cd $base_dir/src
-    echo "done" > ros_opencv_install_done.txt
-fi
+#if [[ ! -e $base_dir/src/ros_opencv_install_done.txt ]]; then
+#    rm -rf /usr/src/deb_mavbench 
+#    mkdir /usr/src/deb_mavbench
+#	cp $base_dir/src/$opencv_deb /usr/src/deb_mavbench/
+#    cd /usr/src/deb_mavbench/
+#    chmod a+wr /usr/src/deb_mavbench && \
+#	apt-ftparchive packages . | gzip -c9 > Packages.gz && \
+#	apt-ftparchive sources . | gzip -c9 > Sources.gz && \
+#	chmod a+wr /etc/apt/sources.list.d/ros-latest.list && \
+#	echo "deb file:/usr/src/deb_mavbench ./" >> /etc/apt/sources.list.d/ros-latest.list && \
+#	sed -i -e "1,2s/^/#/g" /etc/apt/sources.list.d/ros-latest.list && \
+#	apt-get update && \
+#	apt-get remove -y ros-melodic-opencv3 && \
+#	apt-get install -y ros-melodic-opencv3 --allow-unauthenticated && \
+#	sed -i -e "s/#//g" /etc/apt/sources.list.d/ros-latest.list && \
+#	apt-get update && \
+#	apt-get install -y ros-melodic-desktop-full ros-melodic-rviz-visual-tools ros-melodic-octomap* ros-melodic-ompl
+#    cp /opt/ros/melodic/lib/$ros_linux_gnu/pkgconfig/opencv-3.3.1-dev.pc /opt/ros/melodic/lib/$ros_linux_gnu/pkgconfig/opencv.pc 
+#    cd $base_dir/src
+#    echo "done" > ros_opencv_install_done.txt
+#fi
 
 
 ############
@@ -92,8 +92,8 @@ if [[ ! `git status --porcelain`  ]]; then
 fi
 
 cd $base_dir/src/pcl && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++11" ..
-cd $base_dir/src/pcl/build && make -j 2
-cd $base_dir/src/pcl/build && make -j 2 install
+cd $base_dir/src/pcl/build && make -j 10 
+cd $base_dir/src/pcl/build && make -j 10 install
 
 
 ########
