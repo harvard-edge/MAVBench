@@ -6,7 +6,7 @@ set -x
 set -e
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/cuda/lib64" 
 export PATH="$PATH:/usr/local/cuda/bin"
-source /opt/ros/kinetic/setup.bash
+source /opt/ros/melodic/setup.bash
 
 ########
 # darknet 
@@ -47,7 +47,7 @@ fi
 
 # mavbench-build
 cd $base_dir/catkin_ws/ &&\
-    source /opt/ros/kinetic/setup.bash &&\
+    source /opt/ros/melodic/setup.bash &&\
     catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="catkin_simple" &&\
     catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="eigen_catkin" &&\
     catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="glog_catkin" &&\
