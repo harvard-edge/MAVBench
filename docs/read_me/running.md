@@ -39,13 +39,11 @@ Open the Developer Command Prompt for VS 2017
 cd MAVBench_base_dir\test_benches\configs
 ```
 2.Modify the json config file as you like to invoke the desired game for the application of interest.
-```bash
-cd MAVBench_base_dir\1test_benches\configs
-```
 Note: you only need to set the map_name in the json file (we have provided 5 maps, 1 for each application. The names are ${application_name}_simple, so for example for package delivery set the map_name to package_delivery_simple).
 
 3. start the game
 ```bash
+cd MAVBench_base_dir\test_benches
 python scripts\run_games.py --config configs\${your_config_file} #example:  python scripts\run_games.py --config configs\run_game_config.json
 ```
 **For the reckless with no life** (method 2):
