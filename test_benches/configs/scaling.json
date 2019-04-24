@@ -1,14 +1,14 @@
 {
   "companion_setting":{	
-	  "usr_name": "nvidia" ,
-    "pass_code":  "nvidia",
-    "host_ip": "10.243.49.241",
-    "base_dir": "/home/nvidia/MAVBench_base",
+    "usr_name": "wcui" ,
+    "pass_code":  "111",
+    "host_ip": "10.243.49.245",
+    "base_dir": "/home/wcui/MAVBench_base",
     "stats_file_on_comp_computer": "stats.json",
     "platform": "tx2"
     },
     "host_setting":{
-	    "in_editor":true
+	    "in_editor":false
     },
     "experiment_setting_list": [
         {      
@@ -18,11 +18,11 @@
                 "nbvp/gain/range": 6.5,
                 "nbvp/tree/extension_range": 6,
                 "coverage_threshold": 85,
-                "planning_resolution":0.45,
-                "mapping_resolution": 0.45
+                "planning_resolution":0.15,
+                "mapping_resolution": 0.15
             },
-            "number_of_runs": 1,
-            "max_run_time":200,
+            "number_of_runs": 10,
+            "max_run_time":300,
             "processor_frequency":2035200,
             "map_name": "package_delivery_simple"
 	}

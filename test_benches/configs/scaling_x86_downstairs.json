@@ -1,0 +1,30 @@
+{
+  "companion_setting":{	
+    "usr_name": "reddi-rtx" ,
+    "pass_code":  "rur3dd1",
+    "host_ip": "10.243.53.19",
+    "base_dir": "/home/reddi-rtx/MAVBench_base",
+    "stats_file_on_comp_computer": "stats.json",
+    "platform": "tx2"
+    },
+    "host_setting":{
+	    "in_editor":false
+    },
+    "experiment_setting_list": [
+        {      
+          "application": "package_delivery", 
+	        "ros_params": {
+                "sensor_max_range": 7,  
+                "nbvp/gain/range": 6.5,
+                "nbvp/tree/extension_range": 6,
+                "coverage_threshold": 85,
+                "planning_resolution":0.15,
+                "mapping_resolution": 0.15
+            },
+            "number_of_runs": 10,
+            "max_run_time":300,
+            "processor_frequency":2035200,
+            "map_name": "package_delivery_simple"
+	}
+    ]
+}
