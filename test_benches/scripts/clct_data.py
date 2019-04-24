@@ -255,8 +255,9 @@ def main():
                 
                 total_run_ctr += 1
                 result = schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_dir)
-                #restart_unreal()
-                time.sleep(3) #there needs to be a sleep between restart and change_level
+                print(result) 
+                restart_unreal()
+                time.sleep(7) #there needs to be a sleep between restart and change_level
                 write_to_stats_file(stat_file_addr, '\t'+'\\"app\\":\\"'+str(application)+'\\",',  companion_setting, ssh_client)
                 write_to_stats_file(stat_file_addr, '\t'+'\\"processor_freq\\":\\"'+str(proc_freq)+'\\",',  companion_setting, ssh_client)
                 for  param in ros_params.keys():
@@ -265,7 +266,7 @@ def main():
                 write_to_stats_file(stat_file_addr, '\t\\"experiment_number\\":'+str(total_run_ctr),  companion_setting, ssh_client)
                 if (experiment_run_ctr < num_of_runs - 1): 
                     write_to_stats_file(stat_file_addr, "},",  companion_setting, ssh_client)
-
+                #restart_unreal()
             
             write_to_stats_file(stat_file_addr, "}],",  companion_setting, ssh_client)
 
