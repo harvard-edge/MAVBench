@@ -58,6 +58,7 @@ link_directories(
     $ENV{AirSim_base_dir}/AirLib/lib
     $ENV{AirSim_base_dir}/AirLib/deps/rpclib/lib
   /usr/local/cuda/lib64  #added by Behzad (for Behzad)
+  /usr/lib/nvidia-418
   ${Airlib_addr}/deps/MavLinkCom/lib
 )
 

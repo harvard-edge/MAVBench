@@ -199,7 +199,10 @@ bool Drone::set_yaw_at_z (int y, double z)
 
 bool Drone::set_yaw(int y)
 {
-    int pos_dist = (y - int(get_yaw()) + 360) % 360;
+
+	record_all_steps_taken(0, 0, 0, y, .5);
+
+	int pos_dist = (y - int(get_yaw()) + 360) % 360;
     int yaw_diff = pos_dist <= 180 ? pos_dist : pos_dist - 360;
 
     float duration = yaw_diff / max_yaw_rate;
@@ -291,9 +294,20 @@ static float xy_yaw(double x, double y) {
     return 90 - atan2(y, x)*180.0/3.14;
 }
 
-bool Drone::fly_velocity(double vx, double vy, double vz, float yaw, double duration)
-{
-    //getCollisionInfo();
+
+void Drone::record_all_steps_taken(double vx, double vy, double vz, float yaw, double duration) {
+	mavbench_msgs::multiDOFpoint point;
+	point.vx = vx;
+	point.vy = vy;
+	point.vz = vz;
+	point.yaw = yaw;
+	point.duration = duration;
+	all_steps_taken.push_back(point);
+}
+
+bool Drone::fly_velocity(double vx, double vy, double vz, float yaw, double duration) {
+	ROS_INFO_STREAM("vx"<<vx<<"vy"<<vy<<"vy"<<vz);
+	record_all_steps_taken(vx, vy, vz, yaw, duration);
 
 	try {
         if (yaw != YAW_UNCHANGED) {
@@ -340,7 +354,8 @@ bool Drone::fly_velocity(double vx, double vy, double vz, float yaw, double dura
 
 bool Drone::fly_velocity_at_z(double vx, double vy, double z, float yaw, double duration)
 {
-    auto t = std::chrono::system_clock::now();
+
+	auto t = std::chrono::system_clock::now();
     auto end_t = t + std::chrono::milliseconds(int(duration*1000));
     const double t_step = 0.05; // 50 ms
     const auto t_step_ms = std::chrono::milliseconds(int(t_step*1000));

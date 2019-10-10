@@ -23,7 +23,8 @@ void sigIntHandlerPrivate(int signo) {
 int main(int argc, char** argv)
 {
     ros::init(argc, argv, "motion_planner_node");
-    ros::NodeHandle nh("~");
+    const std::string blah = "~";
+    ros::NodeHandle nh(blah);
     signal(SIGINT, sigIntHandlerPrivate);
 
     ROS_WARN("This node has no OctoMap instantiated! It's only useful for the scanning application");

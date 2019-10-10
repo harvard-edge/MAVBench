@@ -40,44 +40,33 @@
 #include <ompl/geometric/planners/prm/PRM.h>
 #include <ompl/geometric/SimpleSetup.h>
 #include <ompl/config.h>
+#include <octomap_msgs/GetOctomap.h>
+#include <octomap_msgs/conversions.h>
+
+using namespace std;
 
 class MotionPlanner
 {
 friend class OMPLMotionValidator;
 
 public:
-    // Type-defs
-    using piecewise_trajectory = std::vector<graph::node>;
+    // Type definitions
+	using piecewise_trajectory = vector<graph::node>;
     using smooth_trajectory = mav_trajectory_generation::Trajectory;
 
-    MotionPlanner(octomap::OcTree * octree_, Drone * drone_) :
-        octree(octree_),
-        drone(drone_)
-    {
-        motion_planning_initialize_params();
-
-        // Create a new callback queue
-        nh.setCallbackQueue(&callback_queue);
-
-        // Topics and services
-        get_trajectory_srv_server = nh.advertiseService("/get_trajectory_srv", &MotionPlanner::get_trajectory_fun, this);
-
-        future_col_sub = nh.subscribe("/col_coming", 1, &MotionPlanner::future_col_callback, this);
-        next_steps_sub = nh.subscribe("/next_steps", 1, &MotionPlanner::next_steps_callback, this);
-
-        smooth_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 1);
-        piecewise_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
-        traj_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1);
-    }
-
-    void spinOnce()
-    {
-        callback_queue.callAvailable(ros::WallDuration());
-    }
-
+    MotionPlanner(octomap::OcTree * octree_, Drone * drone_);
     void log_data_before_shutting_down();
 
+    // does  what ROS::spinceOnce which is to "call all the callback functions if there is any packets in the queues"
+    void spinOnce();
+
+
 private:
+
+    // ***F:DN call back for octomap msgs
+    void octomap_callback(const octomap_msgs::Octomap& msgs);
+
+    // generating the trajectory (including piecewise generation and smooothening)
     bool get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res);
 
     // ***F:DN Plans new paths when collisions are detected
@@ -138,11 +127,12 @@ private:
     template<class PlannerType>
     piecewise_trajectory OMPL_plan(geometry_msgs::Point start, geometry_msgs::Point goal, octomap::OcTree * octree);
 
+
 private:
     ros::NodeHandle nh;
     ros::CallbackQueue callback_queue;
     ros::Publisher smooth_traj_vis_pub, piecewise_traj_vis_pub;
-    ros::Subscriber future_col_sub, next_steps_sub;
+    ros::Subscriber future_col_sub, next_steps_sub, octomap_sub;
     ros::ServiceServer get_trajectory_srv_server;
     ros::Publisher traj_pub;
 

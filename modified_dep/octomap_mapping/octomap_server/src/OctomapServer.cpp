@@ -40,7 +40,7 @@ bool is_equal (double a, double b, double epsilon = 1.0e-7)
 {
     return std::abs(a - b) < epsilon;
 }
-
+#include <iostream>
 namespace octomap_server{
 
 OctomapServer::OctomapServer(ros::NodeHandle private_nh_)
@@ -76,7 +76,7 @@ OctomapServer::OctomapServer(ros::NodeHandle private_nh_)
   data_collection_iteration_freq(100),
   m_initConfig(true)
 {
-  double probHit, probMiss, thresMin, thresMax;
+    double probHit, probMiss, thresMin, thresMax;
 
   ros::NodeHandle private_nh(private_nh_);
   private_nh.param("frame_id", m_worldFrameId, m_worldFrameId);
@@ -281,22 +281,30 @@ bool OctomapServer::openFile(const std::string& filename){
   return true;
 
 }
-
+using namespace std; //
 void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr& cloud){
-    if(CLCT_DATA) {
+
+	if(CLCT_DATA) {
        ros::Time start_time = ros::Time::now();
        pt_cld_octomap_commun_overhead_acc +=  (start_time - cloud->header.stamp).toSec()*1e9;
        octomap_ctr++;
        //ROS_INFO_STREAM("------------------------RIGHT HERE");
    }
    rcvd_point_cld_time_stamp = cloud->header.stamp;
-   ros::WallTime startTime = ros::WallTime::now();
-  
+   ros::Time startTime = ros::Time::now();
+
    //
   // ground filtering in base frame
   //
   PCLPointCloud pc; // input cloud for filtering and ground-detection
+
+  ros::Time point_cloud_deserialization_start = ros::Time::now();
   pcl::fromROSMsg(*cloud, pc);
+  double point_cloud_deserialization_duration = (ros::Time::now() - point_cloud_deserialization_start).toSec();
+  ROS_INFO_STREAM("octomap's point cloud deserialization time"<<point_cloud_deserialization_duration);
+
+  ros::Time filter_start = ros::Time::now();
+
 
   tf::StampedTransform sensorToWorldTf;
   try {
@@ -373,10 +381,16 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
     pc_ground.header = pc.header;
     pc_nonground.header = pc.header;
   }
+  double filter_duration = (ros::Time::now() - filter_start).toSec();
+  ROS_INFO_STREAM("octomap point cloud filtering time:"<<filter_duration);
 
+
+   ros::Time integration_start = ros::Time::now();
   insertScan(sensorToWorldTf.getOrigin(), pc_ground, pc_nonground);
+  double integration_duration = (ros::Time::now() - integration_start).toSec();
+  ROS_INFO_STREAM("octomap integration time"<<integration_duration);
 
-  double total_elapsed = (ros::WallTime::now() - startTime).toSec();
+  double total_elapsed = (ros::Time::now() - startTime).toSec();
   if(CLCT_DATA){
       octomap_integration_acc += total_elapsed*1e9;
       if ((octomap_ctr+1) % data_collection_iteration_freq == 0) {
@@ -400,6 +414,7 @@ void OctomapServer::insertCloudCallback(const sensor_msgs::PointCloud2::ConstPtr
   }
   publishAll(cloud->header.stamp);
   //publishAll(start_time);
+  //ROS_INFO_STREAM("octomap integration time"<< total_elapsed); // @suppress("Type cannot be resolved")
 }
 
 void OctomapServer::insertScan(const tf::Point& sensorOriginTf, const PCLPointCloud& ground, const PCLPointCloud& nonground){
@@ -741,7 +756,7 @@ void OctomapServer::publishAll(const ros::Time& rostime){
   }
 
   if (publishBinaryMap)
-    publishBinaryOctoMap(rostime);
+    publishBinaryOctoMap(ros::Time::now());
 
   if (publishFullMap)
     publishFullOctoMap(rostime);
@@ -876,8 +891,11 @@ void OctomapServer::publishBinaryOctoMap(const ros::Time& rostime) const{
   //map.header.stamp = ros::Time::now();
 
 
-  if (octomap_msgs::binaryMapToMsg(*m_octree, map))
-    m_binaryMapPub.publish(map);
+  if (octomap_msgs::binaryMapToMsg(*m_octree, map)){
+	  int serialization_length = ros::serialization::serializationLength(map);
+	  ROS_INFO_STREAM("serialization length is:"<< serialization_length);
+	  m_binaryMapPub.publish(map);
+  }
   else
     ROS_ERROR("Error serializing OctoMap");
 }

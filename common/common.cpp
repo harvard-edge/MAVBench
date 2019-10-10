@@ -219,6 +219,11 @@ double follow_trajectory(Drone& drone, trajectory_t * traj,
     double max_speed_so_far = 0;
 
     ros::Time start_hook_t;
+    /*
+    for (auto &traj_el: *traj){
+        ROS_INFO_STREAM("==========~~~~~~vx"<<traj_el.vx<<"vy"<<traj_el.vy<<"vz"<<traj_el.vz) ;
+    }
+    */
     while (time > 0 && traj->size() > 0) {
         start_hook_t = ros::Time::now();  
         multiDOFpoint p = traj->front();
@@ -227,7 +232,9 @@ double follow_trajectory(Drone& drone, trajectory_t * traj,
         double v_x = p.vx;
         double v_y = p.vy;
         double v_z = p.vz;
-         
+        //ROS_INFO_STREAM("~~~~~~vx"<<v_x<<"vy"<<v_y<<"vz"<<v_z) ;
+
+
         if (check_position) {
             auto pos = drone.position();
             v_x += 0.2*(p.x-pos.x);
@@ -335,6 +342,7 @@ float yawFromQuat(geometry_msgs::Quaternion q)
 
 trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOFtrajectory& t)
 {
+
     trajectory_t result;
     for (const auto& mdp_msg : t.points) {
         multiDOFpoint mdp;
@@ -346,6 +354,7 @@ trajectory_t create_trajectory_from_msg(const mavbench_msgs::multiDOFtrajectory&
         mdp.vx = mdp_msg.vx;
         mdp.vy = mdp_msg.vy;
         mdp.vz = mdp_msg.vz;
+        //ROS_INFO_STREAM("=====vx"<<mdp.vx<<"vy"<<mdp.vy<<"vz"<<mdp.vz) ;
 
         mdp.ax = mdp_msg.ax;
         mdp.ay = mdp_msg.ay;

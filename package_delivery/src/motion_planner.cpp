@@ -1,8 +1,46 @@
 #include "motion_planner.h"
 
-//*** F:DN getting the smoothened trajectory
-bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res)
+
+MotionPlanner::MotionPlanner(octomap::OcTree * octree_, Drone * drone_):
+        octree(octree_),
+		drone(drone_){
+	motion_planning_initialize_params();
+
+	// Create a new callback queue
+	nh.setCallbackQueue(&callback_queue);
+
+	// Topics and services
+	get_trajectory_srv_server = nh.advertiseService("/get_trajectory_srv", &MotionPlanner::get_trajectory_fun, this);
+
+	//future_col_sub = nh.subscribe("/col_coming", 1, &MotionPlanner::future_col_callback, this);
+	//next_steps_sub = nh.subscribe("/next_steps", 1, &MotionPlanner::next_steps_callback, this);
+	octomap_sub = nh.subscribe("/octomap_binary", 1, &MotionPlanner::octomap_callback, this); // @suppress("Invalid arguments")
+
+	smooth_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("trajectory", 1);
+	piecewise_traj_vis_pub = nh.advertise<visualization_msgs::MarkerArray>("waypoints", 1);
+	traj_pub = nh.advertise<mavbench_msgs::multiDOFtrajectory>("multidoftraj", 1);
+}
+
+// octomap callback
+void MotionPlanner::octomap_callback(const octomap_msgs::Octomap& msg)
 {
+    if (octree != nullptr) {
+        delete octree;
+    }
+
+    auto hook_end_t = ros::Time::now();
+    ROS_INFO_STREAM("octomap communication time"<<(ros::Time::now() - msg.header.stamp).toSec());
+    //ROS_INFO("Requesting octomap...");
+    octomap::AbstractOcTree * tree = octomap_msgs::msgToMap(msg);
+    octree = dynamic_cast<octomap::OcTree*> (tree);
+
+    if (octree == nullptr) {
+        ROS_ERROR("Octree could not be pulled.");
+    }
+}
+
+//*** F:DN getting the smoothened trajectory
+bool MotionPlanner::get_trajectory_fun(package_delivery::get_trajectory::Request &req, package_delivery::get_trajectory::Response &res){
     //----------------------------------------------------------------- 
 	// *** F:DN variables	
 	//----------------------------------------------------------------- 
@@ -431,6 +469,7 @@ void MotionPlanner::create_response(package_delivery::get_trajectory::Response &
 		point.vx = s.velocity_W.x();
 		point.vy = s.velocity_W.y();
 		point.vz = s.velocity_W.z();
+        //ROS_INFO_STREAM("-----vx"<<point.vx<<"vy"<<point.vy<<"vz"<<point.vz) ;
 
 		point.ax = s.acceleration_W.x();
 		point.ay = s.acceleration_W.y();
@@ -460,6 +499,10 @@ void MotionPlanner::create_response(package_delivery::get_trajectory::Response &
     trajectory_seq_id++;
 
     res.multiDOFtrajectory.future_collision_seq = future_col_seq_id;
+}
+
+void MotionPlanner::spinOnce() {
+	callback_queue.callAvailable(ros::WallDuration());
 }
 
 

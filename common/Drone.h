@@ -13,7 +13,9 @@
 #include <tf/transform_listener.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include "coord.h"
+#include <mavbench_msgs/multiDOFpoint.h>
 
+using namespace std;
 //#include "configs.h"
 // Control functions
 
@@ -56,6 +58,8 @@ public:
     float get_yaw();
     float get_roll();
     coord gps(uint64_t& timestamp);
+    std::vector<mavbench_msgs::multiDOFpoint> all_steps_taken;// all the steps taken throughout the mission
+
 
     // *** F:DN Stats functions
     msr::airlib::FlightStats getFlightStats();
@@ -68,6 +72,9 @@ public:
     // *** F:DN Drone parameters functions
     float maxYawRate();
     float maxYawRateDuringFlight();
+
+    // misc
+    void record_all_steps_taken(double vx, double vy, double vz, float yaw, double duration);
 
 private:
     msr::airlib::MultirotorRpcLibClient * client;

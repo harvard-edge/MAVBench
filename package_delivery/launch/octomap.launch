@@ -23,7 +23,7 @@
   <arg name="planner_drone_radius" default="2"/>
   <arg name="planner_drone_height" default="0.6"/>
   
-  <arg name="planning_resolution" default=".50"/>
+  <arg name="planning_resolution" default=".1"/>
   <arg name="sensor_max_range" default="7" />
   <arg name="fly_trajectory_time_out" default=".01"/> 
   <arg name="planning_budget" default=".25"/>
@@ -93,50 +93,6 @@
   </node>
 
 
-  <comment>
-    <!-- Octomap -->
-    <node pkg="nodelet" type="nodelet" name="octomap_server_nodelet" args="load octomap_server/OctomapServerNodelet depth_transforms_manager" output="screen">
-	<!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"-->
-        <param name="resolution" value="$(arg planning_resolution)" />
-		
-		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
-		<param name="frame_id" type="string" value="world" />
-		
-		<!-- maximum range to integrate (speedup!) -->
-		<param name="sensor_model/max_range" value="$(arg sensor_max_range)"/>
-		<param name="CLCT_DATA" value="$(arg CLCT_DATA)"/>
-        <param name="data_collection_iteration_freq_OM" value="$(arg data_collection_iteration_freq)"/>
-        
-        <!-- data source to integrate (PointCloud2) -->
-		<!-- remap from="cloud_in" to="/points" / -->
-
-		<!-- Filter ground for binary occupancy map -->
-		<param name="base_frame_id" value="world" />
-		<!-- <param name="filter_ground" value="true" />
-		<param name="ground_filter_plane_distance" value="1.00" />
-		<param name="ground_filter/distance" value="0.50" /> -->
-	    <param name="pointcloud_min_z" type="double" value="-2.0" />
-	    <param name="pointcloud_max_z" type="double" value="100.0" />
-	    <param name="occupancy_min_z" type="double" value="-2.00" />
-	    <param name="occupancy_max_z" type="double" value="100.0" />
-		<!-- <param name="ground_filter_plane_distance" value="0.07" />
-		<param name="ground_filter/distance" value="0.04" />
-		<param name="ground_filter/angle" value="0.4" /> -->
-	</node>
-  </comment>
-
-  <comment>
-	<node pkg="octomap_world" type="octomap_manager" name="octomap_manager">
-       <remap from="cam0/camera_info" to="/Airsim/left/camera_info"/>
-       <remap from="cam1/camera_info" to="/Airsim/right/camera_info"/>
-	   <remap from="pointcloud" to="/points" />
-       <remap from="disparity" to="/Airsim/disparity"/> 
-       <param name="resolution" value="0.5"/>
-       <!--param name="octomap_file" value=""/-->
-    </node>
-  </comment>
-
-
 	<!-- Point-cloud publisher -->
  	<node pkg="airsim_img_publisher" type="airsim_imgPublisher" name="airsim_imgPublisher" output="screen">
 		<!-- IP of the Airsim computer -->
@@ -192,6 +148,7 @@
 	<!-- node pkg="octomap_server" type="octomap_server_node" name="octomap_server" output="screen"-->
     <!-- group ns="occupancy_map_node" -->
     <node pkg="package_delivery" type="occupancy_map_node" name="occupancy_map_node" output="screen">
+        <!--param name="map_file" type="string" value="/home/reddi-rtx/Downloads/octomap_base.ot" /-->
         <param name="resolution" value="$(arg planning_resolution)" />
 		
 		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
@@ -237,12 +194,11 @@
         <param name="grace_period" type="double" value="0.0" />
         <param name="fly_trajectory_time_out" value="$(arg fly_trajectory_time_out)"/>
     </node>
-1
 
 
 	<!-- Path-Planner -->
-	<group ns="motion_planner">
-    <!--node pkg="package_delivery" type="motion_planner_node" name="motion_planner" output="screen" launch-prefix="$(arg my_launch_prefix)"-->
+	<!--group ns="motion_planner"-->
+    <node pkg="package_delivery" type="motion_planner_node" name="motion_planner" output="screen" launch-prefix="$(arg my_launch_prefix)">
 		<param name="nodes_to_add_to_roadmap" value="300"/>
 		<param name="max_dist_to_connect_at" value="10"/>
 
@@ -270,8 +226,8 @@
         <!-- param name="motion_planning_core" value="OMPL-RRT"/-->
         <param name="motion_planning_core" value="OMPL-RRTConnect"/>
         <!-- param name="motion_planning_core" value="OMPL-RRT"/-->
-    <!-- /node -->
-    </group>
+    </node>
+    <!--/group-->
 
 	<!-- Demo program that controls drone -->
 	<!-- <node pkg="package_delivery" type="package_delivery" name="package_delivery" output="screen" launch-prefix="/home/nvidia/install/perf/perf record -g fp"> -->

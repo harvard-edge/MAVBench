@@ -1,25 +1,17 @@
-#include "ros/ros.h"
-
-// Standard headers
-#include <string>
-#include <signal.h>
-
-// Octomap specific headers
-#include <octomap/octomap.h>
-#include <octomap/OcTree.h>
-#include <octomap_msgs/GetOctomap.h>
-#include <octomap_msgs/conversions.h>
-
-// MAVBench headers
-#include "Drone.h"
-#include "timer.h"
-#include "motion_planner.h"
+#include <Drone.h>
 #include <future_collision/future_collision.h>
-#include <profile_manager/profiling_data_srv.h>
-#include <profile_manager/start_profiling_srv.h>
-
-// Octomap server headers
 #include <octomap_server/OctomapServer.h>
+#include <ros/init.h>
+#include <ros/node_handle.h>
+#include <ros/param.h>
+#include <rosconsole/macros_generated.h>
+#include <signal.h>
+#include <XmlRpcValue.h>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "motion_planner.h"
 
 FutureCollisionChecker * fcc_ptr = nullptr;
 MotionPlanner * mp_ptr = nullptr;
@@ -57,14 +49,14 @@ int main(int argc, char** argv)
     octomap_server::OctomapServer server;
     octomap::OcTree * octree = server.tree_ptr();
 
-    if (nh.getParam("map_file", mapFilenameParam)) {
+
+    if (nh.getParam("/occupancy_map_node/map_file", mapFilenameParam)) {
         if (mapFilename != "") {
             ROS_WARN("map_file is specified by the argument '%s' and rosparam '%s'. now loads '%s'", mapFilename.c_str(), mapFilenameParam.c_str(), mapFilename.c_str());
         } else {
             mapFilename = mapFilenameParam;
         }
     }
-
     if (mapFilename != "") {
         if (!server.openFile(mapFilename)){
             ROS_ERROR("Could not open file %s", mapFilename.c_str());
@@ -78,8 +70,8 @@ int main(int argc, char** argv)
     fcc_ptr = &fcc;
 
     // Create MotionPlanner
-    MotionPlanner mp (octree, &drone);
-    mp_ptr = &mp;
+    //MotionPlanner mp (octree, &drone);
+    //mp_ptr = &mp;
 
     while (ros::ok()) {
         // ROS_INFO("Start octo");
@@ -91,12 +83,20 @@ int main(int argc, char** argv)
 
         // ros::Time start_fcc = ros::Time::now();
         fcc.spinOnce();
+
+     //   ros::Time now_secs =ros::Time::now();
+//        ROS_ERROR_STREAM("now time is "<<now_secs.toSec());
+ //       ros::Duration(5).sleep();
+  //      ros::Time after_now_secs =ros::Time::now();
+   //     ROS_ERROR_STREAM("after now time is "<<now_secs.toSec());
+    //    ROS_ERROR_STREAM("diff is "<<(after_now_secs - now_secs).toSec());
+
         // ros::Time end_fcc = ros::Time::now();
         // std::cout << "fcc takes " << (end_fcc - start_fcc).toSec() << "\n";
 
         // ROS_INFO("Start mp");
         // ros::Time start_mp = ros::Time::now();
-        mp.spinOnce();
+        //mp.spinOnce();
         // ROS_INFO("End mp");
         // ros::Time end_mp = ros::Time::now();
         // std::cout << "mp takes " << (end_mp - start_mp).toSec() << "\n";
