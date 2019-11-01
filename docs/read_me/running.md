@@ -18,8 +18,8 @@ Note that for the application to communicate with the game, the game needs to be
 4.At this point, you can interact with the applications
 4(alternative). you can use our pre-defined missions (encapsulating a set of initial interactions) to prime the drone for a specific goal. These pre-defined missions are provided for each application in a file called pre_mission_cmds.sh: 
 ```bash
-#example: ./MAVbench_base/src/MAV_apps/package_delivery/pre_mission_cmds.sh | roslaunch $package_delivery $scanning.launch 
-./MAVbench_base/src/MAV_apps/$application_name/pre_mission_cmds.sh; | roslaunch $pkg_name $application.launch;  
+#example: ./MAVbench_base/src/MAV_apps/pre_mission/package_delivery/pre_mission_cmds.sh | roslaunch package_delivery package_delivery.launch
+./MAVbench_base/src/MAV_apps/pre_mission/$application_name/pre_mission_cmds.sh; | roslaunch $pkg_name $application.launch;
 ```
 
 
