@@ -27,6 +27,8 @@ parser = argparse.ArgumentParser(description='DARwing collect data.')
 parser.add_argument('--config', metavar='c', type=str,
                     default=get_host_base()+"\test_benches\configs\hello-world-config.json",
                     help='config json file path')
+parser.add_argument('--randomize', metavar='r', default=False,
+                    help='randomize maps')
 
 args = parser.parse_args()
 data_clct_conf_file_addr = args.config
@@ -238,9 +240,14 @@ def main():
             proc_freq = experiment_setting["processor_frequency"]
             stat_file_addr = mavbench_apps_base_dir+"/data/"+application+ "/"+"stats.json"
             if ("map_name" in  experiment_setting.keys()):
-                change_level(experiment_setting["map_name"])
+                if experiment_setting["map_name"] == "random":
+                    randomize_env()
+                    randomize_env_difficulty("hard")
+                else:
+                    change_level(experiment_setting["map_name"])
             else:
                 restart_unreal()
+
             ssh_client = creat_ssh_client(companion_setting, host_base_dir)     
             mk_data_dir(ssh_client) 
             modify_freq(proc_freq, ssh_client) 
@@ -256,6 +263,9 @@ def main():
                 total_run_ctr += 1
                 result = schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_dir)
                 print(result) 
+                if experiment_setting["map_name"] == "random":
+                    tight_randomization()
+                    randomize_env()
                 restart_unreal()
                 time.sleep(7) #there needs to be a sleep between restart and change_level
                 write_to_stats_file(stat_file_addr, '\t'+'\\"app\\":\\"'+str(application)+'\\",',  companion_setting, ssh_client)
