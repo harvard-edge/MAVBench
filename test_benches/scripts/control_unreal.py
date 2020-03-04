@@ -16,10 +16,6 @@ os.sys.path.insert(0, env_gen_py_path)
 
 #print(os.sys.path)
 
-from environment_randomization import EnvRandomizer
-
-env_rand = EnvRandomizer()
-
 def messages_dir():
     return os.path.expanduser("~\Documents\AirSim");
 
@@ -49,13 +45,17 @@ def restart_level():
 
 # for env-gen
 
-def randomize_env():
+from environment_randomization import EnvRandomizer
+
+
+def randomize_env(env_rand):
     env_rand.randomize_env()
 
-def randomize_env_difficulty(difficulty_level):
+def randomize_env_difficulty(env_rand, difficulty_level):
+    #print("control unreal: " + difficulty_level)
     assert(difficulty_level == "easy" or difficulty_level == "medium"
             or difficulty_level == "hard")
     env_rand.init_difficulty_level(difficulty_level)
 
-def tight_randomization():
+def tight_randomization(env_rand):
     env_rand.tight_randomization()

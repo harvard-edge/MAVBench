@@ -27,8 +27,6 @@ parser = argparse.ArgumentParser(description='DARwing collect data.')
 parser.add_argument('--config', metavar='c', type=str,
                     default=get_host_base()+"\test_benches\configs\hello-world-config.json",
                     help='config json file path')
-parser.add_argument('--randomize', metavar='r', default=False,
-                    help='randomize maps')
 
 args = parser.parse_args()
 data_clct_conf_file_addr = args.config
@@ -55,7 +53,8 @@ def start_unreal(host_setting, host_base_dir):
     if host_setting["in_editor"]:
         return
     else:
-        game_path = host_base_dir + "\\test_benches\\games\\WindowsNoEditor\\Blocks.exe"
+        #game_path = host_base_dir + "\\test_benches\\games\\WindowsNoEditor\\Blocks.exe"
+        game_path = "C:\\Users\\Behzad-PC\\mavbench_stuff\\env-gen-ue4-my\\Build\\WindowsNoEditor\\JsonParsing18Version.exe" # for radhika
     if not(os.path.isfile(game_path)):
         print("file:" + game_path + " doesn't exist")
         sys.exit()
@@ -173,21 +172,21 @@ def minimize_the_window():
     win32gui.ShowWindow(Minimize, win32con.SW_MINIMIZE) 
 
 def signal_handler(signal, frame):
-        print('You pressed Ctrl+C!')
-	stop_unreal()
-	sys.exit(0)
+    print('You pressed Ctrl+C!')
+    stop_unreal()
+    sys.exit(0)
 
 def write_to_stats_file(stat_file_addr, string_to_write, companion_setting, ssh_client):
-        python_file_to_run = mavbench_apps_base_dir + "/common/python_files/write_to_file.py"
-        cmd = "python" + " " + python_file_to_run + " " + stat_file_addr + " " + string_to_write
-        stdin,stdout,stderr= ssh_client.exec_command(cmd, get_pty=True)
-        outlines = stdout.readlines() 
-        result=''.join(outlines)
-        print(result)
-        # errlines = stderr.readlines() 
-        # resp_err=''.join(errlines)
-        # print(resp_err)
-        return result
+    python_file_to_run = mavbench_apps_base_dir + "/common/python_files/write_to_file.py"
+    cmd = "python" + " " + python_file_to_run + " " + stat_file_addr + " " + string_to_write
+    stdin,stdout,stderr= ssh_client.exec_command(cmd, get_pty=True)
+    outlines = stdout.readlines() 
+    result=''.join(outlines)
+    print(result)
+    # errlines = stderr.readlines() 
+    # resp_err=''.join(errlines)
+    # print(resp_err)
+    return result
 
 
 def mk_data_dir(ssh_client):
@@ -199,12 +198,12 @@ def mk_data_dir(ssh_client):
     # errlines = stderr.readlines() 
     # resp_err=''.join(errlines)
     # print(resp_err)
-    print result 
+    # print result 
     return result
 
 
 def modify_freq(freq, ssh_client):
-    print freq
+    print(freq)
     stdin,stdout,stderr= ssh_client.exec_command("echo nvidia | sudo -S python "+ mavbench_apps_base_dir+"/misc/set_freq_for_all.py " + str(freq), get_pty=True) #we need the following two statement to make it block, otherwise it won;t # have an effect for some reason
     outlines = stdout.readlines() 
     result=''.join(outlines)
@@ -233,6 +232,8 @@ def main():
         
         start_unreal(host_setting, host_base_dir)
         time.sleep(7) #there needs to be a sleep between restart and change_level
+        # init env-gen
+        env_rand = EnvRandomizer()
         for  experiment_setting in  experiment_setting_list:
             num_of_runs = experiment_setting["number_of_runs"]
             application = experiment_setting["application"]
@@ -241,8 +242,8 @@ def main():
             stat_file_addr = mavbench_apps_base_dir+"/data/"+application+ "/"+"stats.json"
             if ("map_name" in  experiment_setting.keys()):
                 if experiment_setting["map_name"] == "random":
-                    randomize_env()
-                    randomize_env_difficulty("hard")
+                    randomize_env(env_rand)
+                    randomize_env_difficulty(env_rand, experiment_setting["random_difficulty"])
                 else:
                     change_level(experiment_setting["map_name"])
             else:
@@ -264,8 +265,8 @@ def main():
                 result = schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_dir)
                 print(result) 
                 if experiment_setting["map_name"] == "random":
-                    tight_randomization()
-                    randomize_env()
+                    tight_randomization(env_rand)
+                    randomize_env(env_rand)
                 restart_unreal()
                 time.sleep(7) #there needs to be a sleep between restart and change_level
                 write_to_stats_file(stat_file_addr, '\t'+'\\"app\\":\\"'+str(application)+'\\",',  companion_setting, ssh_client)
