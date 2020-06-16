@@ -17,7 +17,7 @@ from multiprocessing import Process
 import argparse
 
 def get_host_base():
-    file_path=sys.argv[0]
+    file_path=os.path.abspath(sys.argv[0])
     file_dir=os.path.dirname(file_path)
     file_dir_abs_path = os.path.abspath(file_dir+"\\..\\..\\")
     return file_dir_abs_path
@@ -54,7 +54,7 @@ def start_unreal(host_setting, host_base_dir):
         return
     else:
         #game_path = host_base_dir + "\\test_benches\\games\\WindowsNoEditor\\Blocks.exe"
-        game_path = "C:\\Users\\Behzad-PC\\mavbench_stuff\\env-gen-ue4-my\\Build\\WindowsNoEditor\\JsonParsing18Version.exe" # for radhika
+        game_path = "C:\\Users\\Behzad-PC\\mavbench_stuff\\env-gen\\Build\\WindowsNoEditor\\JsonParsing18Version.exe" # for radhika
     if not(os.path.isfile(game_path)):
         print("file:" + game_path + " doesn't exist")
         sys.exit()
@@ -232,18 +232,31 @@ def main():
         
         start_unreal(host_setting, host_base_dir)
         time.sleep(7) #there needs to be a sleep between restart and change_level
-        # init env-gen
-        env_rand = EnvRandomizer()
-        for  experiment_setting in  experiment_setting_list:
+
+        for experiment_setting in experiment_setting_list:
             num_of_runs = experiment_setting["number_of_runs"]
             application = experiment_setting["application"]
             ros_params =  experiment_setting["ros_params"]
             proc_freq = experiment_setting["processor_frequency"]
             stat_file_addr = mavbench_apps_base_dir+"/data/"+application+ "/"+"stats.json"
+
+            env_rand = RoborunRandomizer()
+
             if ("map_name" in  experiment_setting.keys()):
                 if experiment_setting["map_name"] == "random":
-                    randomize_env(env_rand)
-                    randomize_env_difficulty(env_rand, experiment_setting["random_difficulty"])
+                    params_list = env_rand.get_gaussian_params_list()
+                    gaussian_params_dict = {}
+                    for param in params_list:
+                        if param in experiment_setting.keys():
+                            gaussian_params_dict[param] = experiment_setting[param]
+
+                    env_rand.set_gaussian_params(gaussian_params_dict)
+                    # passing the goal position to rosparams
+                    ros_params = env_rand.augment_ros_params(ros_params)
+                    env_rand.init_env_gen()
+                    env_rand.randomize_env()
+                    env_rand.airsim_reset()
+                    time.sleep(20) # env-gen takes some time
                 else:
                     change_level(experiment_setting["map_name"])
             else:
@@ -260,14 +273,15 @@ def main():
             #minimize_the_window()
             #--- start collecting data 
             for  experiment_run_ctr  in range(0, num_of_runs):
-                
                 total_run_ctr += 1
                 result = schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_dir)
                 print(result) 
                 if experiment_setting["map_name"] == "random":
-                    tight_randomization(env_rand)
-                    randomize_env(env_rand)
-                restart_unreal()
+                    env_rand.randomize_env()
+                    env_rand.airsim_reset()
+                    time.sleep(20) # env-gen takes some time
+                else:
+                    restart_unreal()
                 time.sleep(7) #there needs to be a sleep between restart and change_level
                 write_to_stats_file(stat_file_addr, '\t'+'\\"app\\":\\"'+str(application)+'\\",',  companion_setting, ssh_client)
                 write_to_stats_file(stat_file_addr, '\t'+'\\"processor_freq\\":\\"'+str(proc_freq)+'\\",',  companion_setting, ssh_client)

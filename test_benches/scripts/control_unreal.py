@@ -7,9 +7,7 @@ file_path=sys.argv[0]
 file_dir=os.path.dirname(file_path)
 file_dir_abs_path = os.path.abspath(file_dir+"\\..\\..\\")
 
-#airsim_dir_abs_path = os.path.abspath(file_dir_abs_path+"/src/AirSim")
-airsim_dir_abs_path = os.path.abspath(file_dir_abs_path+"Users/Behzad-PC/mavbench_stuff/AirSim-my") # for radhika
-airsim_py_path = os.path.abspath(airsim_dir_abs_path+"/PythonClient")
+airsim_py_path = os.path.abspath("./PythonClient")
 os.sys.path.insert(0, airsim_py_path)
 env_gen_py_path = os.path.abspath(airsim_py_path+"/environment_randomization")
 os.sys.path.insert(0, env_gen_py_path)
@@ -45,17 +43,4 @@ def restart_level():
 
 # for env-gen
 
-from environment_randomization import EnvRandomizer
-
-
-def randomize_env(env_rand):
-    env_rand.randomize_env()
-
-def randomize_env_difficulty(env_rand, difficulty_level):
-    #print("control unreal: " + difficulty_level)
-    assert(difficulty_level == "easy" or difficulty_level == "medium"
-            or difficulty_level == "hard")
-    env_rand.init_difficulty_level(difficulty_level)
-
-def tight_randomization(env_rand):
-    env_rand.tight_randomization()
+from environment_randomization import RoborunRandomizer

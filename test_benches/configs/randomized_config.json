@@ -2,7 +2,7 @@
     "companion_setting":{	
 	 "usr_name": "radhika" ,
         "pass_code":  "restro",
-        "host_ip": "10.243.49.119",
+        "host_ip": "192.168.0.159",
 	    "base_dir": "/home/radhika/mavbench_stuff/MAVBench_base",
         "stats_file_on_comp_computer": "stats.json",
         "platform": "tx2"
@@ -22,11 +22,114 @@
                 "planning_resolution":0.05,
                 "mapping_resolution": 0.1
             },
-            "number_of_runs": 6,
-            "max_run_time":60,
+            "number_of_runs": 2,
+            "max_run_time": 3000,
             "processor_frequency":2035200,
             "map_name": "random",
-            "random_difficulty": "medium"
+	    "ArenaSize": [700, 700, 20],
+	    "PlayerStart": [-250, -250, 20],
+	    "End": [0, 0, 20],
+	    "SpreadOfObstacles": [50, 100],
+	    "PeakCongestion": [0.3, 0.5],
+	    "GapSize": [6.0, 10.0],
+	    "EnvGenFlavor": "gaussian",
+	    "GridSize": 5
+	},
+        {      
+            "application": "package_delivery", 
+	    "time_to_trigger_object": "25",
+	    "ros_params": {
+                "sensor_max_range": 7,  
+                "nbvp/gain/range": 6.5,
+                "nbvp/tree/extension_range": 6,
+                "coverage_threshold": 85,
+                "planning_resolution":0.05,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 2,
+            "max_run_time": 3000,
+            "processor_frequency":2035200,
+            "map_name": "random",
+	    "ArenaSize": [700, 700, 20],
+	    "PlayerStart": [-250, -250, 20],
+	    "End": [230, -220, 20],
+	    "SpreadOfObstacles": [100, 200],
+	    "PeakCongestion": [0.3, 0.5],
+	    "GapSize": [4.0, 6.0],
+	    "EnvGenFlavor": "gaussian",
+	    "GridSize": 5
+	},
+        {      
+            "application": "package_delivery", 
+	    "time_to_trigger_object": "25",
+	    "ros_params": {
+                "sensor_max_range": 7,  
+                "nbvp/gain/range": 6.5,
+                "nbvp/tree/extension_range": 6,
+                "coverage_threshold": 85,
+                "planning_resolution":0.05,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 2,
+            "max_run_time": 3000,
+            "processor_frequency":2035200,
+            "map_name": "random",
+	    "ArenaSize": [700, 700, 20],
+	    "PlayerStart": [-250, -250, 20],
+	    "End": [230, -220, 20],
+	    "SpreadOfObstacles": [50, 100],
+	    "PeakCongestion": [0.6, 0.8],
+	    "GapSize": [4.0, 6.0],
+	    "EnvGenFlavor": "gaussian",
+	    "GridSize": 5
+	},
+        {      
+            "application": "package_delivery", 
+	    "time_to_trigger_object": "25",
+	    "ros_params": {
+                "sensor_max_range": 7,  
+                "nbvp/gain/range": 6.5,
+                "nbvp/tree/extension_range": 6,
+                "coverage_threshold": 85,
+                "planning_resolution":0.05,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 2,
+            "max_run_time": 3000,
+            "processor_frequency":2035200,
+            "map_name": "random",
+	    "ArenaSize": [700, 700, 20],
+	    "PlayerStart": [-250, -250, 20],
+	    "End": [230, -220, 20],
+	    "SpreadOfObstacles": [100, 150],
+	    "PeakCongestion": [0.5, 0.8],
+	    "GapSize": [4.0, 6.0],
+	    "EnvGenFlavor": "gaussian",
+	    "GridSize": 5
+	},
+        {      
+            "application": "package_delivery", 
+	    "time_to_trigger_object": "25",
+	    "ros_params": {
+                "sensor_max_range": 7,  
+                "nbvp/gain/range": 6.5,
+                "nbvp/tree/extension_range": 6,
+                "coverage_threshold": 85,
+                "planning_resolution":0.05,
+                "mapping_resolution": 0.1
+            },
+            "number_of_runs": 2,
+            "max_run_time": 3000,
+            "processor_frequency":2035200,
+            "map_name": "random",
+	    "ArenaSize": [700, 700, 20],
+	    "PlayerStart": [-250, -250, 20],
+	    "End": [230, -220, 20],
+	    "SpreadOfObstacles": [100, 200],
+	    "PeakCongestion": [0.5, 0.8],
+	    "GapSize": [4.0, 6.0],
+	    "EnvGenFlavor": "gaussian",
+	    "GridSize": 10
 	}
     ]
 }
