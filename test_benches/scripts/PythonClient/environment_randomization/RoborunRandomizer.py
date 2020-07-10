@@ -56,4 +56,10 @@ class RoborunRandomizer():
         ros_params["goal_x"] = goal_offset[0]
         ros_params["goal_y"] = goal_offset[1]
         ros_params["goal_z"] = end[2]
-        ros_params["goal_from_host"] = "true"
+
+        ros_params["x_dist_to_sample_from__low_bound"] = -abs(goal_offset[0])/2
+        ros_params["x_dist_to_sample_from__high_bound"] = 3 * abs(goal_offset[0])/2
+        ros_params["y_dist_to_sample_from__low_bound"] = -abs(goal_offset[1])/2
+        ros_params["y_dist_to_sample_from__high_bound"] = 3 * abs(goal_offset[1])/2
+
+        return ros_params

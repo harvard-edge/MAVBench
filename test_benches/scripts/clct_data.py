@@ -209,9 +209,8 @@ def modify_freq(freq, ssh_client):
     result=''.join(outlines)
     print(result)
 
-
-
-
+#def read_obs_coords():
+    #obs_coords_file =
 
 def main():
     host_base_dir= get_host_base(); 
@@ -239,6 +238,7 @@ def main():
             ros_params =  experiment_setting["ros_params"]
             proc_freq = experiment_setting["processor_frequency"]
             stat_file_addr = mavbench_apps_base_dir+"/data/"+application+ "/"+"stats.json"
+            obs_file_addr = mavbench_apps_base_dir+"/data/"+application+ "/"+"EnvGenObstacleCoords.py"
 
             env_rand = RoborunRandomizer()
 
@@ -256,6 +256,9 @@ def main():
                     env_rand.init_env_gen()
                     env_rand.randomize_env()
                     env_rand.airsim_reset()
+                    # write obstacle config into py data file
+                    #obs_coords = read_obs_coords()
+                    #write_to_stats_file(obs_file_addr, obs_coords, companion_setting, ssh_client)
                     time.sleep(20) # env-gen takes some time
                 else:
                     change_level(experiment_setting["map_name"])
@@ -271,7 +274,7 @@ def main():
             write_to_stats_file(stat_file_addr, '[',  companion_setting, ssh_client)
             experiment_set_ctr +=1 
             #minimize_the_window()
-            #--- start collecting data 
+            #--- start collecting data
             for  experiment_run_ctr  in range(0, num_of_runs):
                 total_run_ctr += 1
                 result = schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_dir)
@@ -285,7 +288,7 @@ def main():
                 time.sleep(7) #there needs to be a sleep between restart and change_level
                 write_to_stats_file(stat_file_addr, '\t'+'\\"app\\":\\"'+str(application)+'\\",',  companion_setting, ssh_client)
                 write_to_stats_file(stat_file_addr, '\t'+'\\"processor_freq\\":\\"'+str(proc_freq)+'\\",',  companion_setting, ssh_client)
-                for  param in ros_params.keys():
+                for param in ros_params.keys():
                     write_to_stats_file(stat_file_addr, '\t\\"'+param + '\\":\\"'+str(ros_params[param])+'\\",',  companion_setting, ssh_client)
                 
                 write_to_stats_file(stat_file_addr, '\t\\"experiment_number\\":'+str(total_run_ctr),  companion_setting, ssh_client)
