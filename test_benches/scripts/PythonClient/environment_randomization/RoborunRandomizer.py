@@ -58,9 +58,10 @@ class RoborunRandomizer():
         ros_params["goal_z"] = end[2]
 
         # arena bounds in mavbench coords
-        ros_params["x_dist_to_sample_from__low_bound"] = -(self.gaussian_range_dic["ArenaSize"][0][1]/2) - self.gaussian_range_dic["PlayerStart"][0][0]
-        ros_params["x_dist_to_sample_from__high_bound"] = (self.gaussian_range_dic["ArenaSize"][0][1]/2) - self.gaussian_range_dic["PlayerStart"][0][0]
-        ros_params["y_dist_to_sample_from__low_bound"] = -(self.gaussian_range_dic["ArenaSize"][0][0]/2) - self.gaussian_range_dic["PlayerStart"][0][1]
-        ros_params["y_dist_to_sample_from__high_bound"] = (self.gaussian_range_dic["ArenaSize"][0][0]/2) - self.gaussian_range_dic["PlayerStart"][0][1]
+        constant_offset = 300
+        ros_params["x_dist_to_sample_from__low_bound"] = -(self.gaussian_range_dic["ArenaSize"][0][1]/2) - self.gaussian_range_dic["PlayerStart"][0][0] - constant_offset
+        ros_params["x_dist_to_sample_from__high_bound"] = (self.gaussian_range_dic["ArenaSize"][0][1]/2) - self.gaussian_range_dic["PlayerStart"][0][0] + constant_offset
+        ros_params["y_dist_to_sample_from__low_bound"] = -(self.gaussian_range_dic["ArenaSize"][0][0]/2) - self.gaussian_range_dic["PlayerStart"][0][1] - constant_offset
+        ros_params["y_dist_to_sample_from__high_bound"] = (self.gaussian_range_dic["ArenaSize"][0][0]/2) - self.gaussian_range_dic["PlayerStart"][0][1] + constant_offset
 
         return ros_params
