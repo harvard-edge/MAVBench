@@ -1,0 +1,44 @@
+{
+    "companion_setting":{	
+	 "usr_name": "radhika" ,
+        "pass_code":  "restro",
+        "host_ip": "192.168.0.159",
+	    "base_dir": "/home/radhika/mavbench_stuff/MAVBench_base",
+        "stats_file_on_comp_computer": "stats.json",
+        "platform": "tx2"
+    },
+    "host_setting":{
+	"in_editor":false
+    },
+    "experiment_setting_list": [
+        {      
+            "application": "package_delivery", 
+	    "time_to_trigger_object": "25",
+	    "ros_params": {
+		    "capture_size":600,
+		    "budgetting_mode":"dynamic",
+		    "use_pyrun":"true",
+		    "knob_performance_modeling":"false",
+		    "voxel_type_to_publish":"free",
+		    "DEBUG_VIS":"false",
+		    "design_mode":"serial",
+		    "pc_res":0.3,
+		    "point_cloud_height":5,
+		    "point_cloud_width":5,
+		    "sensor_max_range":25
+            },
+            "processor_frequency":2035200,
+            "map_name": "random",
+	    "sweep": ["SpreadOfObstacles", "PeakCongestion", "GapSize", "GoalDistance", "v_max"],
+	    "GoalDistance": [250, 1000],
+	    "SpreadOfObstacles": [60, 80],
+	    "PeakCongestion": [0.4, 0.7],
+	    "GapSize": [5.0, 7.0],
+	    "v_max": [5.0, 7.0],
+	    "episodes_per_sweep": 2,
+	    "EnvGenFlavor": "gaussian",
+	    "GridSize":10 
+	}
+    ]
+}
+

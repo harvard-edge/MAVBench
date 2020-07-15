@@ -2,7 +2,7 @@ import roborun_settings
 import numpy as np
 from EnvRandomizer import EnvRandomizer
 
-class RoborunRandomizer():
+class RoborunRandomizer:
     def __init__(self):
         self.env_rand = None
         self.centroid_list = ["Centroid1", "Centroid2", "Centroid3"]
@@ -47,21 +47,3 @@ class RoborunRandomizer():
 
     def get_gaussian_params_list(self):
         return self.gaussian_params
-
-    def augment_ros_params(self, ros_params):
-        assert (type(ros_params) is dict), "ros_params must be a dict!"
-        start = self.gaussian_range_dic["PlayerStart"][0]
-        end = self.gaussian_range_dic["End"][0]
-        goal_offset = [e_i - s_i for s_i, e_i in zip(start, end)]
-        ros_params["goal_x"] = goal_offset[0]
-        ros_params["goal_y"] = goal_offset[1]
-        ros_params["goal_z"] = end[2]
-
-        # arena bounds in mavbench coords
-        constant_offset = 300
-        ros_params["x_dist_to_sample_from__low_bound"] = -(self.gaussian_range_dic["ArenaSize"][0][1]/2) - self.gaussian_range_dic["PlayerStart"][0][0] - constant_offset
-        ros_params["x_dist_to_sample_from__high_bound"] = (self.gaussian_range_dic["ArenaSize"][0][1]/2) - self.gaussian_range_dic["PlayerStart"][0][0] + constant_offset
-        ros_params["y_dist_to_sample_from__low_bound"] = -(self.gaussian_range_dic["ArenaSize"][0][0]/2) - self.gaussian_range_dic["PlayerStart"][0][1] - constant_offset
-        ros_params["y_dist_to_sample_from__high_bound"] = (self.gaussian_range_dic["ArenaSize"][0][0]/2) - self.gaussian_range_dic["PlayerStart"][0][1] + constant_offset
-
-        return ros_params

@@ -72,12 +72,12 @@ class EnvRandomizer():
 
     def airsim_reset(self):
         print("Resetting Unreal...")
-        self.airsim_client = self.airsim_client.resetUnreal(1, 1)
+        # we specify sleep times before and after passing the RPC
+        # call to AirSim as 3 seconds, because RPCs take time
+        self.airsim_client = self.airsim_client.resetUnreal(5, 5)
 
         client = self.airsim_client
         client.confirmConnection()
-        client.enableApiControl(True)
-        client.armDisarm(True)
 
         self.episodeN += 1
 

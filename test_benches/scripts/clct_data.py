@@ -13,6 +13,7 @@ import sys
 from shutil import copy 
 import time
 from multiprocessing import Process
+from environment_randomization import RoborunRandomizer
 
 import argparse
 

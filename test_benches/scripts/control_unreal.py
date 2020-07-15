@@ -40,7 +40,3 @@ def change_level(level):
 def restart_level():
     f = open(os.path.join(messages_dir(), "restart"), "w");
     f.close()
-
-# for env-gen
-
-from environment_randomization import RoborunRandomizer
