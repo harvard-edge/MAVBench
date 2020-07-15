@@ -93,7 +93,7 @@ class Sweeper:
         # spawning a centroid at the midway point
         self.experiment_setting["Centroid1"] = [0, 0, 20]
 
-        self.experiment_setting["max_run_time"] = 60 #int(ceil(goal_dist * 2.5))
+        self.experiment_setting["max_run_time"] = int(ceil(goal_dist * 2.5)) #60
 
     def augment_ros_params(self):
         ros_params = copy.deepcopy(self.experiment_setting["ros_params"])
