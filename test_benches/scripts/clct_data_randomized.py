@@ -295,7 +295,7 @@ def main():
 
                     curr_gaussian_params_dict = randomizer_sweep.get_sweeped_gaussian_params_dict()
                     for var in randomizer_sweep.vars_to_sweep:
-                        sweep_val = randomizer_sweep.get_sweeped_param_value(var)
+                        sweep_val = randomizer_sweep.get_sweeped_var_value(var)
                         write_to_stats_file(stat_file_addr, '\t\\"' + var + '\\":\\"' + str(sweep_val) + '\\",',
                                             companion_setting, ssh_client)
 

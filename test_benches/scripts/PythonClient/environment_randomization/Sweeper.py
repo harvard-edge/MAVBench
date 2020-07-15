@@ -1,5 +1,6 @@
 import json
 from math import floor, ceil
+from itertools import product
 from RoborunRandomizer import RoborunRandomizer
 import copy
 
@@ -28,16 +29,13 @@ class Sweeper:
         else:
             self.episodes_per_sweep = 1
 
-        self.gaussian_params = self.randomizer.get_gaussian_params_list()
-
-        self.var_being_sweeped = None
-        self.var_being_sweeped_index = -1
-
-        self.sweep_ind = {}
-        self.num_sweeps = 1
+        self.list_of_lists_of_sweep_values = []
         for var in self.vars_to_sweep:
-            self.sweep_ind[var] = 0
-            self.num_sweeps *= len(self.meta_experiment_setting[var])
+            self.list_of_lists_of_sweep_values.append(self.meta_experiment_setting[var])
+        self.all_combinations = list(product(*self.list_of_lists_of_sweep_values))
+        self.num_sweeps = len(self.all_combinations)
+        self.curr_combination = None
+        self.curr_combination_ind = -1
 
         # we will later generate a new experiment setting with the sweeped params set to constants/
         # constant upper and lower bounds
@@ -47,12 +45,18 @@ class Sweeper:
     def get_num_sweeps(self):
         return self.num_sweeps
 
+    def get_sweeped_var_value(self, var):
+        assert var in self.vars_to_sweep, str(var) + " must be a sweeped variable!"
+        sweep_var_index_in_combination = self.vars_to_sweep.index(var)
+        val = self.curr_combination[sweep_var_index_in_combination]
+        return val
+
     def set_sweeped_experiment_setting(self):
         for var in self.meta_experiment_setting.keys():
             if var in self.vars_to_sweep:
                 # we handle the special vars later
                 if var not in self.special_vars:
-                    actual_val = self.meta_experiment_setting[var][self.sweep_ind[var]]
+                    actual_val = self.get_sweeped_var_value(var)
                     if var in self.randomizer.ranged_params:
                         # hack because RoborunRandomizer only accepts ranges for these variables
                         self.experiment_setting[var] = [actual_val, actual_val]
@@ -65,7 +69,7 @@ class Sweeper:
     def augment_gaussian_params(self):
         goal_dist = -1
         if "GoalDistance" in self.vars_to_sweep:
-            goal_dist = self.meta_experiment_setting["GoalDistance"][self.sweep_ind["GoalDistance"]]
+            goal_dist = self.get_sweeped_var_value("GoalDistance")
         elif "GoalDistance" in self.meta_experiment_setting.keys():
             goal_dist = self.meta_experiment_setting["GoalDistance"]
         else:
@@ -93,7 +97,7 @@ class Sweeper:
         # spawning a centroid at the midway point
         self.experiment_setting["Centroid1"] = [0, 0, 20]
 
-        self.experiment_setting["max_run_time"] = int(ceil(goal_dist * 2.5)) #60
+        self.experiment_setting["max_run_time"] = 60#int(ceil(goal_dist * 2.5)) #60
 
     def augment_ros_params(self):
         ros_params = copy.deepcopy(self.experiment_setting["ros_params"])
@@ -114,7 +118,7 @@ class Sweeper:
 
         # v_max
         if "v_max" in self.vars_to_sweep:
-            ros_params["v_max"] = self.meta_experiment_setting["v_max"][self.sweep_ind["v_max"]]
+            ros_params["v_max"] = self.get_sweeped_var_value("v_max")
 
         self.experiment_setting["ros_params"] = ros_params
 
@@ -124,18 +128,12 @@ class Sweeper:
     def get_sweeped_gaussian_params_dict(self):
         return self.curr_gaussian_params_dict
 
-    def get_sweeped_param_value(self, param):
-        assert param in self.vars_to_sweep, str(param) + " was not defined for sweeping!"
-        sweep_val = self.meta_experiment_setting[param][self.sweep_ind[param]]
-        if type(sweep_val) is list:
-            # adjusting for earlier stated range hack
-            return sweep_val[0]
-        else:
-            return sweep_val
+    def set_next_sweep_combination(self):
+        self.curr_combination_ind += 1
+        self.curr_combination = self.all_combinations[self.curr_combination_ind]
 
     def sweep_start(self):
-        self.var_being_sweeped_index += 1
-        self.var_being_sweeped = self.vars_to_sweep[self.var_being_sweeped_index]
+        self.set_next_sweep_combination()
 
         # resetting our experiment setting to be generated
         self.experiment_setting = copy.deepcopy(self.meta_experiment_setting)
@@ -160,5 +158,4 @@ class Sweeper:
     def sweep_end(self):
         self.randomizer = None
         self.experiment_setting = None
-        self.sweep_ind[self.var_being_sweeped] += 1
         self.curr_gaussian_params_dict = {}
