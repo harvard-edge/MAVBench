@@ -301,7 +301,7 @@ def main():
 
                     write_to_stats_file(stat_file_addr, '\t\\"experiment_number\\":' + str(total_run_ctr),
                                         companion_setting, ssh_client)
-                    if experiment_run_ctr < (episodes_per_sweep - 1):
+                    if sweep_ctr < (num_sweeps - 1):
                         write_to_stats_file(stat_file_addr, "},", companion_setting, ssh_client)
                     # restart_unreal()
                 randomizer_sweep.sweep_end()
