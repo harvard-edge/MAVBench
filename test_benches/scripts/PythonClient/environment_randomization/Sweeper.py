@@ -88,8 +88,8 @@ class Sweeper:
             goal_x_offset = goal_dist
         goal_y_offset = int(ceil((goal_dist**2 - goal_x_offset**2)**0.5))
 
-        # adding 400m to arena bounds for some leeway to spawn obstacles
-        constant_offset = 400
+        # adding 500m to arena bounds for some leeway to spawn obstacles
+        constant_offset = 500
         # x's and y's are flipped for arena size in UE, TODO fix
         self.experiment_setting["ArenaSize"] = [goal_y_offset + constant_offset, goal_x_offset + constant_offset, 20]
         self.experiment_setting["PlayerStart"] = [-goal_x_offset/2, -goal_y_offset/2, 20]
