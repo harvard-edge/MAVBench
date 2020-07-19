@@ -12,6 +12,7 @@ import paramiko
 import sys
 from shutil import copy
 import time
+import json
 from multiprocessing import Process
 from environment_randomization import Sweeper
 
@@ -38,6 +39,7 @@ host_setting = data_clct_conf_obj.get_config_data()["host_setting"]
 
 mavbench_apps_base_dir = companion_setting["base_dir"] + "/catkin_ws/src/MAV_apps"
 
+game_base_path = "C:\\Users\\Behzad-PC\\mavbench_stuff\\env-gen\\Build\\WindowsNoEditor\\"  # for radhika
 
 def creat_ssh_client(companion_setting, host_base_dir):
     # paramiko
@@ -55,8 +57,7 @@ def start_unreal(host_setting, host_base_dir):
     if host_setting["in_editor"]:
         return
     else:
-        # game_path = host_base_dir + "\\test_benches\\games\\WindowsNoEditor\\Blocks.exe"
-        game_path = "C:\\Users\\Behzad-PC\\mavbench_stuff\\env-gen\\Build\\WindowsNoEditor\\JsonParsing18Version.exe"  # for radhika
+        game_path = game_base_path + "JsonParsing18Version.exe"
     if not (os.path.isfile(game_path)):
         print("file:" + game_path + " doesn't exist")
         sys.exit()
@@ -224,8 +225,15 @@ def modify_freq(freq, ssh_client):
     print(result)
 
 
-# def read_obs_coords():
-# obs_coords_file =
+def read_env_gen_obs_stats():
+    obs_stats_path = game_base_path + "\\AirLearning\\Content\\JsonFiles\\EnvGenStats.json"
+    if not (os.path.isfile(obs_stats_path)):
+        print("file:" + obs_stats_path + " doesn't exist")
+        sys.exit()
+
+    with open(obs_stats_path, "r") as obs_json_file:
+        data = json.load(obs_json_file)
+        return data
 
 def main():
     host_base_dir = get_host_base();
@@ -252,13 +260,10 @@ def main():
             ros_params = meta_experiment_setting["ros_params"]
             proc_freq = meta_experiment_setting["processor_frequency"]
             stat_file_addr = mavbench_apps_base_dir + "/data/" + application + "/" + "stats.json"
-            #obs_file_addr = mavbench_apps_base_dir + "/data/" + application + "/" + "EnvGenObstacleCoords.py"
+            obs_file_addr = mavbench_apps_base_dir + "/data/" + application + "/" + "EnvGenStats.json"
 
             randomizer_sweep = Sweeper(meta_experiment_setting)
 
-            # write obstacle config into py data file
-            # obs_coords = read_obs_coords()
-            # write_to_stats_file(obs_file_addr, obs_coords, companion_setting, ssh_client)
             time.sleep(10)  # some time for the exe to settle down
 
             ssh_client = creat_ssh_client(companion_setting, host_base_dir)
@@ -269,6 +274,7 @@ def main():
             write_to_stats_file(stat_file_addr, '\t\\"experiment_set_' + str(experiment_set_ctr) + '\\":',
                                 companion_setting, ssh_client)
             write_to_stats_file(stat_file_addr, '[', companion_setting, ssh_client)
+
             experiment_set_ctr += 1
             # minimize_the_window()
             # --- start collecting data
@@ -280,6 +286,7 @@ def main():
                     total_run_ctr += 1
                     randomizer_sweep.do_episode()
                     time.sleep(20)  # env-gen unreal reset takes some time
+
                     experiment_setting = randomizer_sweep.get_sweeped_experiment_setting()
                     ros_params = experiment_setting["ros_params"]
                     result = schedule_tasks(companion_setting, experiment_setting, ssh_client, host_base_dir)
@@ -299,17 +306,27 @@ def main():
                         write_to_stats_file(stat_file_addr, '\t\\"' + var + '\\":\\"' + str(sweep_val) + '\\",',
                                             companion_setting, ssh_client)
 
+                    env_gen_stats = read_env_gen_obs_stats()
+                    for env_gen_param in env_gen_stats.keys():
+                        # we don't want to write out all the obstacle coords right now
+                        if env_gen_param not in ["ObstacleList", "SpreadOfObstacles", "PeakCongestion"]:
+                            env_gen_val = env_gen_stats[env_gen_param]
+                            write_to_stats_file(stat_file_addr, '\t\\"' + env_gen_param + '\\":\\"' + str(env_gen_val) + '\\",',
+                                                companion_setting, ssh_client)
+
                     write_to_stats_file(stat_file_addr, '\t\\"experiment_number\\":' + str(total_run_ctr),
                                         companion_setting, ssh_client)
+
                     if sweep_ctr < (num_sweeps - 1):
                         write_to_stats_file(stat_file_addr, "},", companion_setting, ssh_client)
-                    # restart_unreal()
+                    #    write_to_stats_file(obs_file_addr, "},", companion_setting, ssh_client)
+                    #else:
+                    #    write_to_stats_file(obs_file_addr, "}", companion_setting, ssh_client)
+
                 randomizer_sweep.sweep_end()
 
             write_to_stats_file(stat_file_addr, "}],", companion_setting, ssh_client)
-
-        # write_to_stats_file(stat_file_addr, '\\"experiment_number\\":'+str(experiment_run_ctr)+"}",  companion_setting, ssh_client)
-        # write_to_stats_file(stat_file_addr, "]}",  companion_setting, ssh_client)
+            #write_to_stats_file(obs_file_addr, "],", companion_setting, ssh_client)
 
         stop_unreal()
     except Exception as e:

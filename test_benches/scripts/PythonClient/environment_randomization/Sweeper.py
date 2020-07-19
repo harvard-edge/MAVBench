@@ -90,12 +90,11 @@ class Sweeper:
 
         # adding 500m to arena bounds for some leeway to spawn obstacles
         constant_offset = 500
-        # x's and y's are flipped for arena size in UE, TODO fix
-        self.experiment_setting["ArenaSize"] = [goal_y_offset + constant_offset, goal_x_offset + constant_offset, 20]
+        self.experiment_setting["ArenaSize"] = [goal_x_offset + constant_offset, goal_y_offset + constant_offset, 20]
         self.experiment_setting["PlayerStart"] = [-goal_x_offset/2, -goal_y_offset/2, 20]
         self.experiment_setting["End"] = [goal_x_offset/2, goal_y_offset/2, 50]
         # spawning a centroid at the midway point
-        self.experiment_setting["Centroid1"] = [0, 0, 20]
+        #self.experiment_setting["Centroid1"] = [0, 0, 20]
 
         self.experiment_setting["max_run_time"] = int(ceil(goal_dist * 2.5))
 
@@ -109,12 +108,11 @@ class Sweeper:
         ros_params["goal_z"] = end[2]
 
         # arena bounds in mavbench coords
-        # x's and y's are flipped for arena size in UE, TODO fix
         constant_offset = 300
-        ros_params["x_dist_to_sample_from__low_bound"] = -(self.experiment_setting["ArenaSize"][1]/2) - self.experiment_setting["PlayerStart"][0] - constant_offset
-        ros_params["x_dist_to_sample_from__high_bound"] = (self.experiment_setting["ArenaSize"][1]/2) - self.experiment_setting["PlayerStart"][0] + constant_offset
-        ros_params["y_dist_to_sample_from__low_bound"] = -(self.experiment_setting["ArenaSize"][0]/2) - self.experiment_setting["PlayerStart"][1] - constant_offset
-        ros_params["y_dist_to_sample_from__high_bound"] = (self.experiment_setting["ArenaSize"][0]/2) - self.experiment_setting["PlayerStart"][1] + constant_offset
+        ros_params["x_dist_to_sample_from__low_bound"] = -(self.experiment_setting["ArenaSize"][0]/2) - self.experiment_setting["PlayerStart"][0] - constant_offset
+        ros_params["x_dist_to_sample_from__high_bound"] = (self.experiment_setting["ArenaSize"][0]/2) - self.experiment_setting["PlayerStart"][0] + constant_offset
+        ros_params["y_dist_to_sample_from__low_bound"] = -(self.experiment_setting["ArenaSize"][1]/2) - self.experiment_setting["PlayerStart"][1] - constant_offset
+        ros_params["y_dist_to_sample_from__high_bound"] = (self.experiment_setting["ArenaSize"][1]/2) - self.experiment_setting["PlayerStart"][1] + constant_offset
 
         # v_max
         if "v_max" in self.vars_to_sweep:
