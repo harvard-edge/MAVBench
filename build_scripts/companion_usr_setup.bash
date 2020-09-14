@@ -58,45 +58,78 @@ fi
 #"control_drone;package_delivery;airsim_img_publisher;kdtree;nbvplanner;"
 #mapping_and_sar;follow_the_leader;"
 
-
+#here on
 cd $base_dir/catkin_ws/ &&\
     source /opt/ros/kinetic/setup.bash &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="catkin_simple" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="eigen_catkin" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="glog_catkin" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="eigen_checks" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_msgs" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_comm" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="nlopt" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_visualization" && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="planning_msgs" && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_trajectory_generation" && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_trajectory_generation_ros" && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="gflags_catkin" && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="minkindr" && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="minkindr_conversions" && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="volumetric_map_base" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="volumetric_msgs" &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="profile_manager" -j3 &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="octomap_world" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="multiagent_collision_check" -j3 &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="octomap_server" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="future_collision" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="publish_imu" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="follow_trajectory" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="octomap_mapping" -j3 &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="depth_image_proc" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="package_delivery" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="airsim_img_publisher" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="kdtree" -j3 &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="nbvplanner" -j3 &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mapping_and_sar" -j3 && \
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="follow_the_leader" -j3 &&\
-    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="control_drone" -j3
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="catkin_simple" -j10 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="eigen_catkin" -j10 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="glog_catkin" -j10 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="eigen_checks" -j10 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_msgs" -j10 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_comm" -j10 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="nlopt" -j10 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_visualization" -j10 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="planning_msgs" -j10 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_trajectory_generation" -j10 && \
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mav_trajectory_generation_ros" -j10 && \
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="gflags_catkin" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="minkindr" -j10 && \
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="minkindr_conversions" -j10 && \
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="run_time" -j10 && \
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="volumetric_map_base" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="volumetric_msgs" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="profile_manager" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="data_collection" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="octomap_world" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="multiagent_collision_check" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" -j10 && \
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="kdtree" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="compare_octomaps" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="control_drone" -j3 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="volumetric_msgs" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="octomap_server" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="future_collision" -j10
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="publish_imu" -j10 && \
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="follow_trajectory" -j10 && \
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="octomap_mapping" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="depth_image_proc" -j10 && \
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="package_delivery" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="airsim_img_publisher" -j10 
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="nbvplanner" -j10 &&\
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="mapping_and_sar" -j3 && \
+#    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="follow_the_leader" -j3 &&\
 
 # --- for eclipse
+#    source /opt/ros/kinetic/setup.bash &&\
+    catkin_make  --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="gflags_catkin" -j10 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="minkindr" -j10 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="minkindr_conversions" -j10 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" -j10 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="data_collection" -j10 &&\
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="volumetric_map_base" -j10 &&\
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="volumetric_msgs" -j10 &&\
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="profile_manager" -j10 &&
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug  -DCATKIN_WHITELIST_PACKAGES="octomap_world" -j10 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug  -DCATKIN_WHITELIST_PACKAGES="multiagent_collision_check" -j10 &&\
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug  -DCATKIN_WHITELIST_PACKAGES="mavbench_msgs" -j10 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="kdtree" -j10 &&\
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug  -DCATKIN_WHITELIST_PACKAGES="compare_octomaps" -j10 &&\
+    catkin_make -DCMAKE_BUILD_TYPE=Release -DCATKIN_WHITELIST_PACKAGES="control_drone" -j3 &&\
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="octomap_server" -j3 &&\
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="future_collision" -j3 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="publish_imu" -j3 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="follow_trajectory" -j3 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="octomap_mapping" -j3 &&\
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="depth_image_proc" -j3 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="depth_image_proc_with_spin" -j3 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="airsim_img_publisher" -j3 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="filter_queue" -j3 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="package_delivery" -j1 && \
+    catkin_make --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug -DCATKIN_WHITELIST_PACKAGES="run_time" -j10
+#
+#
+#    source /opt/ros/kinetic/setup.bash &&\
 #    catkin build  catkin_simple --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
 #    catkin build  eigen_catkin --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
 #    catkin build  glog_catkin --force-cmake -G"Eclipse CDT4 - Unix Makefiles" -DCMAKE_BUILD_TYPE=Debug &&\
