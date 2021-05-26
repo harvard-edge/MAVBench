@@ -9,16 +9,16 @@ This computer is responsible for running the compute intensive workloads.
 
 ## System Requirements
 **Hardware**:  
-+ Jetson TX2  
++ x86_64 machine   
 
 **Software**:  
 + Ubuntu: 16.04  
-+ JetPack (Nvidia SDK): 3.2 (We have only tested our setup with 3.2 but we suspect, it'll work with higher versions as well)  
 
 ## Building It 
 The following steps, clone our repo and sub repos (AirSim, pointcloud, ...) and build them all;
 ```bash
 git clone  --recursive https://github.com/harvard-edge/MAVBench.git MAVBench_base;     
+git checkout mavfi
 cd MAVBench_base;   
 source build_scripts/companion_setup_env_var.sh;    
 sudo ./build_scripts/companion_root_setup.bash;    

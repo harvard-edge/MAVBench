@@ -2,7 +2,7 @@
 The README explains how to setup MAVFI and conduct fault injection to the applications inside MAVBench, a benchmark and a simulator for Micro Aerial Vehicles. 
 
 
-**What is MAVFI**
+**What is MAVFI?**
 To understand the fault tolerance and end-to-end reliability impact of transient faults in MAVs, we built a fault injection framework for MAV applications, referred to as MAVFI. The MAVFI is a ROS node that can be integrated into ROS-based MAV applications and injects transient faults to each compute node in the system, facilitating fault tolerance analysis for diverse MAV applications. 
 
 MAVFI is able to conduct architecture-level fault injection for CPU by introducing single or multiple bit flips in the register being accessed by current instruction, simulating transient faults happened during the execution of the processor. The transient faults injected to the architectural states can be manifested and cause the data corruption of output variables. To the best of our knowledge, MAVFI is the first fault injection framework targeted at ROS-based applications. MAVFI can be integrated into different applications and perform fault injection at close to the native speed of the original end-to-end system. In general, MAVFI facilitates fault tolerance analysis of any ROS-based applications, beyond just MAVs. 
@@ -31,11 +31,11 @@ MAVBench used an NVIDIA Jetson TX2, although the setup allows for swapping this 
 
 
 ## Building
-MAVFI has already be integrated into MAVBench. Please follow the same intruction as MAVBench to build MAVFI. (docs/read_me/building.md)
-
+[Instructions to build MAVFI.](https://github.com/harvard-edge/MAVBench/blob/mavfi/docs/read_me/building.md)
 
 ## Running 
-MAVFI supports single or multiple bit flips to the ROS node of package delivery application in MAVBench. User can define the number of bit flips and which algorithm (e.g., Octomap, motion planner) to inject fault into inside the launch file of package delivery application (src/MAV_apps/package_delivery/launch/package_delivery.launch). After configuration, please follow the instruction in docs/read_me/running.md to run MAVBench with MAVFI.
+MAVFI supports single or multiple bit flips to the ROS node of package delivery application in MAVBench. User can define the number of bit flips and which algorithm (e.g., Octomap, motion planner) to inject fault into inside the launch file of package delivery application (src/MAV_apps/package_delivery/launch/package_delivery.launch). After configuration, please follow the instruction to run MAVBench with MAVFI.
+[Instruction to run MAVBench.](https://github.com/harvard-edge/MAVBench/blob/mavfi/docs/read_me/running.md)
 
 
 ## Directory Structure
